@@ -1,0 +1,291 @@
+openapi: 3.0.3
+info:
+  title: Terra External Credentials Manager
+  description: A manager for external credentials
+  version: 0.0.1
+paths:
+  /api/oidc/v1/providers:
+    get:
+      summary: Lists the available OIDC providers.
+      tags: [ oidc ]
+      operationId: listProviders
+      responses:
+        '200':
+          description: A JSON array of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/oidc/v1/{provider}:
+    parameters:
+      - $ref: '#/components/parameters/providerParam'
+    get:
+      summary: Returns info about the linked account for the provider.
+      tags: [ oidc ]
+      operationId: getLink
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkInfoResponse'
+        '404':
+          $ref: '#/components/responses/LinkNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      summary: Delete the account link for the provider, if an account has been linked.
+      tags: [ oidc ]
+      operationId: deleteLink
+      description: Requires an authenticated user.
+      responses:
+        '204':
+          description: Deletes the refresh token and revokes it with the provider.
+        '404':
+          $ref: '#/components/responses/LinkNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/oidc/v1/{provider}/authorization-url:
+    parameters:
+      - $ref: '#/components/parameters/providerParam'
+      - $ref: '#/components/parameters/scopesParam'
+      - $ref: '#/components/parameters/redirectUriParam'
+      - $ref: '#/components/parameters/stateParam'
+    get:
+      summary: Builds an OAuth authorization URL that a user must use to initiate the OAuth dance.
+      tags: [ oidc ]
+      operationId: getAuthUrl
+      description: First step to link a new provider.
+      responses:
+        '200':
+          description: The authorization URL
+          content:
+            application/json:
+              schema:
+                type: string
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/oidc/v1/{provider}/oauthcode:
+    parameters:
+      - $ref: '#/components/parameters/providerParam'
+      - $ref: '#/components/parameters/scopesParam'
+      - $ref: '#/components/parameters/redirectUriParam'
+      - $ref: '#/components/parameters/stateParam'
+      - name: oauthcode
+        description: oauth code returned by identity provider
+        in: query
+        schema:
+          type: string
+    post:
+      summary: Link the user's account with the provider.
+      tags: [ oidc ]
+      operationId: createLink
+      description: Response same as GET /api/oidc/v1/{provider}. Code from the GET /api/oidc/v1/{provider}/authorization-url goes here.
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkInfoResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/oidc/v1/{provider}/passport:
+    parameters:
+      - $ref: '#/components/parameters/providerParam'
+    get:
+      summary: Get the original passport from this provider
+      tags: [ oidc ]
+      operationId: getProviderPassport
+      description: Gets passport signed by provider, not Terra, containing only visas from provider. Passport and visas should be valid.
+      responses:
+        '200':
+          description: A JSON object
+          content:
+            application/json:
+              schema:
+                type: string
+                format: base64
+        '404':
+          description: provider does not support passports
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /status:
+    get:
+      summary: Check status of the service.
+      tags: [ public ]
+      operationId: getStatus
+      security: [ ]
+      responses:
+        '200':
+          $ref: '#/components/responses/SystemStatusResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/SystemStatusResponse'
+  /version:
+    get:
+      summary: Get version info of the deployed service.
+      tags: [ public ]
+      operationId: getVersion
+      security: [ ]
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionProperties'
+        '404':
+          description: "Version not configured"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  parameters:
+    providerParam:
+      name: provider
+      in: path
+      schema:
+        type: string
+        default: ras
+      required: true
+    userIdParam:
+      name: user_id
+      in: path
+      schema:
+        type: string
+      required: true
+    scopesParam:
+      name: scopes
+      description: list of scopes to authorize
+      in: query
+      required: true
+      example: [ "openid", "email", "ga4gh_passport_v1" ]
+      schema:
+        type: array
+        items:
+          type: string
+    redirectUriParam:
+      name: redirectUri
+      description: oidc redirect uri
+      in: query
+      required: true
+      example: "http://localhost:9000/fence-callback"
+      schema:
+        type: string
+    stateParam:
+      name: state
+      description: oidc authorization state
+      in: query
+      required: false
+      schema:
+        type: string
+
+  responses:
+    LinkInfoResponse:
+      description: A JSON object including the external user id and expiration timestamp
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LinkInfo'
+    LinkNotFound:
+      description: Unable to find a link for the user to the provider. Consider re-linking with an oauthcode.
+
+    SystemStatusResponse:
+      description: A JSON description of the subsystems and their statuses.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SystemStatus'
+
+    # Error Responses
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+    PermissionDenied:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+    NotFound:
+      description: Not found (or unauthorized)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+
+  schemas:
+    LinkInfo:
+      type: object
+      required: [ externalUserId, expirationTimestamp ]
+      properties:
+        externalUserId:
+          type: string
+        expirationTimestamp:
+          type: string
+          format: date-time
+    ErrorReport:
+      type: object
+      required: [ message, statusCode ]
+      properties:
+        message:
+          type: string
+        statusCode:
+          type: integer
+
+    SystemStatus:
+      required: [ ok, systems ]
+      type: object
+      properties:
+        ok:
+          type: boolean
+          description: whether any system(s) need attention
+        systems:
+          type: object
+          additionalProperties:
+            type: boolean
+
+    VersionProperties:
+      type: object
+      properties:
+        gitTag:
+          type: string
+        gitHash:
+          type: string
+        github:
+          type: string
+        build:
+          type: string
+
+  securitySchemes:
+    authorization:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://accounts.google.com/o/oauth2/auth
+          scopes:
+            openid: open id authorization
+            email: email authorization
+            profile: profile authorization
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - authorization: [ openid, email, profile ]
+  - bearerAuth: [ ]

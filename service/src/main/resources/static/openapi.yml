@@ -1,0 +1,131 @@
+openapi: 3.0.3
+info:
+  title: drsHub
+  version: 2.0.0
+paths:
+  /api/v4:
+    post:
+      summary: Get a file
+      tags: [ drsHub ]
+      operationId: getFile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestObject'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+
+components:
+  responses:
+    ResourceResponse:
+      description: Information about the requested file
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceMetadata'
+
+    # Error Responses
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+    PermissionDenied:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+    NotFound:
+      description: Not found (or unauthorized)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
+
+  schemas:
+    ResourceMetadata:
+      type: object
+      properties:
+        contentType:
+          type: string
+        size:
+          type: integer
+          format: int64
+        timeCreated:
+          type: string
+          format: date-time
+        timeUpdated:
+          type: string
+          format: date-time
+        bucket:
+          type: string
+        name:
+          type: string
+        gsUri:
+          type: string
+        googleServiceAccount:
+          type: object
+        fileName:
+          type: string
+        accessUrl:
+          type: object
+        hashes:
+          type: object
+        localizationPath:
+          type: string
+        bondProvider:
+          type: string
+
+    RequestObject:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+        fields:
+          type: array
+          items:
+            type: string
+
+    ErrorReport:
+      type: object
+      required: [ message, statusCode ]
+      properties:
+        message:
+          type: string
+        statusCode:
+          type: integer
+
+  securitySchemes:
+    authorization:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://accounts.google.com/o/oauth2/auth
+          scopes:
+            openid: open id authorization
+            email: email authorization
+            profile: profile authorization
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+
+security:
+  - authorization: [ openid, email, profile ]
+  - bearerAuth: [ ]

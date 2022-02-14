@@ -1,0 +1,85 @@
+dependencies {
+	implementation 'io.swagger.core.v3:swagger-annotations:2.1.12'
+	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.4.0'
+	swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.32'
+
+	// Versioned by Spring:
+	implementation 'javax.validation:validation-api'
+	implementation 'org.webjars:webjars-locator-core'
+}
+
+swaggerSources {
+	server {
+		inputFile = file('src/main/resources/static/openapi.yml')
+		code {
+			language = 'spring'
+			components = ['models', 'apis']
+			additionalProperties = [
+					modelPackage     : "${artifactGroup}.generated.model",
+					apiPackage       : "${artifactGroup}.generated.api",
+					dateLibrary      : 'java11',
+					interfaceOnly    : 'true',
+					useTags          : 'true',
+					springBootVersion: dependencyManagement.managedVersions['org.springframework.boot:spring-boot']
+			]
+		}
+	}
+
+	ga4gh {
+		inputFile = file('src/main/resources/vendor/data-repository-service-1.2.0.yaml')
+		code(makeClientCodeClosure('io.github.ga4gh.drs'))
+	}
+
+	bond {
+		inputFile = file('src/main/resources/vendor/bond.yaml')
+		code(makeClientCodeClosure('bio.terra.bond'))
+	}
+
+	externalcreds {
+		inputFile = file('src/main/resources/vendor/externalcreds.yml')
+		code(makeClientCodeClosure('bio.terra.externalcreds'))
+	}
+}
+
+def makeClientCodeClosure(String id) {
+	return () -> {
+		language = 'java'
+		library = 'resttemplate'
+
+		components = [
+				apiDocs  : false, apiTests: false,
+				modelDocs: false, modelTests: false
+		]
+
+		additionalProperties = [
+				modelPackage  : "${id}.model",
+				apiPackage    : "${id}.api",
+				invokerPackage: "${id}.client",
+				dateLibrary   : 'java11'
+		]
+	}
+}
+
+Set<String> swaggerSourcePaths = [
+		"${swaggerSources.server.code.outputDir}/src/main/java",
+		"${swaggerSources.ga4gh.code.outputDir}/src/main/java",
+		"${swaggerSources.bond.code.outputDir}/src/main/java",
+		"${swaggerSources.externalcreds.code.outputDir}/src/main/java"
+]
+
+
+idea.module.generatedSourceDirs = swaggerSourcePaths.collect({ file(it) })
+swaggerSourcePaths.each { sourceSets.main.java.srcDir(it) }
+compileJava.dependsOn tasks.generateSwaggerCode
+
+// The lombok plugin adds an analysis step for each srcDir, but doesn't know to register
+// a dependency on swagger code generation for that code, so things can't be up-to-date
+afterEvaluate {
+	tasks.each {
+		if (it.name.startsWith('generateMainEffectiveLombokConfig') &&
+				it.hasProperty('paths') &&
+				it.paths.intersect(swaggerSourcePaths.collect({ file(it) }))) {
+			it.dependsOn(generateSwaggerCode)
+		}
+	}
+}

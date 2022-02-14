@@ -1,0 +1,14 @@
+spotbugs {
+	reportLevel = 'high'
+	effort = 'max'
+	reportsDir = file("${project.reporting.baseDir}/spotbugs")
+	excludeFilter = file('../spotbugsExclude.xml')
+}
+
+spotbugsMain {
+	reports {
+		sarif { enabled = true }
+	}
+}
+
+spotbugsTest { enabled = false }

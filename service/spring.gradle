@@ -1,0 +1,18 @@
+configurations { compileOnly { extendsFrom annotationProcessor } }
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+}
+
+test { useJUnitPlatform() }
+
+task bootRunDev {
+	bootRun.configure { systemProperty 'spring.profiles.active', 'human-readable-logging' }
+	finalizedBy(bootRun)
+}
+
+

@@ -1,0 +1,112 @@
+deploy_env: ${DEPLOY_ENV:dev} # since there's a default, define this once
+
+drshub:
+  bondUrl: https://broad-bond-${deploy_env}.appspot.com
+  samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
+  externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
+
+  hosts:
+    bioDataCatalyst: staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    crdc: nci-crdc-staging.datacommons.io
+    kidsFirst: gen3staging.kidsfirstdrc.org
+    theAnvil: staging.theanvil.io
+    passportTest: ctds-test-env.planx-pla.net
+
+  drsProviders:
+    bioDataCatalyst:
+      name: BioData Catalyst (BDC)
+      hostRegex: '.*\.biodatacatalyst\.nhlbi\.nih\.gov|wb-mock-drs-dev\.storage\.googleapis\.com'
+      metadataAuth: false
+      bondProvider: fence
+      accessMethodConfigs:
+        - type: gcs
+          auth: fence_token
+          fetchAccessUrl: false
+    terraDataRepo:
+      name: Terra Data Repo (TDR)
+      hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
+      metadataAuth: true
+      accessMethodConfigs:
+        - type: gcs
+          auth: current_request
+          fetchAccessUrl: false
+        - type: https
+          auth: current_request
+          fetchAccessUrl: true # Used for Azure
+    kidsFirst:
+      name: Gabriella Miller Kids First DRC
+      hostRegex: '.*\.kidsfirstdrc\.org'
+      metadataAuth: false
+      bondProvider: kids_first
+      accessMethodConfigs:
+        - type: s3
+          auth: fence_token
+          fetchAccessUrl: true
+    anvil:
+      name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
+      hostRegex: '.*\.theanvil\.io'
+      metadataAuth: false
+      bondProvider: anvil
+      accessMethodConfigs:
+        - type: gcs
+          auth: fence_token
+          fetchAccessUrl: false
+    crdc:
+      name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
+      hostRegex: '.*\.datacommons\.io'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      accessMethodConfigs:
+        - type: gcs
+          auth: fence_token
+          fetchAccessUrl: false
+        - type: s3
+          auth: fence_token
+          fetchAccessUrl: true
+    passport:
+      name: Passport Test Provider
+      hostRegex: 'ctds-test-env\.planx-pla\.net'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      accessMethodConfigs:
+        - type: gcs
+          auth: passport
+          fetchAccessUrl: false
+          fallbackAuth: fence_token
+        - type: s3
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
+
+server:
+  compression:
+    enabled: true
+    mime-types: text/css,application/javascript
+  port: 8080
+
+spring:
+  application.name: drshub
+
+  jackson.serialization.indent_output: true
+
+  main.banner-mode: off
+
+  profiles.include:
+    - ${DEPLOY_ENV:dev}
+
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 0
+          must-revalidate: true
+        use-last-modified: false
+
+---
+spring.config.activate.on-profile: prod
+drshub:
+  hosts:
+    bioDataCatalyst: gen3.biodatacatalyst.nhlbi.nih.gov
+    crdc: nci-crdc.datacommons.io
+    kidsFirst: data.kidsfirstdrc.org
+    theAnvil: gen3.theanvil.io

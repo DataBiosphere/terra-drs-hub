@@ -1,0 +1,42 @@
+plugins {
+	id 'idea'
+	id 'java'
+
+	id 'org.springframework.boot'
+
+	id 'com.diffplug.spotless'
+	id 'com.github.ben-manes.versions' version '0.41.0'
+	id 'com.github.spotbugs' version '5.0.5'
+	id 'com.google.cloud.tools.jib'
+	id 'io.freefair.lombok'
+	id 'org.hidetake.swagger.generator'
+}
+
+compileJava { options.release = 11 }
+
+repositories {
+	mavenCentral()
+	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }
+	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-release' }
+}
+
+
+description = 'DRS Hub'
+
+apply from: 'publishing.gradle'
+apply from: 'spring.gradle'
+apply from: 'generators.gradle'
+apply from: 'tooling.gradle'
+apply from: 'analysis.gradle'
+
+dependencies {
+	annotationProcessor 'org.immutables:value:2.9.0'
+	implementation('bio.terra:terra-common-lib:0.0.53-SNAPSHOT') {
+		// remove transitive database deps, drshub has no db
+		exclude group: 'org.liquibase', module: 'liquibase-core'
+		exclude group: 'bio.terra', module: 'stairway-gcp'
+		exclude group: 'bio.terra', module: 'stairway'
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-data-jdbc'
+	}
+	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-fa74f75'
+}
