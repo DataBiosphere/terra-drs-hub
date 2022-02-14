@@ -1,6 +1,5 @@
 package bio.terra.drshub;
 
-import bio.terra.drshub.models.BondProviderEnum;
 import java.net.URL;
 import java.util.regex.Pattern;
 
@@ -39,21 +38,6 @@ public class Helpers {
           String.format(
               "Data Object URIs with either '%s' or '%s' as host are required to have a path: '%s'",
               dataGuidsHostPrefix, jadeDataRepoHostRegex, someUrl));
-    }
-  }
-
-  public static BondProviderEnum determineCibBondProvider(String cib) {
-    switch (cib) {
-      case ANVIL_NAMESPACE:
-        return BondProviderEnum.anvil;
-      case CRDC_NAMESPACE:
-        return BondProviderEnum.dcf_fence;
-      case KIDS_FIRST_NAMESPACE:
-        return BondProviderEnum.kids_first;
-      case PROD_DATASTAGE_NAMESPACE:
-      case STAGING_DATASTAGE_NAMESPACE:
-      default:
-        return BondProviderEnum.fence;
     }
   }
 

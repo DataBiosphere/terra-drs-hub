@@ -1,6 +1,5 @@
 package bio.terra.drshub.services;
 
-import bio.terra.bond.api.BondApi;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
@@ -10,9 +9,6 @@ import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
-import bio.terra.externalcreds.api.OidcApi;
-import io.github.ga4gh.drs.api.ObjectsApi;
-import io.github.ga4gh.drs.client.auth.OAuth;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
@@ -22,7 +18,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,9 +74,19 @@ public class MetadataService {
       Pattern.compile("gs://(?<bucket>[^/]+)/(?<name>.+)", Pattern.CASE_INSENSITIVE);
 
   private final DrsHubConfig drsHubConfig;
+  private final BondApiFactory bondApiFactory;
+  private final ExternalCredsApiFactory externalCredsApiFactory;
+  private final DrsApiFactory drsApiFactory;
 
-  public MetadataService(DrsHubConfig drsHubConfig) {
+  public MetadataService(
+      DrsHubConfig drsHubConfig,
+      BondApiFactory bondApiFactory,
+      ExternalCredsApiFactory externalCredsApiFactory,
+      DrsApiFactory drsApiFactory) {
     this.drsHubConfig = drsHubConfig;
+    this.bondApiFactory = bondApiFactory;
+    this.externalCredsApiFactory = externalCredsApiFactory;
+    this.drsApiFactory = drsApiFactory;
   }
 
   public ResourceMetadata fetchResourceMetadata(
@@ -127,11 +132,6 @@ public class MetadataService {
 
       return UriComponentsBuilder.newInstance()
           .host(drsHubConfig.getHosts().get(provider.getId()))
-          //              Objects.requireNonNull(
-          //
-          // drsHubConfig.getHosts().get(Helpers.determineCibBondProvider(cibHost)),
-          //                  String.format("Unrecognized Compact Identifier Based host [%s]",
-          // cibHost)))
           .path(URLEncoder.encode(compactIdMatch.group("suffix"), StandardCharsets.UTF_8))
           .query(compactIdMatch.group("query"))
           .build();
@@ -167,86 +167,6 @@ public class MetadataService {
                         uriComponents.toUriString())));
   }
 
-  private String getObjectId(UriComponents uriComponents) {
-    // TODO: is there a reason we need query params? it breaks getAccessUrl.
-    return uriComponents.getPath();
-  }
-
-  private Optional<AccessURL> getAccessUrl(
-      AccessUrlAuthEnum accessUrlAuth,
-      UriComponents uriComponents,
-      String accessId,
-      Optional<String> accessToken,
-      List<String> passports)
-      throws RestClientException {
-
-    var drsApi = makeDrsApiFromDrsUriComponents(uriComponents);
-    var objectId = getObjectId(uriComponents);
-
-    switch (accessUrlAuth) {
-      case passport:
-        if (passports != null && !passports.isEmpty()) {
-          try {
-            return Optional.ofNullable(
-                drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId));
-          } catch (RestClientException e) {
-            log.error(
-                "Passport authorized request failed for {} with error {}",
-                uriComponents.toUriString(),
-                e.getMessage());
-          }
-        }
-        // if we made it this far, there are no passports or there was an error using them so return
-        // nothing.
-        return Optional.empty();
-      case current_request:
-        drsApi.getApiClient().setAccessToken(accessToken.orElse(null));
-        return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
-      case fence_token:
-        if (accessToken.isPresent()) {
-          drsApi.getApiClient().setAccessToken(accessToken.get());
-          return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
-        } else {
-          throw new BadRequestException(
-              String.format(
-                  "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
-                  uriComponents.toUriString()));
-        }
-      default:
-        throw new DrsHubException("This should be impossible, unknown auth type");
-    }
-  }
-
-  private Optional<String> getFenceAccessToken(
-      String drsUri,
-      Optional<AccessMethod> accessMethod,
-      boolean useFallbackAuth,
-      DrsProvider drsProvider,
-      List<String> requestedFields,
-      boolean forceAccessUrl,
-      String bearerToken) {
-    if (drsProvider.shouldFetchFenceAccessToken(
-        accessMethod.map(AccessMethod::getType).orElse(null),
-        requestedFields,
-        useFallbackAuth,
-        forceAccessUrl)) {
-
-      log.info(
-          "Requesting Bond access token for '{}' from '{}'", drsUri, drsProvider.getBondProvider());
-
-      var bondApi = new BondApi();
-      bondApi.getApiClient().setBasePath(drsHubConfig.getBondUrl());
-      bondApi.getApiClient().setAccessToken(bearerToken);
-
-      var response =
-          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().toString());
-
-      return Optional.ofNullable(response.getToken());
-    } else {
-      return Optional.empty();
-    }
-  }
-
   private DrsMetadata fetchMetadata(
       DrsProvider drsProvider,
       List<String> requestedFields,
@@ -265,9 +185,9 @@ public class MetadataService {
           sendMetadataAuth,
           uriComponents.getHost());
 
-      var drsApi = makeDrsApiFromDrsUriComponents(uriComponents);
+      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
       if (sendMetadataAuth) {
-        ((OAuth) drsApi.getApiClient().getAuthentication("BearerAuth")).setAccessToken(bearerToken);
+        drsApi.setBearerToken(bearerToken);
       }
 
       drsResponse = drsApi.getObject(objectId, null);
@@ -279,9 +199,7 @@ public class MetadataService {
 
     String bondSaKey = null;
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
-      var bondApi = new BondApi();
-      bondApi.getApiClient().setBasePath(drsHubConfig.getBondUrl());
-      bondApi.getApiClient().setAccessToken(bearerToken);
+      var bondApi = bondApiFactory.getApi(bearerToken);
 
       // TODO: are we getting the key in a usable format?
       bondSaKey =
@@ -296,9 +214,7 @@ public class MetadataService {
     // TODO: is this an else-if?
     if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
 
-      var ecmApi = new OidcApi();
-      ecmApi.getApiClient().setBasePath(drsHubConfig.getExternalcredsUrl());
-      ecmApi.getApiClient().setAccessToken(bearerToken);
+      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
 
       try {
         // For now, we are only getting a RAS passport. In the future it may also fetch from other
@@ -377,15 +293,9 @@ public class MetadataService {
         .build();
   }
 
-  private ObjectsApi makeDrsApiFromDrsUriComponents(UriComponents uriComponents) {
-    var drsApi = new ObjectsApi();
-    var drsClient = drsApi.getApiClient();
-    drsClient.setBasePath(
-        drsClient
-            .getBasePath()
-            .replace("{serverURL}", Objects.requireNonNull(uriComponents.getHost())));
-
-    return drsApi;
+  private String getObjectId(UriComponents uriComponents) {
+    // TODO: is there a reason we need query params? it breaks getAccessUrl.
+    return uriComponents.getPath();
   }
 
   private Optional<AccessMethod> getAccessMethod(DrsObject drsResponse, DrsProvider drsProvider) {
@@ -438,6 +348,81 @@ public class MetadataService {
     return Optional.empty();
   }
 
+  private Optional<String> getFenceAccessToken(
+      String drsUri,
+      Optional<AccessMethod> accessMethod,
+      boolean useFallbackAuth,
+      DrsProvider drsProvider,
+      List<String> requestedFields,
+      boolean forceAccessUrl,
+      String bearerToken) {
+    if (drsProvider.shouldFetchFenceAccessToken(
+        accessMethod.map(AccessMethod::getType).orElse(null),
+        requestedFields,
+        useFallbackAuth,
+        forceAccessUrl)) {
+
+      log.info(
+          "Requesting BondComponent access token for '{}' from '{}'",
+          drsUri,
+          drsProvider.getBondProvider());
+
+      var bondApi = bondApiFactory.getApi(bearerToken);
+
+      var response =
+          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().toString());
+
+      return Optional.ofNullable(response.getToken());
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  private Optional<AccessURL> getAccessUrl(
+      AccessUrlAuthEnum accessUrlAuth,
+      UriComponents uriComponents,
+      String accessId,
+      Optional<String> accessToken,
+      List<String> passports)
+      throws RestClientException {
+
+    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
+    var objectId = getObjectId(uriComponents);
+
+    switch (accessUrlAuth) {
+      case passport:
+        if (passports != null && !passports.isEmpty()) {
+          try {
+            return Optional.ofNullable(
+                drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId));
+          } catch (RestClientException e) {
+            log.error(
+                "Passport authorized request failed for {} with error {}",
+                uriComponents.toUriString(),
+                e.getMessage());
+          }
+        }
+        // if we made it this far, there are no passports or there was an error using them so return
+        // nothing.
+        return Optional.empty();
+      case current_request:
+        accessToken.ifPresent(drsApi::setBearerToken);
+        return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
+      case fence_token:
+        if (accessToken.isPresent()) {
+          drsApi.setBearerToken(accessToken.get());
+          return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
+        } else {
+          throw new BadRequestException(
+              String.format(
+                  "Fence access token required for %s but is missing. Does user have an account linked in BondComponent?",
+                  uriComponents.toUriString()));
+        }
+      default:
+        throw new DrsHubException("This should be impossible, unknown auth type");
+    }
+  }
+
   private ResourceMetadata buildResponseObject(
       List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider) {
 
@@ -483,7 +468,7 @@ public class MetadataService {
                   eventualResponse.setContentType(r.getMimeType());
                 }
 
-                var gsUrl = MetadataService.getGcsAccessURL(r).map(AccessURL::getUrl);
+                var gsUrl = getGcsAccessURL(r).map(AccessURL::getUrl);
                 if (f.equals(Fields.GS_URI)) {
                   gsUrl.ifPresent(eventualResponse::setGsUri);
                 }
@@ -503,14 +488,14 @@ public class MetadataService {
     return eventualResponse;
   }
 
-  private static Optional<AccessURL> getGcsAccessURL(DrsObject drsObject) {
+  private Map<String, String> getHashesMap(List<Checksum> checksums) {
+    return checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
+  }
+
+  private Optional<AccessURL> getGcsAccessURL(DrsObject drsObject) {
     return drsObject.getAccessMethods().stream()
         .filter(m -> m.getType() == AccessMethod.TypeEnum.GS)
         .findFirst()
         .map(AccessMethod::getAccessUrl);
-  }
-
-  private Map<String, String> getHashesMap(List<Checksum> checksums) {
-    return checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
   }
 }

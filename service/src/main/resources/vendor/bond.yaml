@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Bond API
-  description: Service for linking Sam User accounts with registered 3rd party providers via Oauth2. See [Bond Github](https://github.com/DataBiosphere/bond).
+  title: BondComponent API
+  description: Service for linking Sam User accounts with registered 3rd party providers via Oauth2. See [BondComponent Github](https://github.com/DataBiosphere/bond).
   version: "1.0"
 
 servers:
@@ -183,7 +183,7 @@ paths:
 
   /api/status/v1/status:
     get:
-      summary: Returns the status of the Bond server.
+      summary: Returns the status of the BondComponent server.
       tags: [ bond ]
       operationId: getStatus
       security: [ ]
