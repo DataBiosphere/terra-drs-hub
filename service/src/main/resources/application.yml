@@ -69,7 +69,7 @@ drshub:
       accessMethodConfigs:
         - type: gcs
           auth: passport
-          fetchAccessUrl: false
+          fetchAccessUrl: true
           fallbackAuth: fence_token
         - type: s3
           auth: passport

@@ -122,13 +122,13 @@ public class MetadataService {
 
       var provider =
           drsHubConfig.getDrsProviders().stream()
-              .filter(p -> p.getDgCompactIds().contains(shortHost))
+              .filter(p -> p.getDgCompactIds().contains(shortHost.toLowerCase()))
               .findFirst()
               .orElseThrow(
                   () ->
                       new BadRequestException(
                           String.format(
-                              "Couldn't find matching host for compact id '%s'.", shortHost)));
+                              "Could not find matching host for compact id [%s].", shortHost)));
 
       return UriComponentsBuilder.newInstance()
           .host(drsHubConfig.getHosts().get(provider.getId()))

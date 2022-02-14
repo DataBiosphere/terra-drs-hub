@@ -13,10 +13,10 @@ public class ExternalCredsApiFactory {
     this.drsHubConfig = drsHubConfig;
   }
 
-  public OidcApi getApi(String bearerToken) {
+  public OidcApi getApi(String accessToken) {
     var ecmApi = new OidcApi();
     ecmApi.getApiClient().setBasePath(drsHubConfig.getExternalcredsUrl());
-    ecmApi.getApiClient().setAccessToken(bearerToken);
+    ecmApi.getApiClient().setAccessToken(accessToken);
 
     return ecmApi;
   }
