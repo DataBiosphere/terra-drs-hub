@@ -15,6 +15,8 @@ import org.immutables.value.Value;
 @PropertiesInterfaceStyle
 public interface DrsProviderInterface {
 
+  String getId();
+
   String getName();
 
   String getHostRegex();
@@ -24,6 +26,8 @@ public interface DrsProviderInterface {
   Optional<BondProviderEnum> getBondProvider();
 
   ArrayList<ProviderAccessMethodConfig> getAccessMethodConfigs();
+
+  ArrayList<String> getDgCompactIds();
 
   /**
    * This is hopefully a temporary measure until we can take the time to either get a new field

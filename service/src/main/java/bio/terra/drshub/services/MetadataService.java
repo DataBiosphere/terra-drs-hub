@@ -113,9 +113,20 @@ public class MetadataService {
     var compactIdMatch = compactIdRegex.matcher(drsUri);
 
     if (compactIdMatch.matches()) {
+      var shortHost = compactIdMatch.group("host");
+
+      var provider =
+          drsHubConfig.getDrsProviders().stream()
+              .filter(p -> p.getDgCompactIds().contains(shortHost))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new BadRequestException(
+                          String.format(
+                              "Couldn't find matching host for compact id '%s'.", shortHost)));
 
       return UriComponentsBuilder.newInstance()
-          .host(drsHubConfig.expandCibHost(compactIdMatch.group("host")))
+          .host(drsHubConfig.getHosts().get(provider.getId()))
           //              Objects.requireNonNull(
           //
           // drsHubConfig.getHosts().get(Helpers.determineCibBondProvider(cibHost)),
@@ -143,7 +154,7 @@ public class MetadataService {
           "dataguids.org data has moved. See: https://support.terra.bio/hc/en-us/articles/360060681132");
     }
 
-    var providers = drsHubConfig.getDrsProviders().values();
+    var providers = drsHubConfig.getDrsProviders();
 
     return providers.stream()
         .filter(p -> host.matches(p.getHostRegex()))
@@ -249,7 +260,10 @@ public class MetadataService {
       var objectId = getObjectId(uriComponents);
       var sendMetadataAuth = drsProvider.isMetadataAuth();
       log.info(
-          "Requesting DRS metadata for '{}' with auth required '{}'", drsUri, sendMetadataAuth);
+          "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
+          drsUri,
+          sendMetadataAuth,
+          uriComponents.getHost());
 
       var drsApi = makeDrsApiFromDrsUriComponents(uriComponents);
       if (sendMetadataAuth) {
