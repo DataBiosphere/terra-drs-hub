@@ -10,12 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.models.BondProviderEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
 import bio.terra.externalcreds.api.OidcApi;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
@@ -23,6 +25,7 @@ import io.github.ga4gh.drs.model.DrsObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,58 +34,61 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @AutoConfigureMockMvc
 public class DrsHubApiControllerTest extends BaseTest {
 
+  @Autowired private DrsHubConfig config;
   @Autowired private MockMvc mvc;
+  @Autowired private ObjectMapper objectMapper;
 
-  // TODO generally we may not need a bunch of these anyway
-
-  // TODO I think we need this as a mock bean but it doesn't exist yet, or maybe won't exist?
-  // @MockBean private ApiAdapter apiAdapterMock;
   @MockBean BondApiFactory bondApiFactory;
   @MockBean DrsApiFactory drsApiFactory;
   @MockBean ExternalCredsApiFactory externalCredsApiFactory;
 
   @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
-    var host = "dg.TEST0";
-    var accessToken = "abc123";
+    var passportDrsProvider =
+        config.getDrsProviders().stream()
+            .filter(p -> p.getId().equals("passport"))
+            .findFirst()
+            .get();
+    var host = passportDrsProvider.getDgCompactIds().get(0);
+    var accessToken = "I am an access token";
     var accessUrl = new AccessURL().url("I am a signed access url");
+    var passport = "I am a passport";
     var drsObject =
         new DrsObject()
             .id("000311ea-64e4-4462-9582-00562eb757aa")
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
     mockDrsApiAccessUrlWithPassport(
-        "ctds-test-env.planx-pla.net", drsObject, "I am a passport", "gs", accessUrl);
+        config.getHosts().get(passportDrsProvider.getId()), drsObject, passport, "gs", accessUrl);
 
-    mockExternalcredsApi("ras", accessToken, Optional.of("I am a passport"));
+    mockExternalcredsApi("ras", accessToken, Optional.of(passport));
 
-    var requestBody =
-        String.format(
-            "{ \"url\": \"drs://%s/%s\", \"fields\": [\"accessUrl\"] }", host, drsObject.getId());
-    mvc.perform(
-            post("/api/v4")
-                .header("authorization", "bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+    postDrsHubRequest(accessToken, host, drsObject.getId(), List.of("accessUrl"))
         .andExpect(status().isOk())
         .andExpect(
             content()
                 .json(
-                    String.format("{ \"accessUrl\": { \"url\": \"%s\"} }", accessUrl.getUrl()),
+                    objectMapper.writeValueAsString(Map.of("accessUrl", accessUrl.getUrl())),
                     true));
   }
 
   @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassportsUsingFallback()
       throws Exception {
-    var host = "dg.TEST0";
-    var accessToken = "abc123";
+    var passportDrsProvider =
+        config.getDrsProviders().stream()
+            .filter(p -> p.getId().equals("passport"))
+            .findFirst()
+            .get();
+    var host = passportDrsProvider.getDgCompactIds().get(0);
+    var accessToken = "I am an access token";
     var bondSaToken = "I am a bond SA token";
     var accessUrl = new AccessURL().url("I am a signed access url");
     var drsObject =
@@ -91,28 +97,37 @@ public class DrsHubApiControllerTest extends BaseTest {
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken("ctds-test-env.planx-pla.net", drsObject, "gs", accessUrl);
+        mockDrsApiAccessUrlWithToken(
+            config.getHosts().get(passportDrsProvider.getId()), drsObject, "gs", accessUrl);
 
     mockExternalcredsApi("ras", accessToken, Optional.empty());
 
     mockBondApi(BondProviderEnum.dcf_fence, accessToken, bondSaToken);
 
-    var requestBody =
-        String.format(
-            "{ \"url\": \"drs://%s/%s\", \"fields\": [\"accessUrl\"] }", host, drsObject.getId());
-    mvc.perform(
-            post("/api/v4")
-                .header("authorization", "bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+    postDrsHubRequest(accessToken, host, drsObject.getId(), List.of("accessUrl"))
         .andExpect(status().isOk())
         .andExpect(
             content()
                 .json(
-                    String.format("{ \"accessUrl\": { \"url\": \"%s\"} }", accessUrl.getUrl()),
+                    objectMapper.writeValueAsString(Map.of("accessUrl", accessUrl.getUrl())),
                     true));
 
+    // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(bondSaToken);
+  }
+
+  private ResultActions postDrsHubRequest(
+      String accessToken, String host, String objectId, List<String> fields) throws Exception {
+    var requestBody =
+        String.format(
+            "{ \"url\": \"drs://%s/%s\", \"fields\": [\"%s\"] }",
+            host, objectId, String.join("\",\"", fields));
+
+    return mvc.perform(
+        post("/api/v4")
+            .header("authorization", "bearer " + accessToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(requestBody));
   }
 
   private BondApi mockBondApi(
@@ -170,13 +185,18 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Test
   void testExtraDataDoesNotExplodeDrsHub() throws Exception {
     var requestBody = "{ \"url\": \"dos://${bdc}/123\", \"pattern\": \"gs://\", \"foo\": \"bar\" }";
-    var authHeader = "bearer abc123";
+    var accessToken = "abc123";
 
-    mvc.perform(
-            post("/api/v4")
-                .header("authorization", authHeader)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+    postDrsHubRequest(
+            accessToken,
+            config.getDrsProviders().stream()
+                .filter(p -> !p.getDgCompactIds().isEmpty())
+                .findFirst()
+                .get()
+                .getDgCompactIds()
+                .get(0),
+            UUID.randomUUID().toString(),
+            List.of("accessUrl"))
         .andExpect(status().isOk());
   }
 
