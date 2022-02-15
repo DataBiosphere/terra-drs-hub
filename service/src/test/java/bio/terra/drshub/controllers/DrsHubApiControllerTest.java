@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.DrsApi;
+import bio.terra.drshub.models.ExternalServicesData;
+import bio.terra.drshub.models.ExternalServicesData.Builder;
+import bio.terra.drshub.models.ImmutableExternalServicesData;
 import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
@@ -41,43 +44,85 @@ public class DrsHubApiControllerTest extends BaseTest {
 
   @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
-    var accessToken = "abc123";
-    var passport = "I am a passport";
 
-    var objectId = "000311ea-64e4-4462-9582-00562eb757aa";
     var host = "dg.TEST0";
-    var accessId = "gs";
-    var accessUrl = "https://storage.googleapis.com/ctds-test-controlled-a/testdata.txt?sig=ABC";
 
-    var mockDrsApi = mock(DrsApi.class);
-    when(drsApiFactory.getApiFromUriComponents(
-            UriComponentsBuilder.newInstance()
-                .host("ctds-test-env.planx-pla.net")
-                .path(objectId)
-                .build()))
-        .thenReturn(mockDrsApi);
-    when(mockDrsApi.getObject(objectId, null))
-        .thenReturn(
-            new DrsObject()
-                .accessMethods(List.of(new AccessMethod().accessId(accessId).type(TypeEnum.GS))));
-    when(mockDrsApi.postAccessURL(Map.of("passports", List.of(passport)), objectId, accessId))
-        .thenReturn(new AccessURL().url(accessUrl));
+    ImmutableExternalServicesData externalServicesData =
+        new Builder()
+            .accessToken("abc123")
+            .passport("I am a passport")
+            .objectId("000311ea-64e4-4462-9582-00562eb757aa")
+            .accessId("gs")
+            .accessUrl("I am a signed access url")
+            .drsHost("ctds-test-env.planx-pla.net")
+            .passportProvider("ras")
+            .build();
 
-    var mockExternalCredsApi = mock(OidcApi.class);
-    when(externalCredsApiFactory.getApi(accessToken)).thenReturn(mockExternalCredsApi);
-    when(mockExternalCredsApi.getProviderPassport("ras")).thenReturn(passport);
+    mockExternalServices(externalServicesData);
 
     var requestBody =
-        String.format("{ \"url\": \"drs://%s/%s\", \"fields\": [\"accessUrl\"] }", host, objectId);
+        String.format(
+            "{ \"url\": \"drs://%s/%s\", \"fields\": [\"accessUrl\"] }",
+            host, externalServicesData.getObjectId().get());
     mvc.perform(
             post("/api/v4")
-                .header("authorization", "bearer " + accessToken)
+                .header("authorization", "bearer " + externalServicesData.getAccessToken().get())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isOk())
         .andExpect(
             content()
-                .json(String.format("{ \"accessUrl\": { \"url\": \"%s\"} }", accessUrl), true));
+                .json(
+                    String.format(
+                        "{ \"accessUrl\": { \"url\": \"%s\"} }",
+                        externalServicesData.getAccessUrl().get()),
+                    true));
+  }
+
+  private void mockExternalServices(ExternalServicesData externalServicesData) {
+    var mockDrsApi = mock(DrsApi.class);
+
+    if (externalServicesData.getDrsHost().isPresent()
+        && externalServicesData.getObjectId().isPresent()) {
+      when(drsApiFactory.getApiFromUriComponents(
+              UriComponentsBuilder.newInstance()
+                  .host(externalServicesData.getDrsHost().get())
+                  .path(externalServicesData.getObjectId().get())
+                  .build()))
+          .thenReturn(mockDrsApi);
+    }
+    if (externalServicesData.getObjectId().isPresent()
+        && externalServicesData.getAccessId().isPresent()) {
+      when(mockDrsApi.getObject(externalServicesData.getObjectId().get(), null))
+          .thenReturn(
+              new DrsObject()
+                  .accessMethods(
+                      List.of(
+                          new AccessMethod()
+                              .accessId(externalServicesData.getAccessId().get())
+                              .type(TypeEnum.GS))));
+    }
+    if (externalServicesData.getPassport().isPresent()
+        && externalServicesData.getObjectId().isPresent()
+        && externalServicesData.getAccessId().isPresent()
+        && externalServicesData.getAccessUrl().isPresent()) {
+      when(mockDrsApi.postAccessURL(
+              Map.of("passports", List.of(externalServicesData.getPassport().get())),
+              externalServicesData.getObjectId().get(),
+              externalServicesData.getAccessId().get()))
+          .thenReturn(new AccessURL().url(externalServicesData.getAccessUrl().get()));
+    }
+
+    if (externalServicesData.getPassportProvider().isPresent()
+        && externalServicesData.getAccessToken().isPresent()
+        && externalServicesData.getPassport().isPresent()) {
+      var mockExternalCredsApi = mock(OidcApi.class);
+      when(externalCredsApiFactory.getApi(externalServicesData.getAccessToken().get()))
+          .thenReturn(mockExternalCredsApi);
+      when(mockExternalCredsApi.getProviderPassport(
+              externalServicesData.getPassportProvider().get()))
+          .thenReturn(externalServicesData.getPassport().get());
+    }
   }
 
   // drsHub_v3 doesn't fail when extra data submitted besides a 'url'
