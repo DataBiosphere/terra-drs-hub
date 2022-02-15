@@ -13,6 +13,7 @@ import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.models.BondProviderEnum;
 import bio.terra.drshub.models.DrsApi;
+import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
@@ -70,12 +71,12 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockExternalcredsApi("ras", accessToken, Optional.of(passport));
 
-    postDrsHubRequest(accessToken, host, drsObject.getId(), List.of("accessUrl"))
+    postDrsHubRequest(accessToken, host, drsObject.getId(), List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
         .andExpect(
             content()
                 .json(
-                    objectMapper.writeValueAsString(Map.of("accessUrl", accessUrl.getUrl())),
+                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, accessUrl.getUrl())),
                     true));
   }
 
@@ -104,12 +105,12 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockBondApi(BondProviderEnum.dcf_fence, accessToken, bondSaToken);
 
-    postDrsHubRequest(accessToken, host, drsObject.getId(), List.of("accessUrl"))
+    postDrsHubRequest(accessToken, host, drsObject.getId(), List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
         .andExpect(
             content()
                 .json(
-                    objectMapper.writeValueAsString(Map.of("accessUrl", accessUrl.getUrl())),
+                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, accessUrl.getUrl())),
                     true));
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
