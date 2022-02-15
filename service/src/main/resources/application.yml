@@ -107,6 +107,10 @@ spring:
   profiles.include:
     - ${DEPLOY_ENV:dev}
 
+  jackson:
+    # don't include null json fields in api responses
+    default-property-inclusion: NON_NULL
+
   web:
     resources:
       cache:
