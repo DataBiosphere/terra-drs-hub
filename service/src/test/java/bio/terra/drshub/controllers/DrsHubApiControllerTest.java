@@ -238,16 +238,6 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
-  //  // TODO: test 20
-  // test.serial('martha_v3 should return 400 if not given a url', async (t) => {
-  //    const response = mockResponse();
-  //
-  //    await marthaV3(mockRequest({ body: { 'uri': 'dos://abc/123' } }), response);
-  //
-  //    t.is(response.statusCode, 400);
-  //    t.is(response.body.status, 400);
-  //    t.is(response.body.response.text, "Request is invalid. 'url' is missing.");
-  //  });
 
   /**
    * Test utility function that extracts the right fields from a drs object into a Map that can be
