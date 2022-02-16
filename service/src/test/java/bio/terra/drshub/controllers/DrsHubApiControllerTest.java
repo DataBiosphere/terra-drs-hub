@@ -233,22 +233,6 @@ public class DrsHubApiControllerTest extends BaseTest {
 
   @Test // 20
   void testReturns400IfNotGivenUrl() throws Exception {
-    var passportProvider = config.getDrsProviders().get("passport");
-    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var compactIdAndHost =
-        config.getCompactIdHosts().entrySet().stream()
-            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
-            .findFirst()
-            .get();
-    var drsObject =
-        new DrsObject()
-            .id(UUID.randomUUID().toString())
-            .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
-
-    mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
-
-    mockBondApi(passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
-
     var requestBody =
         objectMapper.writeValueAsString(Map.of("url", "", "fields", List.of(Fields.CONTENT_TYPE)));
 
