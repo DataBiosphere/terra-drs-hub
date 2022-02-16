@@ -68,9 +68,9 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
     var passportProvider = config.getDrsProviders().get("passport");
     var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var host =
-        config.getCompactIdHosts().values().stream()
-            .filter(h -> passportHostRegex.matcher(h).matches())
+    var compactIdAndHost =
+        config.getCompactIdHosts().entrySet().stream()
+            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
             .findFirst()
             .get();
 
@@ -79,11 +79,16 @@ public class DrsHubApiControllerTest extends BaseTest {
             .id(UUID.randomUUID().toString())
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
-    mockDrsApiAccessUrlWithPassport(host, drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
+    mockDrsApiAccessUrlWithPassport(
+        compactIdAndHost.getValue(), drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
-    postDrsHubRequest(TEST_ACCESS_TOKEN, host, drsObject.getId(), List.of(Fields.ACCESS_URL))
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.getKey(),
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
         .andExpect(
             content()
@@ -98,9 +103,9 @@ public class DrsHubApiControllerTest extends BaseTest {
       throws Exception {
     var passportProvider = config.getDrsProviders().get("passport");
     var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var host =
-        config.getCompactIdHosts().values().stream()
-            .filter(h -> passportHostRegex.matcher(h).matches())
+    var compactIdAndHost =
+        config.getCompactIdHosts().entrySet().stream()
+            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
             .findFirst()
             .get();
     var drsObject =
@@ -108,13 +113,18 @@ public class DrsHubApiControllerTest extends BaseTest {
             .id(UUID.randomUUID().toString())
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
-    var drsApi = mockDrsApiAccessUrlWithToken(host, drsObject, "gs", TEST_ACCESS_URL);
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
     mockBondApi(BondProviderEnum.dcf_fence, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
 
-    postDrsHubRequest(TEST_ACCESS_TOKEN, host, drsObject.getId(), List.of(Fields.ACCESS_URL))
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.getKey(),
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
         .andExpect(
             content()
@@ -133,9 +143,9 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testDoesNotFailWhenExtraDataSubmitted() throws Exception {
     var passportProvider = config.getDrsProviders().get("passport");
     var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var host =
-        config.getCompactIdHosts().values().stream()
-            .filter(h -> passportHostRegex.matcher(h).matches())
+    var compactIdAndHost =
+        config.getCompactIdHosts().entrySet().stream()
+            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
             .findFirst()
             .get();
     var drsObject =
@@ -143,7 +153,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             .id(UUID.randomUUID().toString())
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
-    mockDrsApiAccessUrlWithToken(host, drsObject, "gs", TEST_ACCESS_URL);
+    mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
 
     mockBondApi(passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
 
@@ -151,7 +161,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
-                String.format("drs://%s/%s", host, drsObject.getId()),
+                String.format("drs://%s/%s", compactIdAndHost.getKey(), drsObject.getId()),
                 "fields",
                 List.of(Fields.CONTENT_TYPE),
                 "foo",
@@ -198,16 +208,16 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testFoo() throws Exception {
     var drsProvider = config.getDrsProviders().get("kidsFirst");
     var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
-    var host =
-        config.getCompactIdHosts().values().stream()
-            .filter(h -> drsHostRegex.matcher(h).matches())
+    var compactIdAndHost =
+        config.getCompactIdHosts().entrySet().stream()
+            .filter(h -> drsHostRegex.matcher(h.getValue()).matches())
             .findFirst()
             .get();
     var responseMap = new HashMap<String, String>();
     responseMap.put(Fields.GOOGLE_SERVICE_ACCOUNT, null);
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            host,
+            compactIdAndHost.getKey(),
             UUID.randomUUID().toString(),
             List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
         .andExpect(status().isOk())
