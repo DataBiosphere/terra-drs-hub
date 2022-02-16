@@ -26,11 +26,13 @@ import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -183,36 +185,74 @@ public class DrsHubApiControllerTest extends BaseTest {
     when(bondApiFactory.getApi(any()))
         .thenThrow(new RuntimeException("If I am thrown this is a failure"));
 
+    List<String> requestedFields =
+        List.of(Fields.GS_URI, Fields.SIZE, Fields.HASHES, Fields.TIME_UPDATED, Fields.FILE_NAME);
+
     var requestBody =
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
                 String.format("drs://%s/%s", host, drsObject.getId()),
                 "fields",
-                List.of(
-                    Fields.GS_URI,
-                    Fields.SIZE,
-                    Fields.HASHES,
-                    Fields.TIME_UPDATED,
-                    Fields.FILE_NAME)));
+                requestedFields));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody)
         .andExpect(status().isOk())
         .andExpect(
             content()
                 .json(
-                    objectMapper.writeValueAsString(
-                        Map.of(
-                            "size",
-                            drsObject.getSize(),
-                            "timeUpdated",
-                            drsObject.getUpdatedTime(),
-                            "gsUri",
-                            "gs://foobar",
-                            "fileName",
-                            drsObject.getName(),
-                            "hashes",
-                            Map.of("md5", "checksum")))));
+                    objectMapper.writeValueAsString(drsObjectToMap(drsObject, requestedFields)),
+                    true));
+  }
+
+  /**
+   * Test utility function that extracts the right fields from a drs object into a Map that can be
+   * added to and json-ified to compare to test results.
+   *
+   * @param drsObject
+   * @param requestedFields
+   * @return
+   */
+  private Map<String, Object> drsObjectToMap(DrsObject drsObject, List<String> requestedFields) {
+    var responseMap = new HashMap<String, Object>();
+
+    if (requestedFields.contains(Fields.FILE_NAME)) {
+      responseMap.put(Fields.FILE_NAME, drsObject.getName());
+    }
+    if (requestedFields.contains(Fields.LOCALIZATION_PATH)) {
+      responseMap.put(Fields.LOCALIZATION_PATH, drsObject.getAliases().get(0));
+    }
+    if (requestedFields.contains(Fields.TIME_CREATED)) {
+      responseMap.put(Fields.TIME_CREATED, drsObject.getCreatedTime());
+    }
+    if (requestedFields.contains(Fields.TIME_UPDATED)) {
+      responseMap.put(Fields.TIME_UPDATED, drsObject.getUpdatedTime());
+    }
+    if (requestedFields.contains(Fields.HASHES)) {
+      responseMap.put(
+          Fields.HASHES,
+          drsObject.getChecksums().stream()
+              .collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum)));
+    }
+    if (requestedFields.contains(Fields.SIZE)) {
+      responseMap.put(Fields.SIZE, drsObject.getSize());
+    }
+    if (requestedFields.contains(Fields.CONTENT_TYPE)) {
+      responseMap.put(Fields.CONTENT_TYPE, drsObject.getMimeType());
+    }
+
+    if (requestedFields.contains(Fields.GS_URI)) {
+      responseMap.put(
+          Fields.GS_URI,
+          drsObject.getAccessMethods().stream()
+              .filter(m -> m.getType() == TypeEnum.GS)
+              .findFirst()
+              .get()
+              .getAccessUrl()
+              .getUrl());
+    }
+
+    return responseMap;
   }
 
   private ResultActions postDrsHubRequest(
