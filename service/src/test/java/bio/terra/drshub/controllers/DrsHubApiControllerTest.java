@@ -66,13 +66,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
   @Test // 2
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
-    var passportProvider = config.getDrsProviders().get("passport");
-    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var compactIdAndHost =
-        config.getCompactIdHosts().entrySet().stream()
-            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
-            .findFirst()
-            .get();
+    var compactIdAndHost = getProviderHosts("passport");
 
     var drsObject =
         new DrsObject()
@@ -80,13 +74,13 @@ public class DrsHubApiControllerTest extends BaseTest {
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
     mockDrsApiAccessUrlWithPassport(
-        compactIdAndHost.getValue(), drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
+        compactIdAndHost.dnsHost, drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            compactIdAndHost.getKey(),
+            compactIdAndHost.drsUriHost,
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -101,20 +95,14 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Test // 3
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassportsUsingFallback()
       throws Exception {
-    var passportProvider = config.getDrsProviders().get("passport");
-    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var compactIdAndHost =
-        config.getCompactIdHosts().entrySet().stream()
-            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
-            .findFirst()
-            .get();
+    var compactIdAndHost = getProviderHosts("passport");
     var drsObject =
         new DrsObject()
             .id(UUID.randomUUID().toString())
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(compactIdAndHost.dnsHost, drsObject, "gs", TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
@@ -122,7 +110,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            compactIdAndHost.getKey(),
+            compactIdAndHost.drsUriHost,
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -206,18 +194,12 @@ public class DrsHubApiControllerTest extends BaseTest {
 
   @Test // 7
   void testFoo() throws Exception {
-    var drsProvider = config.getDrsProviders().get("kidsFirst");
-    var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
-    var compactIdAndHost =
-        config.getCompactIdHosts().entrySet().stream()
-            .filter(h -> drsHostRegex.matcher(h.getValue()).matches())
-            .findFirst()
-            .get();
+    var compactIdAndHost = getProviderHosts("kidsFirst");
     var responseMap = new HashMap<String, String>();
     responseMap.put(Fields.GOOGLE_SERVICE_ACCOUNT, null);
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            compactIdAndHost.getKey(),
+            compactIdAndHost.drsUriHost,
             UUID.randomUUID().toString(),
             List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
         .andExpect(status().isOk())
@@ -229,6 +211,15 @@ public class DrsHubApiControllerTest extends BaseTest {
                         .setSerializationInclusion(Include.ALWAYS)
                         .writeValueAsString(responseMap),
                     true));
+  }
+
+  private ProviderHosts getProviderHosts(String provider) {
+    var drsProvider = config.getDrsProviders().get(provider);
+    var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
+    return config.getCompactIdHosts().entrySet().stream()
+        .filter(h -> drsHostRegex.matcher(h.getValue()).matches())
+        .findFirst()
+        .map(entry -> new ProviderHosts(entry.getKey(), entry.getValue())).get();
   }
 
   /**
@@ -348,5 +339,15 @@ public class DrsHubApiControllerTest extends BaseTest {
     var mockDrsApi = mockDrsApi(drsHost, drsObject);
     when(mockDrsApi.getAccessURL(drsObject.getId(), accessId)).thenReturn(accessUrl);
     return mockDrsApi;
+  }
+
+  private static class ProviderHosts {
+    final String drsUriHost;
+    final String dnsHost;
+
+    public ProviderHosts(String drsUriHost, String dnsHost) {
+      this.drsUriHost = drsUriHost;
+      this.dnsHost = dnsHost;
+    }
   }
 }
