@@ -23,11 +23,11 @@ public class DrsProviderInterfaceTest extends BaseTest {
     assertFalse(drsProviderMock.useAliasesForLocalizationPath());
   }
 
-  @Test
-  void testGetAccessMethodByTypeReturnsCorrectType() throws Exception {
-    // TODO: fix type mismatch sigh
-    //    verify(drsProviderInterfaceMock.getAccessMethodByType(TypeEnum.S3), TypeEnum.S3);
-  }
+  //  @Test
+  //  void testGetAccessMethodByTypeReturnsCorrectType() throws Exception {
+  //     TODO: fix type mismatch sigh
+  //        verify(drsProviderInterfaceMock.getAccessMethodByType(TypeEnum.S3), TypeEnum.S3);
+  //  }
   //  default ProviderAccessMethodConfig getAccessMethodByType(AccessMethod.TypeEnum
   // accessMethodType) {
   //    return getAccessMethodConfigs().stream()

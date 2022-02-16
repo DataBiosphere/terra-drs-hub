@@ -27,6 +27,7 @@ import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -161,12 +162,9 @@ public class DrsHubApiControllerTest extends BaseTest {
 
   @Test // 6
   void testDoesNotCallBondWhenOnlyDrsFieldsRequested() throws Exception {
-    var drsProvider =
-        config.getDrsProviders().stream()
-            .filter(p -> !p.getDgCompactIds().isEmpty() && p.getBondProvider().isPresent())
-            .findAny()
-            .get();
-    var host = drsProvider.getDgCompactIds().get(0);
+    var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
+    var cid = cidList.get(new Random().nextInt(cidList.size()));
+    var host = config.getCompactIdHosts().get(cid);
     var drsObject =
         new DrsObject()
             .id(UUID.randomUUID().toString())
@@ -180,12 +178,12 @@ public class DrsHubApiControllerTest extends BaseTest {
                         .accessUrl(new AccessURL().url("gs://foobar"))
                         .type(TypeEnum.GS)));
 
-    mockDrsApi(config.getHosts().get(drsProvider.getId()), drsObject);
+    mockDrsApi(host, drsObject);
 
     List<String> requestedFields =
         List.of(Fields.GS_URI, Fields.SIZE, Fields.HASHES, Fields.TIME_UPDATED, Fields.FILE_NAME);
 
-    postDrsHubRequest(TEST_ACCESS_TOKEN, host, drsObject.getId(), requestedFields)
+    postDrsHubRequest(TEST_ACCESS_TOKEN, cid, drsObject.getId(), requestedFields)
         .andExpect(status().isOk())
         .andExpect(
             content()
