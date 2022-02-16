@@ -15,7 +15,7 @@ public class DrsProviderInterfaceTest extends BaseTest {
 
   @BeforeEach
   void generateProvider() {
-    drsProviderMock = DrsProvider.create().setBondProvider(BondProviderEnum.anvil).setId("blah");
+    drsProviderMock = DrsProvider.create().setBondProvider(BondProviderEnum.anvil);
   }
 
   @Test

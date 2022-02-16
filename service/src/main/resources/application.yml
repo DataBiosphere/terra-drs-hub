@@ -5,15 +5,16 @@ drshub:
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
-  hosts:
-    anvil: staging.theanvil.io
-    bioDataCatalyst: staging.gen3.biodatacatalyst.nhlbi.nih.gov
-    crdc: nci-crdc-staging.datacommons.io
-    kidsFirst: gen3staging.kidsfirstdrc.org
-    passport: ctds-test-env.planx-pla.net
+  compactIdHosts:
+    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.anv0": staging.theanvil.io
+    "dg.4dfc": nci-crdc-staging.datacommons.io
+    "dg.f82a1a": gen3staging.kidsfirstdrc.org
+    "dg.test0": ctds-test-env.planx-pla.net
 
   drsProviders:
-    - id: anvil
+    anvil:
       name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
       hostRegex: '.*\.theanvil\.io'
       metadataAuth: false
@@ -22,9 +23,7 @@ drshub:
         - type: gcs
           auth: fence_token
           fetchAccessUrl: false
-      dgCompactIds:
-        - dg.anv0
-    - id: bioDataCatalyst
+    bioDataCatalyst:
       name: BioData Catalyst (BDC)
       hostRegex: '.*\.biodatacatalyst\.nhlbi\.nih\.gov|wb-mock-drs-dev\.storage\.googleapis\.com'
       metadataAuth: false
@@ -33,10 +32,7 @@ drshub:
         - type: gcs
           auth: fence_token
           fetchAccessUrl: false
-      dgCompactIds:
-        - dg.4503
-        - dg.712c
-    - id: crdc
+    crdc:
       name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
       hostRegex: '.*\.datacommons\.io'
       metadataAuth: false
@@ -48,9 +44,7 @@ drshub:
         - type: s3
           auth: fence_token
           fetchAccessUrl: true
-      dgCompactIds:
-        - dg.4dfc
-    - id: kidsFirst
+    kidsFirst:
       name: Gabriella Miller Kids First DRC
       hostRegex: '.*\.kidsfirstdrc\.org'
       metadataAuth: false
@@ -59,9 +53,7 @@ drshub:
         - type: s3
           auth: fence_token
           fetchAccessUrl: true
-      dgCompactIds:
-        - dg.f82a1a
-    - id: passport
+    passport:
       name: Passport Test Provider
       hostRegex: 'ctds-test-env\.planx-pla\.net'
       metadataAuth: false
@@ -75,9 +67,7 @@ drshub:
           auth: passport
           fetchAccessUrl: true
           fallbackAuth: fence_token
-      dgCompactIds:
-        - dg.test0
-    - id: terraDataRepo
+    terraDataRepo:
       name: Terra Data Repo (TDR)
       hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
       metadataAuth: true
@@ -88,8 +78,6 @@ drshub:
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure
-      dgCompactIds:
-        - null
 
 server:
   compression:
@@ -100,16 +88,15 @@ server:
 spring:
   application.name: drshub
 
-  jackson.serialization.indent_output: true
+  jackson:
+    # don't include null json fields in api responses
+    default-property-inclusion: NON_NULL
+    serialization.indent_output: true
 
   main.banner-mode: off
 
   profiles.include:
     - ${DEPLOY_ENV:dev}
-
-  jackson:
-    # don't include null json fields in api responses
-    default-property-inclusion: NON_NULL
 
   web:
     resources:
@@ -122,8 +109,9 @@ spring:
 ---
 spring.config.activate.on-profile: prod
 drshub:
-  hosts:
-    bioDataCatalyst: gen3.biodatacatalyst.nhlbi.nih.gov
-    crdc: nci-crdc.datacommons.io
-    kidsFirst: data.kidsfirstdrc.org
-    theAnvil: gen3.theanvil.io
+  compactIdHosts:
+    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.anv0": gen3.theanvil.io
+    "dg.4dfc": nci-crdc.datacommons.io
+    "dg.f82a1a": data.kidsfirstdrc.org

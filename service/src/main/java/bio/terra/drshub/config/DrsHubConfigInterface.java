@@ -1,6 +1,5 @@
 package bio.terra.drshub.config;
 
-import java.util.ArrayList;
 import java.util.Map;
 import org.immutables.value.Value;
 
@@ -14,7 +13,7 @@ public interface DrsHubConfigInterface {
 
   String getExternalcredsUrl();
 
-  Map<String, String> getHosts();
+  Map<String, String> getCompactIdHosts();
 
-  ArrayList<DrsProvider> getDrsProviders();
+  Map<String, DrsProvider> getDrsProviders();
 }

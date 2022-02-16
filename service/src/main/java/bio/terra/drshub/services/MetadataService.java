@@ -118,20 +118,16 @@ public class MetadataService {
     var compactIdMatch = compactIdRegex.matcher(drsUri);
 
     if (compactIdMatch.matches()) {
-      var shortHost = compactIdMatch.group("host");
+      var cid = compactIdMatch.group("host");
+      if (!drsHubConfig.getCompactIdHosts().containsKey(cid)) {
+        throw new BadRequestException(
+            String.format("Could not find matching host for compact id [%s].", cid));
+      }
 
-      var provider =
-          drsHubConfig.getDrsProviders().stream()
-              .filter(p -> p.getDgCompactIds().contains(shortHost.toLowerCase()))
-              .findFirst()
-              .orElseThrow(
-                  () ->
-                      new BadRequestException(
-                          String.format(
-                              "Could not find matching host for compact id [%s].", shortHost)));
+      var cidHost = drsHubConfig.getCompactIdHosts().get(cid);
 
       return UriComponentsBuilder.newInstance()
-          .host(drsHubConfig.getHosts().get(provider.getId()))
+          .host(cidHost)
           .path(URLEncoder.encode(compactIdMatch.group("suffix"), StandardCharsets.UTF_8))
           .query(compactIdMatch.group("query"))
           .build();
@@ -156,7 +152,7 @@ public class MetadataService {
 
     var providers = drsHubConfig.getDrsProviders();
 
-    return providers.stream()
+    return providers.values().stream()
         .filter(p -> host.matches(p.getHostRegex()))
         .findFirst()
         .orElseThrow(
