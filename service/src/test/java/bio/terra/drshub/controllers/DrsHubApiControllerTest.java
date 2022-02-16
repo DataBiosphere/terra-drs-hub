@@ -2,6 +2,7 @@ package bio.terra.drshub.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,6 +20,7 @@ import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
 import bio.terra.externalcreds.api.OidcApi;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
@@ -182,26 +184,44 @@ public class DrsHubApiControllerTest extends BaseTest {
                         .type(TypeEnum.GS)));
 
     mockDrsApi(config.getHosts().get(drsProvider.getId()), drsObject);
-    when(bondApiFactory.getApi(any()))
-        .thenThrow(new RuntimeException("If I am thrown this is a failure"));
 
     List<String> requestedFields =
         List.of(Fields.GS_URI, Fields.SIZE, Fields.HASHES, Fields.TIME_UPDATED, Fields.FILE_NAME);
 
-    var requestBody =
-        objectMapper.writeValueAsString(
-            Map.of(
-                "url",
-                String.format("drs://%s/%s", host, drsObject.getId()),
-                "fields",
-                requestedFields));
-
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody)
+    postDrsHubRequest(TEST_ACCESS_TOKEN, host, drsObject.getId(), requestedFields)
         .andExpect(status().isOk())
         .andExpect(
             content()
                 .json(
                     objectMapper.writeValueAsString(drsObjectToMap(drsObject, requestedFields)),
+                    true));
+
+    verify(bondApiFactory, times(0)).getApi(any());
+  }
+
+  @Test // 7
+  void testFoo() throws Exception {
+    var drsProvider =
+        config.getDrsProviders().stream()
+            .filter(p -> p.getId().equals("kidsFirst"))
+            .findAny()
+            .get();
+    var host = drsProvider.getDgCompactIds().get(0);
+    var responseMap = new HashMap<String, String>();
+    responseMap.put(Fields.GOOGLE_SERVICE_ACCOUNT, null);
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            host,
+            UUID.randomUUID().toString(),
+            List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(
+                    objectMapper
+                        .copy()
+                        .setSerializationInclusion(Include.ALWAYS)
+                        .writeValueAsString(responseMap),
                     true));
   }
 
