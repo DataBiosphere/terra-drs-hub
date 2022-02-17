@@ -234,10 +234,33 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Test // 20
   void testReturns400IfNotGivenUrl() throws Exception {
     var requestBody =
-        objectMapper.writeValueAsString(Map.of("url", "", "fields", List.of(Fields.CONTENT_TYPE)));
+        objectMapper.writeValueAsString(
+            Map.of("uri", "drs://foo/bar", "fields", List.of(Fields.CONTENT_TYPE)));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
+
+  @Test // 21
+  void testReturns400IfGivenDgUrlWithoutPath() throws Exception {
+    var passportProvider = config.getDrsProviders().get("passport");
+    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
+    var compactIdAndHost =
+        config.getCompactIdHosts().entrySet().stream()
+            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
+            .findFirst()
+            .get();
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", compactIdAndHost.getKey(), "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 23
+  void testShouldReturn400IfNoDataPostedWithRequest() throws Exception {
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
+  }
+
 
   /**
    * Test utility function that extracts the right fields from a drs object into a Map that can be
