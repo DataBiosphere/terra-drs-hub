@@ -22,6 +22,7 @@ swaggerSources {
 					useTags          : 'true',
 					springBootVersion: dependencyManagement.managedVersions['org.springframework.boot:spring-boot']
 			]
+			rawOptions = ['--import-mappings', "VersionProperties=${artifactGroup}.config.VersionProperties"]
 		}
 	}
 
@@ -82,4 +83,14 @@ afterEvaluate {
 			it.dependsOn(generateSwaggerCode)
 		}
 	}
+}
+
+// see https://github.com/n0mer/gradle-git-properties
+gitProperties {
+	gitPropertiesName = 'rendered/version.properties'
+	keys = []
+	customProperty('drshub.version.gitTag', { it.describe(tags: true) })
+	customProperty('drshub.version.gitHash', { it.head().abbreviatedId })
+	customProperty('drshub.version.github', { "https://github.com/DataBiosphere/terra-drs-hub/tree/${it.describe(tags: true)}" })
+	customProperty('drshub.version.build', version)
 }

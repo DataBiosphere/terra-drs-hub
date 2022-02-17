@@ -219,7 +219,8 @@ public class DrsHubApiControllerTest extends BaseTest {
     return config.getCompactIdHosts().entrySet().stream()
         .filter(h -> drsHostRegex.matcher(h.getValue()).matches())
         .findFirst()
-        .map(entry -> new ProviderHosts(entry.getKey(), entry.getValue())).get();
+        .map(entry -> new ProviderHosts(entry.getKey(), entry.getValue()))
+        .get();
   }
 
   /**

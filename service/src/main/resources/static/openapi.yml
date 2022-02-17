@@ -21,6 +21,37 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /status:
+    get:
+      summary: Check status of the service.
+      tags: [ public ]
+      operationId: getStatus
+      security: [ ]
+      responses:
+        '200':
+          description: OK
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/SystemStatusResponse'
+  /version:
+    get:
+      summary: Get version info of the deployed service.
+      tags: [ public ]
+      operationId: getVersion
+      security: [ ]
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionProperties'
+        '404':
+          description: "Version not configured"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 
 components:
   responses:
@@ -110,6 +141,18 @@ components:
           type: string
         statusCode:
           type: integer
+
+    VersionProperties:
+      type: object
+      properties:
+        gitTag:
+          type: string
+        gitHash:
+          type: string
+        github:
+          type: string
+        build:
+          type: string
 
   securitySchemes:
     authorization:
