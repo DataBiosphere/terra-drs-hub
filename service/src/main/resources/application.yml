@@ -86,7 +86,11 @@ server:
   port: 8080
 
 spring:
-  application.name: drshub
+  application:
+    name: drshub
+    version: ${drshub.version.gitHash:unknown}
+
+  config.import: classpath:rendered/version.properties
 
   jackson:
     # don't include null json fields in api responses
