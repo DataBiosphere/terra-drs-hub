@@ -224,16 +224,10 @@ public class DrsHubApiControllerTest extends BaseTest {
 
   @Test // 21
   void testReturns400IfGivenDgUrlWithoutPath() throws Exception {
-    var passportProvider = config.getDrsProviders().get("passport");
-    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var compactIdAndHost =
-        config.getCompactIdHosts().entrySet().stream()
-            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
-            .findFirst()
-            .get();
+    var compactIdAndHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", compactIdAndHost.getKey(), "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of("url", compactIdAndHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
