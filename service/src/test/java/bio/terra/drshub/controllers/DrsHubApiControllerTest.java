@@ -235,7 +235,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testReturns400IfNotGivenUrl() throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("uri", "drs://foo/bar", "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of("notAUrl", "drs://foo/bar", "fields", List.of(Fields.CONTENT_TYPE)));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -256,11 +256,19 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
+  @Test // 22
+  void testShouldReturn400IfGivenDgUrlWithOnlyPath() throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", UUID.randomUUID(), "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
   @Test // 23
   void testShouldReturn400IfNoDataPostedWithRequest() throws Exception {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
   }
-
 
   /**
    * Test utility function that extracts the right fields from a drs object into a Map that can be
