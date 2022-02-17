@@ -15,7 +15,7 @@ public interface DrsMetadata extends WithDrsMetadata {
 
   Optional<AccessURL> getAccessUrl();
 
-  Optional<String> getBondSaKey();
+  Optional<Object> getBondSaKey();
 
   class Builder extends ImmutableDrsMetadata.Builder {}
 }
