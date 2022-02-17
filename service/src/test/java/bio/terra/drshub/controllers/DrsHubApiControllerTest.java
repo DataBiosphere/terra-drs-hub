@@ -230,6 +230,39 @@ public class DrsHubApiControllerTest extends BaseTest {
                         Map.of(Fields.GOOGLE_SERVICE_ACCOUNT, bondSaKey))));
   }
 
+  @Test // 20
+  void testReturns400IfNotGivenUrl() throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("notAUrl", "drs://foo/bar", "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 21
+  void testReturns400IfGivenDgUrlWithoutPath() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", compactIdAndHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 22
+  void testShouldReturn400IfGivenDgUrlWithOnlyPath() throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", UUID.randomUUID(), "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 23
+  void testShouldReturn400IfNoDataPostedWithRequest() throws Exception {
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
+  }
+
   private ProviderHosts getProviderHosts(String provider) {
     var drsProvider = config.getDrsProviders().get(provider);
     var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
