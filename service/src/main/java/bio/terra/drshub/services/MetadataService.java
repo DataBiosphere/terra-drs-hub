@@ -79,19 +79,16 @@ public class MetadataService {
   private final BondApiFactory bondApiFactory;
   private final ExternalCredsApiFactory externalCredsApiFactory;
   private final DrsApiFactory drsApiFactory;
-  private final ObjectMapper objectMapper;
 
   public MetadataService(
       DrsHubConfig drsHubConfig,
       BondApiFactory bondApiFactory,
       ExternalCredsApiFactory externalCredsApiFactory,
-      DrsApiFactory drsApiFactory,
-      ObjectMapper objectMapper) {
+      DrsApiFactory drsApiFactory) {
     this.drsHubConfig = drsHubConfig;
     this.bondApiFactory = bondApiFactory;
     this.externalCredsApiFactory = externalCredsApiFactory;
     this.drsApiFactory = drsApiFactory;
-    this.objectMapper = objectMapper;
   }
 
   public ResourceMetadata fetchResourceMetadata(
