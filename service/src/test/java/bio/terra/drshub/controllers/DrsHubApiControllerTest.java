@@ -246,6 +246,19 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
   }
 
+  // TODO finish this, doesn't break in the right way yet
+  @Test // 24
+  void testReturns400IfGivenInvalidUrlValue() throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", "I am not a valid url", "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+
+  // helper functions
+
   private ProviderHosts getProviderHosts(String provider) {
     var drsProvider = config.getDrsProviders().get(provider);
     var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
