@@ -265,49 +265,64 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
   }
 
-  @Test // 20
-  void testReturns400IfNotGivenUrl() throws Exception {
-    var requestBody =
-        objectMapper.writeValueAsString(
-            Map.of("notAUrl", "drs://foo/bar", "fields", List.of(Fields.CONTENT_TYPE)));
-
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
-  }
-
-  @Test // 21
-  void testReturns400IfGivenDgUrlWithoutPath() throws Exception {
-    var compactIdAndHost = getProviderHosts("kidsFirst");
-    var requestBody =
-        objectMapper.writeValueAsString(
-            Map.of("url", compactIdAndHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
-
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
-  }
-
-  @Test // 22
-  void testShouldReturn400IfGivenDgUrlWithOnlyPath() throws Exception {
-    var requestBody =
-        objectMapper.writeValueAsString(
-            Map.of("url", UUID.randomUUID(), "fields", List.of(Fields.CONTENT_TYPE)));
-
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
-  }
-
-  @Test // 23
-  void testShouldReturn400IfNoDataPostedWithRequest() throws Exception {
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
-  }
-
-  // TODO finish this, doesn't break in the right way yet
   @Test // 24
   void testReturns400IfGivenInvalidUrlValue() throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", "I am not a valid url", "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of("url", "I am not a url", "fields", List.of(Fields.CONTENT_TYPE)));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
+  @Test // 28
+  void testCallsBondWithFenceProviderWhenHostIsDg4503() throws Exception {
+    var passportProvider = config.getDrsProviders().get("passport");
+    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
+    var compactIdAndHost =
+        config.getCompactIdHosts().entrySet().stream()
+            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
+            .findFirst()
+            .get();
+    var drsObject =
+        new DrsObject()
+            .id(UUID.randomUUID().toString())
+            .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
+
+    mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
+
+    mockBondLinkAccessTokenApi(
+        passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of(
+                "url",
+                String.format("drs://%s/%s", compactIdAndHost.getKey(), drsObject.getId()),
+                "fields",
+                List.of(Fields.CONTENT_TYPE),
+                "foo",
+                "bar"));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
+  }
+
+  //  // TODO: test 28
+  // test.serial('martha_v3 calls Bond with the "fence" provider when the Data Object URL host is
+  // "dg.4503"', async (t) => {
+  //    const bond = bondUrls('fence');
+  //    const drs = drsUrls(config.HOST_BIODATA_CATALYST_STAGING);
+  //    getJsonFromApiStub.withArgs(bond.serviceAccountKeyUrl,
+  // terraAuth).resolves(googleSAKeyObject);
+  //    getJsonFromApiStub.withArgs(drs.objectsUrl, null).resolves(bdcDrsResponse);
+  //    const response = mockResponse();
+  //
+  //    await marthaV3(mockRequest({ body: { 'url': 'drs://dg.4503/this_part_can_be_anything' } }),
+  // response);
+  //
+  //    t.is(response.statusCode, 200); // Not strictly necessary here, but the test fails if we
+  // don't assert something
+  //    sinon.assert.callCount(getJsonFromApiStub, 2);
+  //  });
 
   // helper functions
 

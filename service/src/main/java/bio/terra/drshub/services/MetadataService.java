@@ -67,9 +67,9 @@ public class MetadataService {
    * <p>If you update *any* of the below be sure to link to the supporting docs and update the
    * comments above!
    */
-  private static final Pattern compactIdRegex =
+  private static final Pattern drsRegex =
       Pattern.compile(
-          "(?:dos|drs)://(?<host>dg\\.[0-9a-z-]+)[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
+          "(?:dos|drs)://(?:(?<cidHost>dg\\.[0-9a-z-]+)|(?<fullHost>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
           Pattern.CASE_INSENSITIVE);
 
   private static final Pattern gsUriParseRegex =
@@ -117,29 +117,28 @@ public class MetadataService {
 
   private UriComponents getUriComponents(String drsUri) {
 
-    var compactIdMatch = compactIdRegex.matcher(drsUri);
+    var drsRegexMatch = drsRegex.matcher(drsUri);
 
-    if (compactIdMatch.matches()) {
-      var cid = compactIdMatch.group("host");
-      if (!drsHubConfig.getCompactIdHosts().containsKey(cid)) {
-        throw new BadRequestException(
-            String.format("Could not find matching host for compact id [%s].", cid));
+    if (drsRegexMatch.matches()) {
+      if (drsRegexMatch.group("cidHost").isEmpty()) {
+        return UriComponentsBuilder.fromUriString(drsUri).build();
+      } else {
+        var cid = drsRegexMatch.group("cidHost");
+        if (!drsHubConfig.getCompactIdHosts().containsKey(cid)) {
+          throw new BadRequestException(
+              String.format("Could not find matching host for compact id [%s].", cid));
+        }
+
+        var cidHost = drsHubConfig.getCompactIdHosts().get(cid);
+
+        return UriComponentsBuilder.newInstance()
+            .host(cidHost)
+            .path(URLEncoder.encode(drsRegexMatch.group("suffix"), StandardCharsets.UTF_8))
+            .query(drsRegexMatch.group("query"))
+            .build();
       }
-
-      var cidHost = drsHubConfig.getCompactIdHosts().get(cid);
-
-      return UriComponentsBuilder.newInstance()
-          .host(cidHost)
-          .path(URLEncoder.encode(compactIdMatch.group("suffix"), StandardCharsets.UTF_8))
-          .query(compactIdMatch.group("query"))
-          .build();
     } else {
-      var parsedUri = UriComponentsBuilder.fromUriString(drsUri).build();
-      if (parsedUri.getHost() == null || parsedUri.getPath() == null) {
-        throw new BadRequestException(
-            String.format("[%s] is missing a host and/or a path.", drsUri));
-      }
-      return parsedUri;
+      throw new BadRequestException(String.format("[%s] is not a valid DOS/DRS URI.", drsUri));
     }
   }
 
