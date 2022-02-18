@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
+import bio.terra.bond.model.SaKeyObject;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.models.BondProviderEnum;
@@ -20,7 +21,6 @@ import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
 import bio.terra.externalcreds.api.OidcApi;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
@@ -106,7 +106,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
-    mockBondApi(BondProviderEnum.dcf_fence, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+    mockBondLinkAccessTokenApi(BondProviderEnum.dcf_fence, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
@@ -143,7 +143,8 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
 
-    mockBondApi(passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+    mockBondLinkAccessTokenApi(
+        passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
 
     var requestBody =
         objectMapper.writeValueAsString(
@@ -193,10 +194,29 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test // 7
-  void testFoo() throws Exception {
+  void testDrsProviderDoesNotSupportGoogle() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");
-    var responseMap = new HashMap<String, String>();
-    responseMap.put(Fields.GOOGLE_SERVICE_ACCOUNT, null);
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.drsUriHost,
+            UUID.randomUUID().toString(),
+            List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{}"));
+  }
+
+  @Test // 8
+  void testDrsProviderDoesSupportGoogle() throws Exception {
+    var provider = "bioDataCatalyst";
+    var compactIdAndHost = getProviderHosts(provider);
+
+    var bondSaKey = Map.of("foo", "sa key");
+    mockBondLinkSaKeyApi(
+        config.getDrsProviders().get(provider).getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        bondSaKey);
+
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
             compactIdAndHost.drsUriHost,
@@ -206,11 +226,43 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(
             content()
                 .json(
-                    objectMapper
-                        .copy()
-                        .setSerializationInclusion(Include.ALWAYS)
-                        .writeValueAsString(responseMap),
-                    true));
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            Fields.GOOGLE_SERVICE_ACCOUNT,
+                            new ObjectMapper().writeValueAsString(bondSaKey)))));
+  }
+
+  @Test // 20
+  void testReturns400IfNotGivenUrl() throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("notAUrl", "drs://foo/bar", "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 21
+  void testReturns400IfGivenDgUrlWithoutPath() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", compactIdAndHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 22
+  void testShouldReturn400IfGivenDgUrlWithOnlyPath() throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", UUID.randomUUID(), "fields", List.of(Fields.CONTENT_TYPE)));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 23
+  void testShouldReturn400IfNoDataPostedWithRequest() throws Exception {
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
   }
 
   @Test // 20
@@ -337,12 +389,21 @@ public class DrsHubApiControllerTest extends BaseTest {
             .content(requestBody));
   }
 
-  private BondApi mockBondApi(
+  private BondApi mockBondLinkAccessTokenApi(
       BondProviderEnum bondProvider, String accessToken, String bondSaToken) {
     var mockBondApi = mock(BondApi.class);
     when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.name()))
         .thenReturn(new AccessTokenObject().token(bondSaToken));
+    return mockBondApi;
+  }
+
+  private BondApi mockBondLinkSaKeyApi(
+      BondProviderEnum bondProvider, String accessToken, Object bondSaKey) {
+    var mockBondApi = mock(BondApi.class);
+    when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
+    when(mockBondApi.getLinkSaKey(bondProvider.name()))
+        .thenReturn(new SaKeyObject().data(bondSaKey));
     return mockBondApi;
   }
 
