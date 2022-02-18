@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.bond.model.SaKeyObject;
+import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.models.BondProviderEnum;
@@ -274,8 +275,9 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 28
-  void testCallsBondWithFenceProviderWhenHostIsDg4503() throws Exception {
+  // TODO: WIP this does not work 
+  @Test // 25
+  void testShouldReturn500IfDataObjectResolutionFails() throws Exception {
     var passportProvider = config.getDrsProviders().get("passport");
     var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
     var compactIdAndHost =
@@ -288,7 +290,11 @@ public class DrsHubApiControllerTest extends BaseTest {
             .id(UUID.randomUUID().toString())
             .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
 
-    mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
+    // mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
+
+    var mockDrsApi = mockDrsApi(compactIdAndHost.getKey(), drsObject);
+    when(mockDrsApi.getAccessURL(drsObject.getId(), drsObject.getAccessMethods().toString()))
+        .thenThrow(new InternalServerErrorException("500 error"));
 
     mockBondLinkAccessTokenApi(
         passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
@@ -299,12 +305,26 @@ public class DrsHubApiControllerTest extends BaseTest {
                 "url",
                 String.format("drs://%s/%s", compactIdAndHost.getKey(), drsObject.getId()),
                 "fields",
-                List.of(Fields.CONTENT_TYPE),
-                "foo",
-                "bar"));
+                List.of(Fields.CONTENT_TYPE)));
 
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().is5xxServerError());
   }
+
+  //// TODO: test 25
+  // test.serial('martha_v3 should return 500 if Data Object resolution fails', async (t) => {
+  //    const drs = drsUrls(bdc, '123');
+  //    getJsonFromApiStub.withArgs(drs.objectsUrl, null).rejects(new Error('Data Object Resolution
+  // forced to fail by testing stub'));
+  //    const response = mockResponse();
+  //
+  //    await marthaV3(mockRequest({ body: { 'url': `dos://${bdc}/123` } }), response);
+  //
+  //    t.is(response.statusCode, 500);
+  //      t.is(response.body.status, 500);
+  //      t.is(response.body.response.text, 'Received error while resolving DRS URL. Data Object
+  // Resolution forced to fail by testing stub');
+  //    });
+  //
 
   //  // TODO: test 28
   // test.serial('martha_v3 calls Bond with the "fence" provider when the Data Object URL host is
