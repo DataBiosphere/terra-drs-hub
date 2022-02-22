@@ -255,7 +255,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testForceFetchAccessUrl() {}
 
   @Test // 16
-  void testCallsNoEndpointsWhenNoFieldsRequested() throws Exception {
+  void testReturns400WhenNoFieldsRequested() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
@@ -265,13 +265,38 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test // 17
-  void testReturnsErrorIfFieldsIsNotAList() throws Exception {
+  void testReturns400IfFieldsIsNotAList() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
             Map.of("url", compactIdAndHost.drsUriHost, "fields", "not a list"));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 18
+  void testReturns400IfInvalidFieldRequested() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of(
+                "url",
+                compactIdAndHost.drsUriHost,
+                "fields",
+                List.of("fake field", "fake field 2")));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 19
+  void testReturns401IfNoAuthHeaderIsSent() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", compactIdAndHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
+
+    mvc.perform(post("/api/v4").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+        .andExpect(status().is4xxClientError());
   }
 
   @Test // 20
@@ -316,71 +341,19 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  // TODO: WIP this does not work
   @Test // 25
   void testShouldReturn500IfDataObjectResolutionFails() throws Exception {
-    var passportProvider = config.getDrsProviders().get("passport");
-    var passportHostRegex = Pattern.compile(passportProvider.getHostRegex());
-    var compactIdAndHost =
-        config.getCompactIdHosts().entrySet().stream()
-            .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
-            .findFirst()
-            .get();
+    var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
+    var cid = cidList.get(new Random().nextInt(cidList.size()));
+    var host = config.getCompactIdHosts().get(cid);
     var drsObject = drsObjectWithRandomId("gs");
 
-    // mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
+    when(mockDrsApi(host, drsObject).getObject(drsObject.getId(), null))
+        .thenThrow(new InternalServerErrorException("forced 500 error"));
 
-    var mockDrsApi = mockDrsApi(compactIdAndHost.getKey(), drsObject);
-    when(mockDrsApi.getAccessURL(drsObject.getId(), drsObject.getAccessMethods().toString()))
-        .thenThrow(new InternalServerErrorException("500 error"));
-
-    mockBondLinkAccessTokenApi(
-        passportProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
-
-    var requestBody =
-        objectMapper.writeValueAsString(
-            Map.of(
-                "url",
-                String.format("drs://%s/%s", compactIdAndHost.getKey(), drsObject.getId()),
-                "fields",
-                List.of(Fields.CONTENT_TYPE)));
-
-    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().is5xxServerError());
+    postDrsHubRequest(TEST_ACCESS_TOKEN, cid, drsObject.getId(), List.of(Fields.CONTENT_TYPE))
+        .andExpect(status().is5xxServerError());
   }
-
-  //// TODO: test 25
-  // test.serial('martha_v3 should return 500 if Data Object resolution fails', async (t) => {
-  //    const drs = drsUrls(bdc, '123');
-  //    getJsonFromApiStub.withArgs(drs.objectsUrl, null).rejects(new Error('Data Object Resolution
-  // forced to fail by testing stub'));
-  //    const response = mockResponse();
-  //
-  //    await marthaV3(mockRequest({ body: { 'url': `dos://${bdc}/123` } }), response);
-  //
-  //    t.is(response.statusCode, 500);
-  //      t.is(response.body.status, 500);
-  //      t.is(response.body.response.text, 'Received error while resolving DRS URL. Data Object
-  // Resolution forced to fail by testing stub');
-  //    });
-  //
-
-  //  // TODO: test 28
-  // test.serial('martha_v3 calls Bond with the "fence" provider when the Data Object URL host is
-  // "dg.4503"', async (t) => {
-  //    const bond = bondUrls('fence');
-  //    const drs = drsUrls(config.HOST_BIODATA_CATALYST_STAGING);
-  //    getJsonFromApiStub.withArgs(bond.serviceAccountKeyUrl,
-  // terraAuth).resolves(googleSAKeyObject);
-  //    getJsonFromApiStub.withArgs(drs.objectsUrl, null).resolves(bdcDrsResponse);
-  //    const response = mockResponse();
-  //
-  //    await marthaV3(mockRequest({ body: { 'url': 'drs://dg.4503/this_part_can_be_anything' } }),
-  // response);
-  //
-  //    t.is(response.statusCode, 200); // Not strictly necessary here, but the test fails if we
-  // don't assert something
-  //    sinon.assert.callCount(getJsonFromApiStub, 2);
-  //  });
 
   // helper functions
 
