@@ -69,10 +69,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
     var compactIdAndHost = getProviderHosts("passport");
 
-    var drsObject =
-        new DrsObject()
-            .id(UUID.randomUUID().toString())
-            .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
+    var drsObject = drsObjectWithRandomId("gs");
 
     mockDrsApiAccessUrlWithPassport(
         compactIdAndHost.dnsHost, drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
@@ -97,10 +94,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassportsUsingFallback()
       throws Exception {
     var compactIdAndHost = getProviderHosts("passport");
-    var drsObject =
-        new DrsObject()
-            .id(UUID.randomUUID().toString())
-            .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
+    var drsObject = drsObjectWithRandomId("gs");
 
     var drsApi =
         mockDrsApiAccessUrlWithToken(compactIdAndHost.dnsHost, drsObject, "gs", TEST_ACCESS_URL);
@@ -137,10 +131,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
             .findFirst()
             .get();
-    var drsObject =
-        new DrsObject()
-            .id(UUID.randomUUID().toString())
-            .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
+    var drsObject = drsObjectWithRandomId("gs");
 
     mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
 
@@ -233,6 +224,36 @@ public class DrsHubApiControllerTest extends BaseTest {
                             new ObjectMapper().writeValueAsString(bondSaKey)))));
   }
 
+  @Test // 8b
+  void testCallsCorrectEndpointsWhenOnlyAccessUrlRequested() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(compactIdAndHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+
+    mockBondLinkAccessTokenApi(BondProviderEnum.kids_first, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(
+                    objectMapper.writeValueAsString(
+                        Map.of(Fields.ACCESS_URL, Map.of("url", TEST_ACCESS_URL.getUrl()))),
+                    true));
+
+    // need an extra verify because nothing in the mock cares that bearer token is set or not
+    verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+  }
+
+  @Test // 9, 10, 11, 12
+  void testForceFetchAccessUrl() {}
+
   @Test // 16
   void testCallsNoEndpointsWhenNoFieldsRequested() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");
@@ -305,10 +326,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             .filter(h -> passportHostRegex.matcher(h.getValue()).matches())
             .findFirst()
             .get();
-    var drsObject =
-        new DrsObject()
-            .id(UUID.randomUUID().toString())
-            .accessMethods(List.of(new AccessMethod().accessId("gs").type(TypeEnum.GS)));
+    var drsObject = drsObjectWithRandomId("gs");
 
     // mockDrsApiAccessUrlWithToken(compactIdAndHost.getValue(), drsObject, "gs", TEST_ACCESS_URL);
 
@@ -512,5 +530,13 @@ public class DrsHubApiControllerTest extends BaseTest {
       this.drsUriHost = drsUriHost;
       this.dnsHost = dnsHost;
     }
+  }
+
+  private DrsObject drsObjectWithRandomId(String accessMethod) {
+    return new DrsObject()
+        .id(UUID.randomUUID().toString())
+        .accessMethods(
+            List.of(
+                new AccessMethod().accessId(accessMethod).type(TypeEnum.fromValue(accessMethod))));
   }
 }
