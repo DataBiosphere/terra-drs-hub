@@ -4,5 +4,5 @@ public enum BondProviderEnum {
   dcf_fence,
   fence,
   anvil,
-  kids_first;
+  kids_first
 }
