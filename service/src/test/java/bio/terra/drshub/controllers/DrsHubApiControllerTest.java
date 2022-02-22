@@ -233,6 +233,26 @@ public class DrsHubApiControllerTest extends BaseTest {
                             new ObjectMapper().writeValueAsString(bondSaKey)))));
   }
 
+  @Test // 16
+  void testCallsNoEndpointsWhenNoFieldsRequested() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", compactIdAndHost.drsUriHost, "fields", List.of("")));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
+  @Test // 17
+  void testReturnsErrorIfFieldsIsNotAList() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of("url", compactIdAndHost.drsUriHost, "fields", "not a list"));
+
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
+  }
+
   @Test // 20
   void testReturns400IfNotGivenUrl() throws Exception {
     var requestBody =
@@ -275,7 +295,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  // TODO: WIP this does not work 
+  // TODO: WIP this does not work
   @Test // 25
   void testShouldReturn500IfDataObjectResolutionFails() throws Exception {
     var passportProvider = config.getDrsProviders().get("passport");
