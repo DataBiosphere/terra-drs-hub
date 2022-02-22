@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -57,6 +58,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   public static final String TEST_BOND_SA_TOKEN = "I am a bond SA token";
   public static final AccessURL TEST_ACCESS_URL = new AccessURL().url("I am a signed access url");
   public static final String TEST_PASSPORT = "I am a passport";
+  public static final String TDR_TEST_HOST = "jade.datarepo-dev.broadinstitute.org";
   @Autowired private DrsHubConfig config;
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
@@ -252,7 +254,60 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test // 9, 10, 11, 12
-  void testForceFetchAccessUrl() {}
+  void testForceFetchAccessUrl() throws Exception {
+    var providersList =
+        config.getDrsProviders().entrySet().stream()
+            .filter(
+                p ->
+                    p.getValue().getAccessMethodConfigs().stream()
+                        .anyMatch(c -> !c.isFetchAccessUrl()))
+            .collect(Collectors.toList());
+
+    for (var drsProviderEntry : providersList) {
+      var compactIdAndHost = getProviderHosts(drsProviderEntry.getKey());
+
+      var accessMethod =
+          drsProviderEntry.getValue().getAccessMethodConfigs().stream()
+              .filter(c -> !c.isFetchAccessUrl())
+              .findAny()
+              .get()
+              .getType()
+              .getReturnedEquivalent()
+              .toString();
+
+      var drsObject = drsObjectWithRandomId(accessMethod);
+
+      var mockDrsApi =
+          mockDrsApiAccessUrlWithToken(
+              compactIdAndHost.dnsHost, drsObject, accessMethod, TEST_ACCESS_URL);
+
+      drsProviderEntry
+          .getValue()
+          .getBondProvider()
+          .ifPresent(p -> mockBondLinkAccessTokenApi(p, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
+
+      mvc.perform(
+              post("/api/v4")
+                  .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                  .header("drshub-force-access-url", "true")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      objectMapper.writeValueAsString(
+                          Map.of(
+                              "url",
+                              String.format(
+                                  "drs://%s/%s", compactIdAndHost.drsUriHost, drsObject.getId()),
+                              "fields",
+                              List.of(Fields.ACCESS_URL)))))
+          .andExpect(status().isOk())
+          .andExpect(
+              content()
+                  .json(
+                      objectMapper.writeValueAsString(
+                          Map.of(Fields.ACCESS_URL, Map.of("url", TEST_ACCESS_URL.getUrl()))),
+                      true));
+    }
+  }
 
   @Test // 16
   void testReturns400WhenNoFieldsRequested() throws Exception {
@@ -358,6 +413,10 @@ public class DrsHubApiControllerTest extends BaseTest {
   // helper functions
 
   private ProviderHosts getProviderHosts(String provider) {
+    if (Objects.equals(provider, "terraDataRepo")) {
+      return new ProviderHosts(TDR_TEST_HOST, TDR_TEST_HOST);
+    }
+
     var drsProvider = config.getDrsProviders().get(provider);
     var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
     return config.getCompactIdHosts().entrySet().stream()

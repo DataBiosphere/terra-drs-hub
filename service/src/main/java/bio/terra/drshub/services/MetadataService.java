@@ -120,23 +120,20 @@ public class MetadataService {
     var drsRegexMatch = drsRegex.matcher(drsUri);
 
     if (drsRegexMatch.matches()) {
-      if (drsRegexMatch.group("cidHost").isEmpty()) {
-        return UriComponentsBuilder.fromUriString(drsUri).build();
-      } else {
-        var cid = drsRegexMatch.group("cidHost");
-        if (!drsHubConfig.getCompactIdHosts().containsKey(cid)) {
-          throw new BadRequestException(
-              String.format("Could not find matching host for compact id [%s].", cid));
-        }
-
-        var cidHost = drsHubConfig.getCompactIdHosts().get(cid);
-
-        return UriComponentsBuilder.newInstance()
-            .host(cidHost)
-            .path(URLEncoder.encode(drsRegexMatch.group("suffix"), StandardCharsets.UTF_8))
-            .query(drsRegexMatch.group("query"))
-            .build();
+      var cid = drsRegexMatch.group("cidHost");
+      if (cid != null && !drsHubConfig.getCompactIdHosts().containsKey(cid)) {
+        throw new BadRequestException(
+            String.format("Could not find matching host for compact id [%s].", cid));
       }
+
+      var dnsHost =
+          cid == null ? drsRegexMatch.group("fullHost") : drsHubConfig.getCompactIdHosts().get(cid);
+
+      return UriComponentsBuilder.newInstance()
+          .host(dnsHost)
+          .path(URLEncoder.encode(drsRegexMatch.group("suffix"), StandardCharsets.UTF_8))
+          .query(drsRegexMatch.group("query"))
+          .build();
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DOS/DRS URI.", drsUri));
     }
