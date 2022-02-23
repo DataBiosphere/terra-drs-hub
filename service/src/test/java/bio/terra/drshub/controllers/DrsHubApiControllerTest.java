@@ -254,7 +254,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test // 9, 10, 11, 12
-  void testForceFetchAccessUrl() throws Exception {
+  void testForceFetchAccessUrlAllProviders() throws Exception {
     var providersList =
         config.getDrsProviders().entrySet().stream()
             .filter(
@@ -277,9 +277,8 @@ public class DrsHubApiControllerTest extends BaseTest {
 
       var drsObject = drsObjectWithRandomId(accessMethod);
 
-      var mockDrsApi =
-          mockDrsApiAccessUrlWithToken(
-              compactIdAndHost.dnsHost, drsObject, accessMethod, TEST_ACCESS_URL);
+      mockDrsApiAccessUrlWithToken(
+          compactIdAndHost.dnsHost, drsObject, accessMethod, TEST_ACCESS_URL);
 
       drsProviderEntry
           .getValue()
@@ -307,6 +306,52 @@ public class DrsHubApiControllerTest extends BaseTest {
                           Map.of(Fields.ACCESS_URL, Map.of("url", TEST_ACCESS_URL.getUrl()))),
                       true));
     }
+  }
+
+  @Test // 13
+  void testUsesProvidedFilename() throws Exception {
+    var provider = "bioDataCatalyst";
+    var compactIdAndHost = getProviderHosts(provider);
+
+    var drsObject = drsObjectWithRandomId("gs").name("foo.bar.txt");
+
+    mockDrsApi(compactIdAndHost.dnsHost, drsObject);
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.FILE_NAME))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(
+                    objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, drsObject.getName())),
+                    true));
+  }
+
+  @Test // 14
+  void testParsesMissingFilenameFromAccessUrl() throws Exception {
+    var compactIdAndHost = getProviderHosts("bioDataCatalyst");
+
+    var drsObject = drsObjectWithRandomId("gs");
+    var fileName = "foo.bar.txt";
+    drsObject
+        .getAccessMethods()
+        .get(0)
+        .setAccessUrl(new AccessURL().url("gs://bucket/" + fileName));
+
+    mockDrsApi(compactIdAndHost.dnsHost, drsObject);
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.FILE_NAME))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, fileName)), true));
   }
 
   @Test // 16
