@@ -458,6 +458,19 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
   }
 
+  @Test // 27
+  void testReturns500IfKeyRetrievalFromBondFails() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
+        .andExpect(status().is5xxServerError());
+  }
+
   // helper functions
 
   private ProviderHosts getProviderHosts(String provider) {
