@@ -65,6 +65,7 @@ jobs:
           ./gradlew --build-cache :service:jibDockerBuild \
           -Djib.from.image=docker://drshub:local \
           -Djib.console=plain
+          
   unit-tests:
     needs: [ build ]
     runs-on: ubuntu-latest
