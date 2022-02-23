@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -50,7 +51,12 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorReport);
   }
 
-  // TODO: Kai, add @ExceptionHandler for HttpStatusCodeException here that forwards the status
+  // return the actual status code instead of the default for HttpStatusCodeExceptions
+  @ExceptionHandler(HttpStatusCodeException.class)
+  public ResponseEntity<ErrorReport> HttpStatusCodeExceptionReportHandler(
+      HttpStatusCodeException ex) {
+    return buildErrorReport(ex, ex.getStatusCode());
+  }
 
   // -- catchall - log so we can understand what we have missed in the handlers above
   @ExceptionHandler(Exception.class)
