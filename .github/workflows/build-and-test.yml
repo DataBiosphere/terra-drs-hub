@@ -94,7 +94,7 @@ jobs:
           files: ./service/build/reports/jacoco/test/jacocoTestReport.xml
 
   notify-slack:
-    needs: [ build, jib, unit-tests, integration-tests ]
+    needs: [ build, jib, unit-tests ]
     runs-on: ubuntu-latest
 
     if: failure() && github.ref == 'refs/heads/dev'
@@ -111,7 +111,7 @@ jobs:
           text: 'Build failed :sadpanda:'
 
   dispatch-tag:
-    needs: [ build, jib, unit-tests, integration-tests ]
+    needs: [ build, jib, unit-tests ]
     runs-on: ubuntu-latest
 
     if: success() && github.ref == 'refs/heads/dev'
