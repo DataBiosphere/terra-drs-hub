@@ -50,6 +50,8 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorReport);
   }
 
+  // TODO: Kai, add @ExceptionHandler for HttpStatusCodeException here that forwards the status
+
   // -- catchall - log so we can understand what we have missed in the handlers above
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorReport> catchallHandler(Exception ex) {

@@ -12,7 +12,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.bond.model.SaKeyObject;
-import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.models.BondProviderEnum;
@@ -49,6 +48,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @AutoConfigureMockMvc
@@ -330,9 +330,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().isOk())
         .andExpect(
             content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, fileName)),
-                    true));
+                .json(objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, fileName)), true));
   }
 
   @Test // 14
@@ -446,18 +444,18 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 25
-  void testShouldReturn500IfDataObjectResolutionFails() throws Exception {
+  @Test // 25, 26
+  void testShouldReturnUnderlyingStatusIfDataObjectResolutionFails() throws Exception {
     var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
     var cid = cidList.get(new Random().nextInt(cidList.size()));
     var host = config.getCompactIdHosts().get(cid);
     var drsObject = drsObjectWithRandomId("gs");
 
     when(mockDrsApi(host, drsObject).getObject(drsObject.getId(), null))
-        .thenThrow(new InternalServerErrorException("forced 500 error"));
+        .thenThrow(new HttpServerErrorException(HttpStatus.NOT_IMPLEMENTED, "forced sad response"));
 
     postDrsHubRequest(TEST_ACCESS_TOKEN, cid, drsObject.getId(), List.of(Fields.CONTENT_TYPE))
-        .andExpect(status().is5xxServerError());
+        .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
   }
 
   // helper functions
