@@ -211,7 +211,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var provider = "bioDataCatalyst";
     var compactIdAndHost = getProviderHosts(provider);
 
-    String bondSaKey = objectMapper.writeValueAsString(Map.of("foo", "sa key"));
+    var bondSaKey = Map.of("foo", "sa key");
     mockBondLinkSaKeyApi(
         config.getDrsProviders().get(provider).getBondProvider().get(),
         TEST_ACCESS_TOKEN,
@@ -227,7 +227,9 @@ public class DrsHubApiControllerTest extends BaseTest {
             content()
                 .json(
                     objectMapper.writeValueAsString(
-                        Map.of(Fields.GOOGLE_SERVICE_ACCOUNT, bondSaKey))));
+                        Map.of(
+                            Fields.GOOGLE_SERVICE_ACCOUNT,
+                            new ObjectMapper().writeValueAsString(bondSaKey)))));
   }
 
   @Test // 20

@@ -9,6 +9,8 @@ import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
@@ -198,11 +200,16 @@ public class MetadataService {
       var bondApi = bondApiFactory.getApi(bearerToken);
 
       // TODO: are we getting the key in a usable format?
-      bondSaKey =
-          bondApi
-              .getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString())
-              .getData()
-              .toString();
+      try {
+        bondSaKey =
+            new ObjectMapper()
+                .writeValueAsString(
+                    bondApi
+                        .getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString())
+                        .getData());
+      } catch (JsonProcessingException e) {
+        throw new DrsHubException("Unable to parse SA key response from Bond", e);
+      }
     }
 
     Optional<AccessURL> accessUrl = Optional.empty();
