@@ -308,12 +308,17 @@ public class DrsHubApiControllerTest extends BaseTest {
     }
   }
 
-  @Test // 13
+  @Test // 13, 15
   void testUsesProvidedFilename() throws Exception {
     var provider = "bioDataCatalyst";
     var compactIdAndHost = getProviderHosts(provider);
 
-    var drsObject = drsObjectWithRandomId("gs").name("foo.bar.txt");
+    var fileName = "foo.bar.txt";
+    var drsObject = drsObjectWithRandomId("gs").name(fileName);
+    drsObject
+        .getAccessMethods()
+        .get(0)
+        .setAccessUrl(new AccessURL().url("gs://bucket/bad.different.name.txt"));
 
     mockDrsApi(compactIdAndHost.dnsHost, drsObject);
 
@@ -326,7 +331,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(
             content()
                 .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, drsObject.getName())),
+                    objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, fileName)),
                     true));
   }
 
