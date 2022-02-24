@@ -107,8 +107,8 @@ public interface DrsProviderInterface {
         // "Not definitely not GCS". A falsy accessMethod is okay because there may not have been a
         // preceding metadata request to determine the accessMethod.
         && (accessMethodType == null
-            || AccessMethodConfigTypeEnum.gcs.getReturnedEquivalent() == accessMethodType)
-        && getAccessMethodConfigTypes().contains(AccessMethodConfigTypeEnum.gcs)
+            || AccessMethodConfigTypeEnum.gs.getReturnedEquivalent() == accessMethodType)
+        && getAccessMethodConfigTypes().contains(AccessMethodConfigTypeEnum.gs)
         && Fields.overlap(requestedFields, Fields.BOND_SA_FIELDS);
   }
 
@@ -136,6 +136,6 @@ public interface DrsProviderInterface {
    */
   static boolean shouldFailOnAccessUrlFail(AccessMethod.TypeEnum accessMethodType) {
     // TODO: get rid of this
-    return AccessMethodConfigTypeEnum.gcs.getReturnedEquivalent() != accessMethodType;
+    return AccessMethodConfigTypeEnum.gs.getReturnedEquivalent() != accessMethodType;
   }
 }

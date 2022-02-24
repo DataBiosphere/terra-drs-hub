@@ -3,7 +3,7 @@ package bio.terra.drshub.models;
 import io.github.ga4gh.drs.model.AccessMethod;
 
 public enum AccessMethodConfigTypeEnum {
-  gcs(AccessMethod.TypeEnum.GS),
+  gs(AccessMethod.TypeEnum.GS),
   s3(AccessMethod.TypeEnum.S3),
   https(AccessMethod.TypeEnum.HTTPS);
 

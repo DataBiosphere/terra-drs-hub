@@ -472,6 +472,23 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().is5xxServerError());
   }
 
+  @Test // 45
+  void testShouldReturnUnderlyingStatusIfGettingAccessUrlFails() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    when(mockDrsApi(compactIdAndHost.dnsHost, drsObject).getAccessURL(drsObject.getId(), "s3"))
+        .thenThrow(new HttpServerErrorException(HttpStatus.NOT_IMPLEMENTED, "forced sad response"));
+    mockBondLinkAccessTokenApi(BondProviderEnum.kids_first, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+
+    postDrsHubRequest(
+        TEST_ACCESS_TOKEN,
+        compactIdAndHost.drsUriHost,
+        drsObject.getId(),
+        List.of(Fields.ACCESS_URL))
+        .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
+  }
+
   @Test // 46
   void testReturnsNullForFieldsMissingInDrsResponse() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");

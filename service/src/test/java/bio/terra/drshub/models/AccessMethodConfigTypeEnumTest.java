@@ -10,7 +10,7 @@ class AccessMethodConfigTypeEnumTest {
   @Test
   void getReturnedEquivalent() {
     assertEquals(AccessMethodConfigTypeEnum.s3.getReturnedEquivalent(), TypeEnum.S3);
-    assertEquals(AccessMethodConfigTypeEnum.gcs.getReturnedEquivalent(), TypeEnum.GS);
+    assertEquals(AccessMethodConfigTypeEnum.gs.getReturnedEquivalent(), TypeEnum.GS);
     assertEquals(AccessMethodConfigTypeEnum.https.getReturnedEquivalent(), TypeEnum.HTTPS);
   }
 }
