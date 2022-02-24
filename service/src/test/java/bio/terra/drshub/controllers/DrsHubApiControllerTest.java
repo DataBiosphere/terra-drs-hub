@@ -27,6 +27,7 @@ import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -470,6 +471,81 @@ public class DrsHubApiControllerTest extends BaseTest {
             List.of(Fields.ACCESS_URL))
         .andExpect(status().is5xxServerError());
   }
+
+  @Test // 46
+  void testReturnsNullForFieldsMissingInDrsResponse() throws Exception {
+    var compactIdAndHost = getProviderHosts("kidsFirst");
+
+    var drsObject =
+        new DrsObject()
+            .id(UUID.randomUUID().toString())
+            .size(new Random().nextLong())
+            .checksums(List.of(new Checksum().type("md5").checksum("checksum")))
+            .updatedTime(new Date())
+            .name("filename")
+            .accessMethods(
+                List.of(
+                    new AccessMethod()
+                        .accessUrl(new AccessURL().url("gs://foobar"))
+                        .type(TypeEnum.GS)));
+
+    mockDrsApi(compactIdAndHost.drsUriHost, drsObject);
+
+    List<String> requestedFields =
+        List.of(Fields.GS_URI, Fields.SIZE, Fields.HASHES, Fields.TIME_UPDATED, Fields.FILE_NAME);
+
+//    var drsObjectWithMissingFields = {
+//          id: 'v1_abc-123',
+//          description: '123 BAM file',
+//          name: '123.mapped.abc.bam',
+//          created: '2020-04-27T15:56:09.696Z',
+//          version: '0',
+//          mime_type: 'application/octet-stream',
+//          size: 123456
+//};
+////
+//    const expectedObjWithMissingFields = {
+//        contentType: 'application/octet-stream',
+//        size: 123456,
+//        timeCreated: '2020-04-27T15:56:09.696Z',
+//        timeUpdated: null,
+//        bucket: null,
+//        name: null,
+//        accessUrl: null,
+//        gsUri: null,
+//        googleServiceAccount: null,
+//        bondProvider: 'dcf-fence',
+//        fileName: '123.mapped.abc.bam',
+//        localizationPath: null,
+//        hashes: null
+//};
+
+    mockDrsApi(compactIdAndHost.drsUriHost, drsObject);
+
+    postDrsHubRequest(
+        TEST_ACCESS_TOKEN,
+        compactIdAndHost.drsUriHost,
+        UUID.randomUUID().toString(),
+        List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(
+                    objectMapper.writeValueAsString(drsObjectToMap(drsObject, requestedFields)),
+                    true));
+  }
+
+//  // TODO: test 46
+//test.serial('martha_v3 returns null for fields missing in drs and bond response', async (t) => {
+//    const drs = drsUrls(crdc, '123');
+//    getJsonFromApiStub.withArgs(drs.objectsUrl, null).resolves(dosObjectWithMissingFields);
+//    const response = mockResponse();
+//
+//    await marthaV3(mockRequest({ body: { 'url': `drs://${crdc}/123` } }), response); // Also testing dos/drs mismatch here
+//
+//    t.is(response.statusCode, 200);
+//      t.deepEqual(response.body, expectedObjWithMissingFields);
+//    });
 
   // helper functions
 
