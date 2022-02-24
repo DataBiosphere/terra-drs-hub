@@ -13,7 +13,7 @@ repositories { mavenCentral() }
 
 subprojects {
 	group = 'bio.terra'
-	version = '0.0.1'
+	version = '0.1.0-SNAPSHOT'
 
 	ext {
 		artifactGroup = "${group}.${rootProject.name}"
@@ -27,8 +27,8 @@ subprojects {
 		}
 
 		dependencies {
-			dependency 'io.swagger.core.v3:swagger-annotations:2.1.12'
-			dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.31'
+			dependency 'io.swagger.core.v3:swagger-annotations:2.1.13'
+			dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.33'
 		}
 	}
 }
