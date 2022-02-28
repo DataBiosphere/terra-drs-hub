@@ -1,5 +1,6 @@
 package bio.terra.drshub.models;
 
+import bio.terra.bond.model.SaKeyObject;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.util.Optional;
@@ -15,7 +16,7 @@ public interface DrsMetadata extends WithDrsMetadata {
 
   Optional<AccessURL> getAccessUrl();
 
-  Optional<String> getBondSaKey();
+  Optional<SaKeyObject> getBondSaKey();
 
   class Builder extends ImmutableDrsMetadata.Builder {}
 }

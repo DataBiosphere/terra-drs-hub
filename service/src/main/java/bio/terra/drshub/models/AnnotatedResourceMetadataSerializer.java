@@ -8,6 +8,7 @@ import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,19 +49,21 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
         jgen.writePOJOField(Fields.ACCESS_URL, drsMetadata.getAccessUrl().orElse(null));
       }
       if (f.equals(Fields.GOOGLE_SERVICE_ACCOUNT)) {
-        jgen.writeStringField(
-            Fields.GOOGLE_SERVICE_ACCOUNT, drsMetadata.getBondSaKey().orElse(null));
+        jgen.writePOJOField(Fields.GOOGLE_SERVICE_ACCOUNT, drsMetadata.getBondSaKey().orElse(null));
       }
 
       if (drsMetadata.getDrsResponse().isPresent()) {
 
         var response = drsMetadata.getDrsResponse().get();
+        var formatter = DateTimeFormatter.ISO_INSTANT;
 
         if (f.equals(Fields.TIME_CREATED)) {
-          jgen.writePOJOField(Fields.TIME_CREATED, response.getCreatedTime());
+          jgen.writePOJOField(
+              Fields.TIME_CREATED, formatter.format(response.getCreatedTime().toInstant()));
         }
         if (f.equals(Fields.TIME_UPDATED)) {
-          jgen.writePOJOField(Fields.TIME_UPDATED, response.getUpdatedTime());
+          jgen.writePOJOField(
+              Fields.TIME_UPDATED, formatter.format(response.getUpdatedTime().toInstant()));
         }
         if (f.equals(Fields.HASHES)) {
           jgen.writePOJOField(Fields.HASHES, getHashesMap(response.getChecksums()));

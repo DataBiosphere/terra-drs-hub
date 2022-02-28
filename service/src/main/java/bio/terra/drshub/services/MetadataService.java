@@ -1,5 +1,6 @@
 package bio.terra.drshub.services;
 
+import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
@@ -9,8 +10,6 @@ import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.DrsObject;
@@ -185,21 +184,10 @@ public class MetadataService {
     // TODO: make this optional instead of icky null
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
-    String bondSaKey = null;
+    SaKeyObject bondSaKey = null;
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var bondApi = bondApiFactory.getApi(bearerToken);
-
-      // TODO: are we getting the key in a usable format?
-      try {
-        bondSaKey =
-            new ObjectMapper()
-                .writeValueAsString(
-                    bondApi
-                        .getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString())
-                        .getData());
-      } catch (JsonProcessingException e) {
-        throw new DrsHubException("Unable to parse SA key response from Bond", e);
-      }
+      bondSaKey = bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString());
     }
 
     Optional<AccessURL> accessUrl = Optional.empty();
@@ -316,7 +304,7 @@ public class MetadataService {
       return Optional.empty();
     }
 
-    if (drsResponse.getName() != null) {
+    if (drsResponse.getName() != null && !drsResponse.getName().isBlank()) {
       return Optional.of(drsResponse.getName());
     }
 
