@@ -469,6 +469,53 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().is5xxServerError());
   }
 
+  @Test // 28
+  void testCallsBondWithFenceProviderWhenHostIsDg() throws Exception {
+    var provider = "bioDataCatalyst";
+    var compactIdAndHost = getProviderHosts(provider);
+
+    var bondSaKey = Map.of("foo", "sa key");
+    var mockBondApi =
+        mockBondLinkSaKeyApi(
+            config.getDrsProviders().get(provider).getBondProvider().get(),
+            TEST_ACCESS_TOKEN,
+            bondSaKey);
+
+    var drsObject = drsObjectWithRandomId("gs");
+    drsObject
+        .getAccessMethods()
+        .get(0)
+        .setAccessUrl(new AccessURL().url("gs://bucket/" + "fileName"));
+    var mockDrsApi = mockDrsApi(compactIdAndHost.dnsHost, drsObject);
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            compactIdAndHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
+        .andExpect(status().isOk());
+    verify(mockDrsApi, times(1)).getObject(any(), any());
+    verify(mockBondApi, times(1)).getLinkSaKey(any());
+  }
+  //
+  //  // TODO: test 28
+  // test.serial('martha_v3 calls Bond with the "fence" provider when the Data Object URL host is
+  // "dg.4503"', async (t) => {
+  //    const bond = bondUrls('fence');
+  //    const drs = drsUrls(config.HOST_BIODATA_CATALYST_STAGING);
+  //    getJsonFromApiStub.withArgs(bond.serviceAccountKeyUrl,
+  // terraAuth).resolves(googleSAKeyObject);
+  //    getJsonFromApiStub.withArgs(drs.objectsUrl, null).resolves(bdcDrsResponse);
+  //    const response = mockResponse();
+  //
+  //    await marthaV3(mockRequest({ body: { 'url': 'drs://dg.4503/this_part_can_be_anything' } }),
+  // response);
+  //
+  //    t.is(response.statusCode, 200); // Not strictly necessary here, but the test fails if we
+  // don't assert something
+  //    sinon.assert.callCount(getJsonFromApiStub, 2);
+  //  });
+
   @Test // 45
   void testShouldReturnUnderlyingStatusIfGettingAccessUrlFails() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");
