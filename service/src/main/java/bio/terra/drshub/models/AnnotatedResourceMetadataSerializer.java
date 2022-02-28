@@ -25,73 +25,72 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
 
   @Override
   public void serialize(
-      AnnotatedResourceMetadata value, JsonGenerator jgen, SerializerProvider provider)
+      AnnotatedResourceMetadata value, JsonGenerator jsonGenerator, SerializerProvider provider)
       throws IOException {
-    jgen.writeStartObject();
+    jsonGenerator.writeStartObject();
 
     var drsMetadata = value.getDrsMetadata();
 
     for (var f : value.getRequestedFields()) {
       if (f.equals(Fields.BOND_PROVIDER)) {
-        jgen.writeStringField(
+        jsonGenerator.writeStringField(
             Fields.BOND_PROVIDER,
             value.getDrsProvider().getBondProvider().map(Enum::toString).orElse(null));
       }
 
       if (f.equals(Fields.FILE_NAME)) {
-        jgen.writeStringField(Fields.FILE_NAME, drsMetadata.getFileName().orElse(null));
+        jsonGenerator.writeStringField(Fields.FILE_NAME, drsMetadata.getFileName());
       }
       if (f.equals(Fields.LOCALIZATION_PATH)) {
-        jgen.writeStringField(
-            Fields.LOCALIZATION_PATH, drsMetadata.getLocalizationPath().orElse(null));
+        jsonGenerator.writeStringField(Fields.LOCALIZATION_PATH, drsMetadata.getLocalizationPath());
       }
       if (f.equals(Fields.ACCESS_URL)) {
-        jgen.writePOJOField(Fields.ACCESS_URL, drsMetadata.getAccessUrl().orElse(null));
+        jsonGenerator.writePOJOField(Fields.ACCESS_URL, drsMetadata.getAccessUrl());
       }
       if (f.equals(Fields.GOOGLE_SERVICE_ACCOUNT)) {
-        jgen.writePOJOField(Fields.GOOGLE_SERVICE_ACCOUNT, drsMetadata.getBondSaKey().orElse(null));
+        jsonGenerator.writePOJOField(Fields.GOOGLE_SERVICE_ACCOUNT, drsMetadata.getBondSaKey());
       }
 
-      if (drsMetadata.getDrsResponse().isPresent()) {
+      if (drsMetadata.getDrsResponse() != null) {
 
-        var response = drsMetadata.getDrsResponse().get();
+        var response = drsMetadata.getDrsResponse();
         var formatter = DateTimeFormatter.ISO_INSTANT;
 
         if (f.equals(Fields.TIME_CREATED)) {
-          jgen.writeStringField(
+          jsonGenerator.writeStringField(
               Fields.TIME_CREATED, formatter.format(response.getCreatedTime().toInstant()));
         }
         if (f.equals(Fields.TIME_UPDATED)) {
-          jgen.writeStringField(
+          jsonGenerator.writeStringField(
               Fields.TIME_UPDATED, formatter.format(response.getUpdatedTime().toInstant()));
         }
         if (f.equals(Fields.HASHES)) {
-          jgen.writePOJOField(Fields.HASHES, getHashesMap(response.getChecksums()));
+          jsonGenerator.writePOJOField(Fields.HASHES, getHashesMap(response.getChecksums()));
         }
         if (f.equals(Fields.SIZE)) {
-          jgen.writeNumberField(Fields.SIZE, response.getSize());
+          jsonGenerator.writeNumberField(Fields.SIZE, response.getSize());
         }
         if (f.equals(Fields.CONTENT_TYPE)) {
-          jgen.writeStringField(Fields.CONTENT_TYPE, response.getMimeType());
+          jsonGenerator.writeStringField(Fields.CONTENT_TYPE, response.getMimeType());
         }
 
         var gsUrl = getGcsAccessURL(response).map(AccessURL::getUrl);
         if (f.equals(Fields.GS_URI)) {
-          jgen.writeStringField(Fields.GS_URI, gsUrl.orElse(null));
+          jsonGenerator.writeStringField(Fields.GS_URI, gsUrl.orElse(null));
         }
 
         var gsFileInfo = gsUrl.map(gsUriParseRegex::matcher);
         if (gsFileInfo.map(Matcher::matches).orElse(false)) {
           if (f.equals(Fields.BUCKET)) {
-            jgen.writeStringField(Fields.BUCKET, gsFileInfo.get().group("bucket"));
+            jsonGenerator.writeStringField(Fields.BUCKET, gsFileInfo.get().group("bucket"));
           }
           if (f.equals(Fields.NAME)) {
-            jgen.writeStringField(Fields.NAME, gsFileInfo.get().group("name"));
+            jsonGenerator.writeStringField(Fields.NAME, gsFileInfo.get().group("name"));
           }
         }
       }
     }
-    jgen.writeEndObject();
+    jsonGenerator.writeEndObject();
   }
 
   private Map<String, String> getHashesMap(List<Checksum> checksums) {

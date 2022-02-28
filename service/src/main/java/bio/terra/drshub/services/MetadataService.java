@@ -179,7 +179,7 @@ public class MetadataService {
       }
 
       drsResponse = drsApi.getObject(objectId, null);
-      drsMetadataBuilder.drsResponse(Optional.ofNullable(drsResponse));
+      drsMetadataBuilder.drsResponse(drsResponse);
     }
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
@@ -192,80 +192,81 @@ public class MetadataService {
           bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString()));
     }
 
-    List<String> passports = null;
-    // TODO: is this an else-if?
-    if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
+    if (drsResponse != null) {
+      drsMetadataBuilder.fileName(getDrsFileName(drsResponse));
+      drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
 
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+      List<String> passports = null;
+      // TODO: is this an else-if?
+      if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
+
+        var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+
+        try {
+          // For now, we are only getting a RAS passport. In the future it may also fetch from other
+          // providers.
+          passports = List.of(ecmApi.getProviderPassport("ras"));
+        } catch (HttpStatusCodeException e) {
+          if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+            log.info("User does not have a passport.");
+          } else {
+            throw e;
+          }
+        }
+      }
 
       try {
-        // For now, we are only getting a RAS passport. In the future it may also fetch from other
-        // providers.
-        passports = List.of(ecmApi.getProviderPassport("ras"));
-      } catch (HttpStatusCodeException e) {
-        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-          log.info("User does not have a passport.");
-        } else {
-          throw e;
-        }
-      }
-    }
+        var accessToken =
+            getFenceAccessToken(
+                drsUri,
+                accessMethod,
+                false,
+                drsProvider,
+                requestedFields,
+                forceAccessField,
+                bearerToken);
 
-    drsMetadataBuilder.fileName(getDrsFileName(drsResponse));
-    drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
+        if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessField)) {
+          var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
 
-    try {
-      var accessToken =
-          getFenceAccessToken(
-              drsUri,
-              accessMethod,
-              false,
-              drsProvider,
-              requestedFields,
-              forceAccessField,
-              bearerToken);
+          log.info("Requesting URL for {}", uriComponents.toUriString());
 
-      if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessField)) {
-        var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
-
-        log.info("Requesting URL for {}", uriComponents.toUriString());
-
-        Optional<AccessURL> accessUrl;
-        accessUrl =
-            getAccessUrl(
-                providerAccessMethod.getAuth(),
-                uriComponents,
-                accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
-                accessToken,
-                passports);
-
-        if (accessUrl.isEmpty() && providerAccessMethod.getFallbackAuth().isPresent()) {
-          var fallbackToken =
-              getFenceAccessToken(
-                  drsUri,
-                  accessMethod,
-                  true,
-                  drsProvider,
-                  requestedFields,
-                  forceAccessField,
-                  bearerToken);
-
-          accessUrl =
+          AccessURL accessUrl =
               getAccessUrl(
-                  providerAccessMethod.getFallbackAuth().get(),
+                  providerAccessMethod.getAuth(),
                   uriComponents,
                   accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
-                  fallbackToken,
+                  accessToken,
                   passports);
-        }
 
-        drsMetadataBuilder.accessUrl(accessUrl);
-      }
-    } catch (RuntimeException e) {
-      if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
-        throw e;
-      } else {
-        log.warn("Ignoring error from fetching signed URL", e);
+          if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+            var fallbackToken =
+                getFenceAccessToken(
+                    drsUri,
+                    accessMethod,
+                    true,
+                    drsProvider,
+                    requestedFields,
+                    forceAccessField,
+                    bearerToken);
+
+            accessUrl =
+                getAccessUrl(
+                    providerAccessMethod.getFallbackAuth().get(),
+                    uriComponents,
+                    accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
+                    fallbackToken,
+                    passports);
+          }
+
+          drsMetadataBuilder.accessUrl(accessUrl);
+        }
+      } catch (RuntimeException e) {
+        if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
+          throw e;
+        } else {
+          log.warn("Ignoring error from fetching signed URL", e);
+        }
       }
     }
 
@@ -297,34 +298,29 @@ public class MetadataService {
    *
    * <p>It is possible the name may need to be retrieved from the signed url.
    */
-  private Optional<String> getDrsFileName(DrsObject drsResponse) {
-    if (drsResponse == null) {
-      return Optional.empty();
-    }
+  private String getDrsFileName(DrsObject drsResponse) {
 
     if (drsResponse.getName() != null && !drsResponse.getName().isBlank()) {
-      return Optional.of(drsResponse.getName());
+      return drsResponse.getName();
     }
 
     var accessURL = drsResponse.getAccessMethods().get(0).getAccessUrl();
 
     if (accessURL != null) {
       var path = URI.create(accessURL.getUrl()).getPath();
-      return Optional.ofNullable(path).map(s -> s.replaceAll("^.*[\\\\/]", ""));
+      return path == null ? path : path.replaceAll("^.*[\\\\/]", "");
     }
-
-    return Optional.empty();
+    return null;
   }
 
-  private Optional<String> getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
+  private String getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
     if (drsProvider.useAliasesForLocalizationPath()
         && drsResponse != null
         && drsResponse.getAliases() != null
         && !drsResponse.getAliases().isEmpty()) {
-      return Optional.of(drsResponse.getAliases().get(0));
+      return drsResponse.getAliases().get(0);
     }
-
-    return Optional.empty();
+    return null;
   }
 
   private Optional<String> getFenceAccessToken(
@@ -357,7 +353,7 @@ public class MetadataService {
     }
   }
 
-  private Optional<AccessURL> getAccessUrl(
+  private AccessURL getAccessUrl(
       AccessUrlAuthEnum accessUrlAuth,
       UriComponents uriComponents,
       String accessId,
@@ -372,8 +368,7 @@ public class MetadataService {
       case passport:
         if (passports != null && !passports.isEmpty()) {
           try {
-            return Optional.ofNullable(
-                drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId));
+            return drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId);
           } catch (RestClientException e) {
             log.error(
                 "Passport authorized request failed for {} with error {}",
@@ -383,14 +378,14 @@ public class MetadataService {
         }
         // if we made it this far, there are no passports or there was an error using them so return
         // nothing.
-        return Optional.empty();
+        return null;
       case current_request:
         accessToken.ifPresent(drsApi::setBearerToken);
-        return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
+        return drsApi.getAccessURL(objectId, accessId);
       case fence_token:
         if (accessToken.isPresent()) {
           drsApi.setBearerToken(accessToken.get());
-          return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
+          return drsApi.getAccessURL(objectId, accessId);
         } else {
           throw new BadRequestException(
               String.format(
