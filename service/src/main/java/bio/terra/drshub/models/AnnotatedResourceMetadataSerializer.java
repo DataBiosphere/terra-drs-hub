@@ -58,11 +58,11 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
         var formatter = DateTimeFormatter.ISO_INSTANT;
 
         if (f.equals(Fields.TIME_CREATED)) {
-          jgen.writePOJOField(
+          jgen.writeStringField(
               Fields.TIME_CREATED, formatter.format(response.getCreatedTime().toInstant()));
         }
         if (f.equals(Fields.TIME_UPDATED)) {
-          jgen.writePOJOField(
+          jgen.writeStringField(
               Fields.TIME_UPDATED, formatter.format(response.getUpdatedTime().toInstant()));
         }
         if (f.equals(Fields.HASHES)) {
