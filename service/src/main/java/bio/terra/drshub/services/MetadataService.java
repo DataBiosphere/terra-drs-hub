@@ -1,6 +1,5 @@
 package bio.terra.drshub.services;
 
-import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
@@ -162,6 +161,8 @@ public class MetadataService {
       String bearerToken,
       boolean forceAccessField) {
     DrsObject drsResponse = null;
+    var drsMetadataBuilder = new DrsMetadata.Builder();
+
     if (Fields.shouldRequestMetadata(requestedFields)) {
 
       var objectId = getObjectId(uriComponents);
@@ -178,19 +179,19 @@ public class MetadataService {
       }
 
       drsResponse = drsApi.getObject(objectId, null);
+      drsMetadataBuilder.drsResponse(Optional.ofNullable(drsResponse));
     }
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
     // TODO: make this optional instead of icky null
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
-    SaKeyObject bondSaKey = null;
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var bondApi = bondApiFactory.getApi(bearerToken);
-      bondSaKey = bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString());
+      drsMetadataBuilder.bondSaKey(
+          bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString()));
     }
 
-    Optional<AccessURL> accessUrl = Optional.empty();
     List<String> passports = null;
     // TODO: is this an else-if?
     if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
@@ -210,8 +211,8 @@ public class MetadataService {
       }
     }
 
-    var fileName = getDrsFileName(drsResponse);
-    var localizationPath = getLocalizationPath(drsProvider, drsResponse);
+    drsMetadataBuilder.fileName(getDrsFileName(drsResponse));
+    drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
 
     try {
       var accessToken =
@@ -229,6 +230,7 @@ public class MetadataService {
 
         log.info("Requesting URL for {}", uriComponents.toUriString());
 
+        Optional<AccessURL> accessUrl;
         accessUrl =
             getAccessUrl(
                 providerAccessMethod.getAuth(),
@@ -256,6 +258,8 @@ public class MetadataService {
                   fallbackToken,
                   passports);
         }
+
+        drsMetadataBuilder.accessUrl(accessUrl);
       }
     } catch (RuntimeException e) {
       if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
@@ -265,13 +269,7 @@ public class MetadataService {
       }
     }
 
-    return new DrsMetadata.Builder()
-        .drsResponse(Optional.ofNullable(drsResponse))
-        .fileName(fileName)
-        .localizationPath(localizationPath)
-        .accessUrl(accessUrl)
-        .bondSaKey(Optional.ofNullable(bondSaKey))
-        .build();
+    return drsMetadataBuilder.build();
   }
 
   private String getObjectId(UriComponents uriComponents) {

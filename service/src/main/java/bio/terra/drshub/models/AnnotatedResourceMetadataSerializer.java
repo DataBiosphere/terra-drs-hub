@@ -29,13 +29,13 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
       throws IOException {
     jgen.writeStartObject();
 
-    var drsProvider = value.getDrsProvider();
     var drsMetadata = value.getDrsMetadata();
 
     for (var f : value.getRequestedFields()) {
       if (f.equals(Fields.BOND_PROVIDER)) {
         jgen.writeStringField(
-            Fields.BOND_PROVIDER, drsProvider.getBondProvider().map(Enum::toString).orElse(null));
+            Fields.BOND_PROVIDER,
+            value.getDrsProvider().getBondProvider().map(Enum::toString).orElse(null));
       }
 
       if (f.equals(Fields.FILE_NAME)) {
