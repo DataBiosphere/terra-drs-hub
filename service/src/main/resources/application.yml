@@ -92,10 +92,7 @@ spring:
 
   config.import: classpath:rendered/version.properties
 
-  jackson:
-    # don't include null json fields in api responses
-    default-property-inclusion: NON_NULL
-    serialization.indent_output: true
+  jackson.serialization.indent_output: true
 
   main.banner-mode: off
 

@@ -5,15 +5,14 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
-import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
-import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -21,9 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -72,9 +69,6 @@ public class MetadataService {
           "(?:dos|drs)://(?:(?<cidHost>dg\\.[0-9a-z-]+)|(?<fullHost>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
           Pattern.CASE_INSENSITIVE);
 
-  private static final Pattern gsUriParseRegex =
-      Pattern.compile("gs://(?<bucket>[^/]+)/(?<name>.+)", Pattern.CASE_INSENSITIVE);
-
   private final DrsHubConfig drsHubConfig;
   private final BondApiFactory bondApiFactory;
   private final ExternalCredsApiFactory externalCredsApiFactory;
@@ -91,7 +85,7 @@ public class MetadataService {
     this.drsApiFactory = drsApiFactory;
   }
 
-  public ResourceMetadata fetchResourceMetadata(
+  public AnnotatedResourceMetadata fetchResourceMetadata(
       String drsUri, List<String> rawRequestedFields, String accessToken, Boolean forceAccessUrl) {
 
     var requestedFields =
@@ -422,79 +416,13 @@ public class MetadataService {
     }
   }
 
-  private ResourceMetadata buildResponseObject(
+  private AnnotatedResourceMetadata buildResponseObject(
       List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider) {
 
-    var eventualResponse = new ResourceMetadata();
-
-    for (var f : requestedFields) {
-      if (f.equals(Fields.BOND_PROVIDER)) {
-        drsProvider
-            .getBondProvider()
-            .ifPresent(p -> eventualResponse.setBondProvider(p.toString()));
-      }
-
-      if (f.equals(Fields.FILE_NAME)) {
-        drsMetadata.getFileName().ifPresent(eventualResponse::setFileName);
-      }
-      if (f.equals(Fields.LOCALIZATION_PATH)) {
-        drsMetadata.getLocalizationPath().ifPresent(eventualResponse::setLocalizationPath);
-      }
-      if (f.equals(Fields.ACCESS_URL)) {
-        drsMetadata.getAccessUrl().ifPresent(eventualResponse::setAccessUrl);
-      }
-      if (f.equals(Fields.GOOGLE_SERVICE_ACCOUNT)) {
-        drsMetadata.getBondSaKey().ifPresent(eventualResponse::setGoogleServiceAccount);
-      }
-
-      drsMetadata
-          .getDrsResponse()
-          .ifPresent(
-              r -> {
-                if (f.equals(Fields.TIME_CREATED)) {
-                  eventualResponse.setTimeCreated(r.getCreatedTime());
-                }
-                if (f.equals(Fields.TIME_UPDATED)) {
-                  eventualResponse.setTimeUpdated(r.getUpdatedTime());
-                }
-                if (f.equals(Fields.HASHES)) {
-                  eventualResponse.setHashes(getHashesMap(r.getChecksums()));
-                }
-                if (f.equals(Fields.SIZE)) {
-                  eventualResponse.setSize(r.getSize());
-                }
-                if (f.equals(Fields.CONTENT_TYPE)) {
-                  eventualResponse.setContentType(r.getMimeType());
-                }
-
-                var gsUrl = getGcsAccessURL(r).map(AccessURL::getUrl);
-                if (f.equals(Fields.GS_URI)) {
-                  gsUrl.ifPresent(eventualResponse::setGsUri);
-                }
-
-                var gsFileInfo = gsUrl.map(gsUriParseRegex::matcher);
-                if (gsFileInfo.map(Matcher::matches).orElse(false)) {
-                  if (f.equals(Fields.BUCKET)) {
-                    gsFileInfo.map(i -> i.group("bucket")).ifPresent(eventualResponse::setBucket);
-                  }
-                  if (f.equals(Fields.NAME)) {
-                    gsFileInfo.map(i -> i.group("name")).ifPresent(eventualResponse::setName);
-                  }
-                }
-              });
-    }
-
-    return eventualResponse;
-  }
-
-  private Map<String, String> getHashesMap(List<Checksum> checksums) {
-    return checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
-  }
-
-  private Optional<AccessURL> getGcsAccessURL(DrsObject drsObject) {
-    return drsObject.getAccessMethods().stream()
-        .filter(m -> m.getType() == AccessMethod.TypeEnum.GS)
-        .findFirst()
-        .map(AccessMethod::getAccessUrl);
+    return AnnotatedResourceMetadata.builder()
+        .requestedFields(requestedFields)
+        .drsMetadata(drsMetadata)
+        .drsProvider(drsProvider)
+        .build();
   }
 }
