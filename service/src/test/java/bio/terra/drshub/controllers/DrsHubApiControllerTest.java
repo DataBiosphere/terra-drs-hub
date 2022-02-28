@@ -27,6 +27,7 @@ import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -156,12 +157,15 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
     var cid = cidList.get(new Random().nextInt(cidList.size()));
     var host = config.getCompactIdHosts().get(cid);
+    var formatter = DateTimeFormatter.ISO_INSTANT;
+    var updatedTime = new Date();
+
     var drsObject =
         new DrsObject()
             .id(UUID.randomUUID().toString())
             .size(new Random().nextLong())
             .checksums(List.of(new Checksum().type("md5").checksum("checksum")))
-            .updatedTime(new Date())
+            .updatedTime(updatedTime)
             .name("filename")
             .accessMethods(
                 List.of(
@@ -174,13 +178,11 @@ public class DrsHubApiControllerTest extends BaseTest {
     List<String> requestedFields =
         List.of(Fields.GS_URI, Fields.SIZE, Fields.HASHES, Fields.TIME_UPDATED, Fields.FILE_NAME);
 
+    Map<String, Object> drsObjectMap = drsObjectToMap(drsObject, requestedFields);
+    drsObjectMap.put(Fields.TIME_UPDATED, formatter.format(updatedTime.toInstant()));
     postDrsHubRequest(TEST_ACCESS_TOKEN, cid, drsObject.getId(), requestedFields)
         .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(drsObjectToMap(drsObject, requestedFields)),
-                    true));
+        .andExpect(content().json(objectMapper.writeValueAsString(drsObjectMap), true));
 
     verify(bondApiFactory, times(0)).getApi(any());
   }
@@ -221,7 +223,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                     objectMapper.writeValueAsString(
                         Map.of(
                             Fields.GOOGLE_SERVICE_ACCOUNT,
-                            new ObjectMapper().writeValueAsString(bondSaKey)))));
+                            content().json(new ObjectMapper().writeValueAsString(bondSaKey))))));
   }
 
   @Test // 8b
@@ -488,11 +490,13 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testReturnsNullForFieldsMissingInDrsResponse() throws Exception {
     var compactIdAndHost = getProviderHosts("kidsFirst");
 
-    var drsObject = drsObjectWithRandomId("gs").createdTime(new Date(123));
+    var formatter = DateTimeFormatter.ISO_INSTANT;
+    var createdTime = new Date(123);
+    var drsObject = drsObjectWithRandomId("gs").createdTime(createdTime);
     List<String> requestedFields = List.of(Fields.TIME_CREATED, Fields.LOCALIZATION_PATH);
 
     var expectedMap = new HashMap<String, Object>();
-    expectedMap.put(Fields.TIME_CREATED, new Date(123));
+    expectedMap.put(Fields.TIME_CREATED, formatter.format(createdTime.toInstant()));
     expectedMap.put(Fields.LOCALIZATION_PATH, null);
 
     mockDrsApi(compactIdAndHost.dnsHost, drsObject);
