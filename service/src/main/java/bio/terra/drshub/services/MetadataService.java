@@ -183,7 +183,6 @@ public class MetadataService {
     }
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
-    // TODO: make this optional instead of icky null
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
@@ -219,7 +218,7 @@ public class MetadataService {
         var accessToken =
             getFenceAccessToken(
                 drsUri,
-                accessMethod,
+                accessMethodType,
                 false,
                 drsProvider,
                 requestedFields,
@@ -228,22 +227,19 @@ public class MetadataService {
 
         if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessField)) {
           var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+          var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
 
           log.info("Requesting URL for {}", uriComponents.toUriString());
 
           AccessURL accessUrl =
               getAccessUrl(
-                  providerAccessMethod.getAuth(),
-                  uriComponents,
-                  accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
-                  accessToken,
-                  passports);
+                  providerAccessMethod.getAuth(), uriComponents, accessId, accessToken, passports);
 
           if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
             var fallbackToken =
                 getFenceAccessToken(
                     drsUri,
-                    accessMethod,
+                    accessMethodType,
                     true,
                     drsProvider,
                     requestedFields,
@@ -254,7 +250,7 @@ public class MetadataService {
                 getAccessUrl(
                     providerAccessMethod.getFallbackAuth().get(),
                     uriComponents,
-                    accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
+                    accessId,
                     fallbackToken,
                     passports);
           }
@@ -315,7 +311,6 @@ public class MetadataService {
 
   private String getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
     if (drsProvider.useAliasesForLocalizationPath()
-        && drsResponse != null
         && drsResponse.getAliases() != null
         && !drsResponse.getAliases().isEmpty()) {
       return drsResponse.getAliases().get(0);
@@ -325,22 +320,17 @@ public class MetadataService {
 
   private Optional<String> getFenceAccessToken(
       String drsUri,
-      Optional<AccessMethod> accessMethod,
+      AccessMethod.TypeEnum accessMethodType,
       boolean useFallbackAuth,
       DrsProvider drsProvider,
       List<String> requestedFields,
       boolean forceAccessUrl,
       String bearerToken) {
     if (drsProvider.shouldFetchFenceAccessToken(
-        accessMethod.map(AccessMethod::getType).orElse(null),
-        requestedFields,
-        useFallbackAuth,
-        forceAccessUrl)) {
+        accessMethodType, requestedFields, useFallbackAuth, forceAccessUrl)) {
 
       log.info(
-          "Requesting BondComponent access token for '{}' from '{}'",
-          drsUri,
-          drsProvider.getBondProvider());
+          "Requesting Bond access token for '{}' from '{}'", drsUri, drsProvider.getBondProvider());
 
       var bondApi = bondApiFactory.getApi(bearerToken);
 
@@ -389,7 +379,7 @@ public class MetadataService {
         } else {
           throw new BadRequestException(
               String.format(
-                  "Fence access token required for %s but is missing. Does user have an account linked in BondComponent?",
+                  "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
                   uriComponents.toUriString()));
         }
       default:
