@@ -20,7 +20,7 @@ drshub:
       metadataAuth: false
       bondProvider: anvil
       accessMethodConfigs:
-        - type: gcs
+        - type: gs
           auth: fence_token
           fetchAccessUrl: false
     bioDataCatalyst:
@@ -29,7 +29,7 @@ drshub:
       metadataAuth: false
       bondProvider: fence
       accessMethodConfigs:
-        - type: gcs
+        - type: gs
           auth: fence_token
           fetchAccessUrl: false
     crdc:
@@ -38,7 +38,7 @@ drshub:
       metadataAuth: false
       bondProvider: dcf_fence
       accessMethodConfigs:
-        - type: gcs
+        - type: gs
           auth: fence_token
           fetchAccessUrl: false
         - type: s3
@@ -59,7 +59,7 @@ drshub:
       metadataAuth: false
       bondProvider: dcf_fence
       accessMethodConfigs:
-        - type: gcs
+        - type: gs
           auth: passport
           fetchAccessUrl: true
           fallbackAuth: fence_token
@@ -72,7 +72,7 @@ drshub:
       hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
       metadataAuth: true
       accessMethodConfigs:
-        - type: gcs
+        - type: gs
           auth: current_request
           fetchAccessUrl: false
         - type: https
@@ -92,10 +92,7 @@ spring:
 
   config.import: classpath:rendered/version.properties
 
-  jackson:
-    # don't include null json fields in api responses
-    default-property-inclusion: NON_NULL
-    serialization.indent_output: true
+  jackson.serialization.indent_output: true
 
   main.banner-mode: off
 

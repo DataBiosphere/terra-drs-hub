@@ -48,10 +48,10 @@ public interface DrsProviderInterface {
   }
 
   /**
-   * Should Drshub call BondComponent to retrieve a Fence access token to use when later calling the
-   * `access` endpoint to retrieve a signed URL. Should return `true` for Gen3 signed URL flows and
-   * `false` otherwise, including TDR signed URL flows (TDR uses the same auth supplied to the
-   * current Drshub request for calling `access`).
+   * Should Drshub call Bond to retrieve a Fence access token to use when later calling the `access`
+   * endpoint to retrieve a signed URL. Should return `true` for Gen3 signed URL flows and `false`
+   * otherwise, including TDR signed URL flows (TDR uses the same auth supplied to the current
+   * Drshub request for calling `access`).
    *
    * @param useFallbackAuth if false (default) check accessUrlAuth in accessMethods, otherwise check
    *     fallbackAccessUrlAuth
@@ -97,18 +97,18 @@ public interface DrsProviderInterface {
   }
 
   /**
-   * Should Drshub fetch the Google user service account from BondComponent. Because this account is
+   * Should Drshub fetch the Google user service account from Bond. Because this account is
    * Google-specific it should not be fetched if we know the underlying data is not GCS-based.
    */
   default boolean shouldFetchUserServiceAccount(
       AccessMethod.TypeEnum accessMethodType, List<String> requestedFields) {
-    // This account would be stored in BondComponent so no BondComponent means no account.
+    // This account would be stored in Bond so no Bond means no account.
     return getBondProvider().isPresent()
         // "Not definitely not GCS". A falsy accessMethod is okay because there may not have been a
         // preceding metadata request to determine the accessMethod.
         && (accessMethodType == null
-            || AccessMethodConfigTypeEnum.gcs.getReturnedEquivalent() == accessMethodType)
-        && getAccessMethodConfigTypes().contains(AccessMethodConfigTypeEnum.gcs)
+            || AccessMethodConfigTypeEnum.gs.getReturnedEquivalent() == accessMethodType)
+        && getAccessMethodConfigTypes().contains(AccessMethodConfigTypeEnum.gs)
         && Fields.overlap(requestedFields, Fields.BOND_SA_FIELDS);
   }
 
@@ -136,6 +136,6 @@ public interface DrsProviderInterface {
    */
   static boolean shouldFailOnAccessUrlFail(AccessMethod.TypeEnum accessMethodType) {
     // TODO: get rid of this
-    return AccessMethodConfigTypeEnum.gcs.getReturnedEquivalent() != accessMethodType;
+    return AccessMethodConfigTypeEnum.gs.getReturnedEquivalent() != accessMethodType;
   }
 }

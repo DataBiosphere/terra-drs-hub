@@ -1,21 +1,27 @@
 package bio.terra.drshub.models;
 
+import bio.terra.bond.model.SaKeyObject;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.DrsObject;
-import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface DrsMetadata extends WithDrsMetadata {
-  Optional<DrsObject> getDrsResponse();
+public interface DrsMetadata {
+  @Nullable
+  DrsObject getDrsResponse();
 
-  Optional<String> getFileName();
+  @Nullable
+  String getFileName();
 
-  Optional<String> getLocalizationPath();
+  @Nullable
+  String getLocalizationPath();
 
-  Optional<AccessURL> getAccessUrl();
+  @Nullable
+  AccessURL getAccessUrl();
 
-  Optional<String> getBondSaKey();
+  @Nullable
+  SaKeyObject getBondSaKey();
 
   class Builder extends ImmutableDrsMetadata.Builder {}
 }

@@ -5,15 +5,12 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
-import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
-import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -21,9 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -67,13 +62,10 @@ public class MetadataService {
    * <p>If you update *any* of the below be sure to link to the supporting docs and update the
    * comments above!
    */
-  private static final Pattern compactIdRegex =
+  private static final Pattern drsRegex =
       Pattern.compile(
-          "(?:dos|drs)://(?<host>dg\\.[0-9a-z-]+)[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
+          "(?:dos|drs)://(?:(?<cidHost>dg\\.[0-9a-z-]+)|(?<fullHost>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
           Pattern.CASE_INSENSITIVE);
-
-  private static final Pattern gsUriParseRegex =
-      Pattern.compile("gs://(?<bucket>[^/]+)/(?<name>.+)", Pattern.CASE_INSENSITIVE);
 
   private final DrsHubConfig drsHubConfig;
   private final BondApiFactory bondApiFactory;
@@ -91,7 +83,7 @@ public class MetadataService {
     this.drsApiFactory = drsApiFactory;
   }
 
-  public ResourceMetadata fetchResourceMetadata(
+  public AnnotatedResourceMetadata fetchResourceMetadata(
       String drsUri, List<String> rawRequestedFields, String accessToken, Boolean forceAccessUrl) {
 
     var requestedFields =
@@ -117,29 +109,25 @@ public class MetadataService {
 
   private UriComponents getUriComponents(String drsUri) {
 
-    var compactIdMatch = compactIdRegex.matcher(drsUri);
+    var drsRegexMatch = drsRegex.matcher(drsUri);
 
-    if (compactIdMatch.matches()) {
-      var cid = compactIdMatch.group("host");
-      if (!drsHubConfig.getCompactIdHosts().containsKey(cid)) {
+    if (drsRegexMatch.matches()) {
+      var cid = drsRegexMatch.group("cidHost");
+      if (cid != null && !drsHubConfig.getCompactIdHosts().containsKey(cid)) {
         throw new BadRequestException(
             String.format("Could not find matching host for compact id [%s].", cid));
       }
 
-      var cidHost = drsHubConfig.getCompactIdHosts().get(cid);
+      var dnsHost =
+          cid == null ? drsRegexMatch.group("fullHost") : drsHubConfig.getCompactIdHosts().get(cid);
 
       return UriComponentsBuilder.newInstance()
-          .host(cidHost)
-          .path(URLEncoder.encode(compactIdMatch.group("suffix"), StandardCharsets.UTF_8))
-          .query(compactIdMatch.group("query"))
+          .host(dnsHost)
+          .path(URLEncoder.encode(drsRegexMatch.group("suffix"), StandardCharsets.UTF_8))
+          .query(drsRegexMatch.group("query"))
           .build();
     } else {
-      var parsedUri = UriComponentsBuilder.fromUriString(drsUri).build();
-      if (parsedUri.getHost() == null || parsedUri.getPath() == null) {
-        throw new BadRequestException(
-            String.format("[%s] is missing a host and/or a path.", drsUri));
-      }
-      return parsedUri;
+      throw new BadRequestException(String.format("[%s] is not a valid DOS/DRS URI.", drsUri));
     }
   }
 
@@ -173,6 +161,8 @@ public class MetadataService {
       String bearerToken,
       boolean forceAccessField) {
     DrsObject drsResponse = null;
+    var drsMetadataBuilder = new DrsMetadata.Builder();
+
     if (Fields.shouldRequestMetadata(requestedFields)) {
 
       var objectId = getObjectId(uriComponents);
@@ -189,111 +179,94 @@ public class MetadataService {
       }
 
       drsResponse = drsApi.getObject(objectId, null);
+      drsMetadataBuilder.drsResponse(drsResponse);
     }
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
-    // TODO: make this optional instead of icky null
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
-    String bondSaKey = null;
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var bondApi = bondApiFactory.getApi(bearerToken);
-
-      // TODO: are we getting the key in a usable format?
-      try {
-        bondSaKey =
-            new ObjectMapper()
-                .writeValueAsString(
-                    bondApi
-                        .getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString())
-                        .getData());
-      } catch (JsonProcessingException e) {
-        throw new DrsHubException("Unable to parse SA key response from Bond", e);
-      }
+      drsMetadataBuilder.bondSaKey(
+          bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString()));
     }
 
-    Optional<AccessURL> accessUrl = Optional.empty();
-    List<String> passports = null;
-    // TODO: is this an else-if?
-    if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
+    if (drsResponse != null) {
+      drsMetadataBuilder.fileName(getDrsFileName(drsResponse));
+      drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
 
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+      List<String> passports = null;
+      // TODO: is this an else-if?
+      if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
 
-      try {
-        // For now, we are only getting a RAS passport. In the future it may also fetch from other
-        // providers.
-        passports = List.of(ecmApi.getProviderPassport("ras"));
-      } catch (HttpStatusCodeException e) {
-        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-          log.info("User does not have a passport.");
-        } else {
-          throw e;
+        var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+
+        try {
+          // For now, we are only getting a RAS passport. In the future it may also fetch from other
+          // providers.
+          passports = List.of(ecmApi.getProviderPassport("ras"));
+        } catch (HttpStatusCodeException e) {
+          if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+            log.info("User does not have a passport.");
+          } else {
+            throw e;
+          }
         }
       }
-    }
 
-    var fileName = getDrsFileName(drsResponse);
-    var localizationPath = getLocalizationPath(drsProvider, drsResponse);
+      try {
+        var accessToken =
+            getFenceAccessToken(
+                drsUri,
+                accessMethodType,
+                false,
+                drsProvider,
+                requestedFields,
+                forceAccessField,
+                bearerToken);
 
-    try {
-      var accessToken =
-          getFenceAccessToken(
-              drsUri,
-              accessMethod,
-              false,
-              drsProvider,
-              requestedFields,
-              forceAccessField,
-              bearerToken);
+        if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessField)) {
+          var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+          var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
 
-      if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessField)) {
-        var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+          log.info("Requesting URL for {}", uriComponents.toUriString());
 
-        log.info("Requesting URL for {}", uriComponents.toUriString());
-
-        accessUrl =
-            getAccessUrl(
-                providerAccessMethod.getAuth(),
-                uriComponents,
-                accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
-                accessToken,
-                passports);
-
-        if (accessUrl.isEmpty() && providerAccessMethod.getFallbackAuth().isPresent()) {
-          var fallbackToken =
-              getFenceAccessToken(
-                  drsUri,
-                  accessMethod,
-                  true,
-                  drsProvider,
-                  requestedFields,
-                  forceAccessField,
-                  bearerToken);
-
-          accessUrl =
+          AccessURL accessUrl =
               getAccessUrl(
-                  providerAccessMethod.getFallbackAuth().get(),
-                  uriComponents,
-                  accessMethod.map(AccessMethod::getAccessId).orElseThrow(),
-                  fallbackToken,
-                  passports);
+                  providerAccessMethod.getAuth(), uriComponents, accessId, accessToken, passports);
+
+          if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+            var fallbackToken =
+                getFenceAccessToken(
+                    drsUri,
+                    accessMethodType,
+                    true,
+                    drsProvider,
+                    requestedFields,
+                    forceAccessField,
+                    bearerToken);
+
+            accessUrl =
+                getAccessUrl(
+                    providerAccessMethod.getFallbackAuth().get(),
+                    uriComponents,
+                    accessId,
+                    fallbackToken,
+                    passports);
+          }
+
+          drsMetadataBuilder.accessUrl(accessUrl);
         }
-      }
-    } catch (RuntimeException e) {
-      if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
-        throw e;
-      } else {
-        log.warn("Ignoring error from fetching signed URL", e);
+      } catch (RuntimeException e) {
+        if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
+          throw e;
+        } else {
+          log.warn("Ignoring error from fetching signed URL", e);
+        }
       }
     }
 
-    return new DrsMetadata.Builder()
-        .drsResponse(Optional.ofNullable(drsResponse))
-        .fileName(fileName)
-        .localizationPath(localizationPath)
-        .accessUrl(accessUrl)
-        .bondSaKey(Optional.ofNullable(bondSaKey))
-        .build();
+    return drsMetadataBuilder.build();
   }
 
   private String getObjectId(UriComponents uriComponents) {
@@ -321,54 +294,43 @@ public class MetadataService {
    *
    * <p>It is possible the name may need to be retrieved from the signed url.
    */
-  private Optional<String> getDrsFileName(DrsObject drsResponse) {
-    if (drsResponse == null) {
-      return Optional.empty();
-    }
+  private String getDrsFileName(DrsObject drsResponse) {
 
-    if (drsResponse.getName() != null) {
-      return Optional.of(drsResponse.getName());
+    if (drsResponse.getName() != null && !drsResponse.getName().isBlank()) {
+      return drsResponse.getName();
     }
 
     var accessURL = drsResponse.getAccessMethods().get(0).getAccessUrl();
 
     if (accessURL != null) {
       var path = URI.create(accessURL.getUrl()).getPath();
-      return Optional.ofNullable(path).map(s -> s.replaceAll("^.*[\\\\/]", ""));
+      return path == null ? path : path.replaceAll("^.*[\\\\/]", "");
     }
-
-    return Optional.empty();
+    return null;
   }
 
-  private Optional<String> getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
+  private String getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
     if (drsProvider.useAliasesForLocalizationPath()
-        && drsResponse != null
         && drsResponse.getAliases() != null
         && !drsResponse.getAliases().isEmpty()) {
-      return Optional.of(drsResponse.getAliases().get(0));
+      return drsResponse.getAliases().get(0);
     }
-
-    return Optional.empty();
+    return null;
   }
 
   private Optional<String> getFenceAccessToken(
       String drsUri,
-      Optional<AccessMethod> accessMethod,
+      AccessMethod.TypeEnum accessMethodType,
       boolean useFallbackAuth,
       DrsProvider drsProvider,
       List<String> requestedFields,
       boolean forceAccessUrl,
       String bearerToken) {
     if (drsProvider.shouldFetchFenceAccessToken(
-        accessMethod.map(AccessMethod::getType).orElse(null),
-        requestedFields,
-        useFallbackAuth,
-        forceAccessUrl)) {
+        accessMethodType, requestedFields, useFallbackAuth, forceAccessUrl)) {
 
       log.info(
-          "Requesting BondComponent access token for '{}' from '{}'",
-          drsUri,
-          drsProvider.getBondProvider());
+          "Requesting Bond access token for '{}' from '{}'", drsUri, drsProvider.getBondProvider());
 
       var bondApi = bondApiFactory.getApi(bearerToken);
 
@@ -381,7 +343,7 @@ public class MetadataService {
     }
   }
 
-  private Optional<AccessURL> getAccessUrl(
+  private AccessURL getAccessUrl(
       AccessUrlAuthEnum accessUrlAuth,
       UriComponents uriComponents,
       String accessId,
@@ -396,8 +358,7 @@ public class MetadataService {
       case passport:
         if (passports != null && !passports.isEmpty()) {
           try {
-            return Optional.ofNullable(
-                drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId));
+            return drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId);
           } catch (RestClientException e) {
             log.error(
                 "Passport authorized request failed for {} with error {}",
@@ -407,18 +368,18 @@ public class MetadataService {
         }
         // if we made it this far, there are no passports or there was an error using them so return
         // nothing.
-        return Optional.empty();
+        return null;
       case current_request:
         accessToken.ifPresent(drsApi::setBearerToken);
-        return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
+        return drsApi.getAccessURL(objectId, accessId);
       case fence_token:
         if (accessToken.isPresent()) {
           drsApi.setBearerToken(accessToken.get());
-          return Optional.ofNullable(drsApi.getAccessURL(objectId, accessId));
+          return drsApi.getAccessURL(objectId, accessId);
         } else {
           throw new BadRequestException(
               String.format(
-                  "Fence access token required for %s but is missing. Does user have an account linked in BondComponent?",
+                  "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
                   uriComponents.toUriString()));
         }
       default:
@@ -426,79 +387,13 @@ public class MetadataService {
     }
   }
 
-  private ResourceMetadata buildResponseObject(
+  private AnnotatedResourceMetadata buildResponseObject(
       List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider) {
 
-    var eventualResponse = new ResourceMetadata();
-
-    for (var f : requestedFields) {
-      if (f.equals(Fields.BOND_PROVIDER)) {
-        drsProvider
-            .getBondProvider()
-            .ifPresent(p -> eventualResponse.setBondProvider(p.toString()));
-      }
-
-      if (f.equals(Fields.FILE_NAME)) {
-        drsMetadata.getFileName().ifPresent(eventualResponse::setFileName);
-      }
-      if (f.equals(Fields.LOCALIZATION_PATH)) {
-        drsMetadata.getLocalizationPath().ifPresent(eventualResponse::setLocalizationPath);
-      }
-      if (f.equals(Fields.ACCESS_URL)) {
-        drsMetadata.getAccessUrl().ifPresent(eventualResponse::setAccessUrl);
-      }
-      if (f.equals(Fields.GOOGLE_SERVICE_ACCOUNT)) {
-        drsMetadata.getBondSaKey().ifPresent(eventualResponse::setGoogleServiceAccount);
-      }
-
-      drsMetadata
-          .getDrsResponse()
-          .ifPresent(
-              r -> {
-                if (f.equals(Fields.TIME_CREATED)) {
-                  eventualResponse.setTimeCreated(r.getCreatedTime());
-                }
-                if (f.equals(Fields.TIME_UPDATED)) {
-                  eventualResponse.setTimeUpdated(r.getUpdatedTime());
-                }
-                if (f.equals(Fields.HASHES)) {
-                  eventualResponse.setHashes(getHashesMap(r.getChecksums()));
-                }
-                if (f.equals(Fields.SIZE)) {
-                  eventualResponse.setSize(r.getSize());
-                }
-                if (f.equals(Fields.CONTENT_TYPE)) {
-                  eventualResponse.setContentType(r.getMimeType());
-                }
-
-                var gsUrl = getGcsAccessURL(r).map(AccessURL::getUrl);
-                if (f.equals(Fields.GS_URI)) {
-                  gsUrl.ifPresent(eventualResponse::setGsUri);
-                }
-
-                var gsFileInfo = gsUrl.map(gsUriParseRegex::matcher);
-                if (gsFileInfo.map(Matcher::matches).orElse(false)) {
-                  if (f.equals(Fields.BUCKET)) {
-                    gsFileInfo.map(i -> i.group("bucket")).ifPresent(eventualResponse::setBucket);
-                  }
-                  if (f.equals(Fields.NAME)) {
-                    gsFileInfo.map(i -> i.group("name")).ifPresent(eventualResponse::setName);
-                  }
-                }
-              });
-    }
-
-    return eventualResponse;
-  }
-
-  private Map<String, String> getHashesMap(List<Checksum> checksums) {
-    return checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
-  }
-
-  private Optional<AccessURL> getGcsAccessURL(DrsObject drsObject) {
-    return drsObject.getAccessMethods().stream()
-        .filter(m -> m.getType() == AccessMethod.TypeEnum.GS)
-        .findFirst()
-        .map(AccessMethod::getAccessUrl);
+    return AnnotatedResourceMetadata.builder()
+        .requestedFields(requestedFields)
+        .drsMetadata(drsMetadata)
+        .drsProvider(drsProvider)
+        .build();
   }
 }
