@@ -1,5 +1,7 @@
 package bio.terra.drshub.services;
 
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
+
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
@@ -10,6 +12,7 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
+import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
@@ -86,10 +89,7 @@ public class MetadataService {
   public AnnotatedResourceMetadata fetchResourceMetadata(
       String drsUri, List<String> rawRequestedFields, String accessToken, Boolean forceAccessUrl) {
 
-    var requestedFields =
-        (rawRequestedFields == null || rawRequestedFields.isEmpty())
-            ? Fields.DEFAULT_FIELDS
-            : rawRequestedFields;
+    var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
     var uriComponents = getUriComponents(drsUri);
     var provider = determineDrsProvider(uriComponents);
@@ -159,7 +159,7 @@ public class MetadataService {
       UriComponents uriComponents,
       String drsUri,
       String bearerToken,
-      boolean forceAccessField) {
+      boolean forceAccessUrl) {
     DrsObject drsResponse = null;
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
@@ -195,168 +195,115 @@ public class MetadataService {
       drsMetadataBuilder.fileName(getDrsFileName(drsResponse));
       drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
 
-      List<String> passports = null;
-      // TODO: is this an else-if?
-      if (drsProvider.shouldFetchPassports(accessMethodType, requestedFields)) {
+      if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
+        var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
 
-        var ecmApi = externalCredsApiFactory.getApi(bearerToken);
-
-        try {
-          // For now, we are only getting a RAS passport. In the future it may also fetch from other
-          // providers.
-          passports = List.of(ecmApi.getProviderPassport("ras"));
-        } catch (HttpStatusCodeException e) {
-          if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-            log.info("User does not have a passport.");
-          } else {
-            throw e;
-          }
-        }
-      }
-
-      try {
-        var accessToken =
-            getFenceAccessToken(
-                drsUri,
-                accessMethodType,
-                false,
+        drsMetadataBuilder.accessUrl(
+            getAccessUrl(
                 drsProvider,
-                requestedFields,
-                forceAccessField,
-                bearerToken);
-
-        if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessField)) {
-          var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
-          var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
-
-          log.info("Requesting URL for {}", uriComponents.toUriString());
-
-          AccessURL accessUrl =
-              getAccessUrl(
-                  providerAccessMethod.getAuth(), uriComponents, accessId, accessToken, passports);
-
-          if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
-            var fallbackToken =
-                getFenceAccessToken(
-                    drsUri,
-                    accessMethodType,
-                    true,
-                    drsProvider,
-                    requestedFields,
-                    forceAccessField,
-                    bearerToken);
-
-            accessUrl =
-                getAccessUrl(
-                    providerAccessMethod.getFallbackAuth().get(),
-                    uriComponents,
-                    accessId,
-                    fallbackToken,
-                    passports);
-          }
-
-          drsMetadataBuilder.accessUrl(accessUrl);
-        }
-      } catch (RuntimeException e) {
-        if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
-          throw e;
-        } else {
-          log.warn("Ignoring error from fetching signed URL", e);
-        }
+                uriComponents,
+                bearerToken,
+                forceAccessUrl,
+                accessMethodType,
+                accessId));
       }
     }
 
     return drsMetadataBuilder.build();
   }
 
-  private String getObjectId(UriComponents uriComponents) {
-    // TODO: is there a reason we need query params? it breaks getAccessUrl.
-    return uriComponents.getPath();
-  }
+  private AccessURL getAccessUrl(
+      DrsProvider drsProvider,
+      UriComponents uriComponents,
+      String bearerToken,
+      boolean forceAccessUrl,
+      TypeEnum accessMethodType,
+      String accessId) {
+    List<String> passports = null;
+    // TODO: is this an else-if?
+    if (drsProvider.shouldFetchPassports(accessMethodType)) {
+      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
 
-  private Optional<AccessMethod> getAccessMethod(DrsObject drsResponse, DrsProvider drsProvider) {
-    if (drsResponse != null && !drsResponse.getAccessMethods().isEmpty()) {
-      for (var methodConfig : drsProvider.getAccessMethodConfigs()) {
-        var matchingMethod =
-            drsResponse.getAccessMethods().stream()
-                .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType())
-                .findFirst();
-        if (matchingMethod.isPresent()) {
-          return matchingMethod;
+      try {
+        // For now, we are only getting a RAS passport. In the future it may also fetch from other
+        // providers.
+        passports = List.of(ecmApi.getProviderPassport("ras"));
+      } catch (HttpStatusCodeException e) {
+        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+          log.info("User does not have a passport.");
+        } else {
+          throw e;
         }
       }
     }
-    return Optional.empty();
-  }
 
-  /**
-   * Attempts to return the file name using only the drsResponse.
-   *
-   * <p>It is possible the name may need to be retrieved from the signed url.
-   */
-  private String getDrsFileName(DrsObject drsResponse) {
+    try {
+      var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
 
-    if (drsResponse.getName() != null && !drsResponse.getName().isBlank()) {
-      return drsResponse.getName();
-    }
+      log.info("Requesting URL for {}", uriComponents.toUriString());
 
-    var accessURL = drsResponse.getAccessMethods().get(0).getAccessUrl();
+      var accessUrl =
+          getAccessURL(
+              drsProvider,
+              uriComponents,
+              bearerToken,
+              forceAccessUrl,
+              accessMethodType,
+              accessId,
+              passports,
+              providerAccessMethod.getAuth(),
+              false);
 
-    if (accessURL != null) {
-      var path = URI.create(accessURL.getUrl()).getPath();
-      return path == null ? path : path.replaceAll("^.*[\\\\/]", "");
+      if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+        return getAccessURL(
+            drsProvider,
+            uriComponents,
+            bearerToken,
+            forceAccessUrl,
+            accessMethodType,
+            accessId,
+            passports,
+            providerAccessMethod.getFallbackAuth().get(),
+            true);
+      }
+
+      return accessUrl;
+    } catch (RuntimeException e) {
+      if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
+        throw e;
+      } else {
+        log.warn("Ignoring error from fetching signed URL", e);
+      }
     }
     return null;
   }
 
-  private String getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
-    if (drsProvider.useAliasesForLocalizationPath()
-        && drsResponse.getAliases() != null
-        && !drsResponse.getAliases().isEmpty()) {
-      return drsResponse.getAliases().get(0);
-    }
-    return null;
-  }
-
-  private Optional<String> getFenceAccessToken(
-      String drsUri,
-      AccessMethod.TypeEnum accessMethodType,
-      boolean useFallbackAuth,
+  private AccessURL getAccessURL(
       DrsProvider drsProvider,
-      List<String> requestedFields,
-      boolean forceAccessUrl,
-      String bearerToken) {
-    if (drsProvider.shouldFetchFenceAccessToken(
-        accessMethodType, requestedFields, useFallbackAuth, forceAccessUrl)) {
-
-      log.info(
-          "Requesting Bond access token for '{}' from '{}'", drsUri, drsProvider.getBondProvider());
-
-      var bondApi = bondApiFactory.getApi(bearerToken);
-
-      var response =
-          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().toString());
-
-      return Optional.ofNullable(response.getToken());
-    } else {
-      return Optional.empty();
-    }
-  }
-
-  private AccessURL getAccessUrl(
-      AccessUrlAuthEnum accessUrlAuth,
       UriComponents uriComponents,
+      String bearerToken,
+      boolean forceAccessUrl,
+      TypeEnum accessMethodType,
       String accessId,
-      Optional<String> accessToken,
-      List<String> passports)
-      throws RestClientException {
+      List<String> passports,
+      AccessUrlAuthEnum providerAccessMethodType,
+      boolean useFallbackAuth) {
+
+    var accessToken =
+        getFenceAccessToken(
+            uriComponents.toUriString(),
+            accessMethodType,
+            useFallbackAuth,
+            drsProvider,
+            forceAccessUrl,
+            bearerToken);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
     var objectId = getObjectId(uriComponents);
 
-    switch (accessUrlAuth) {
+    switch (providerAccessMethodType) {
       case passport:
-        if (passports != null && !passports.isEmpty()) {
+        if (!isEmpty(passports)) {
           try {
             return drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId);
           } catch (RestClientException e) {
@@ -384,6 +331,79 @@ public class MetadataService {
         }
       default:
         throw new DrsHubException("This should be impossible, unknown auth type");
+    }
+  }
+
+  private String getObjectId(UriComponents uriComponents) {
+    // TODO: is there a reason we need query params? it breaks getAccessUrl.
+    return uriComponents.getPath();
+  }
+
+  private Optional<AccessMethod> getAccessMethod(DrsObject drsResponse, DrsProvider drsProvider) {
+    if (!isEmpty(drsResponse)) {
+      for (var methodConfig : drsProvider.getAccessMethodConfigs()) {
+        var matchingMethod =
+            drsResponse.getAccessMethods().stream()
+                .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType())
+                .findFirst();
+        if (matchingMethod.isPresent()) {
+          return matchingMethod;
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Attempts to return the file name using only the drsResponse.
+   *
+   * <p>It is possible the name may need to be retrieved from the signed url.
+   */
+  private String getDrsFileName(DrsObject drsResponse) {
+
+    if (!isEmpty(drsResponse.getName())) {
+      return drsResponse.getName();
+    }
+
+    var accessURL = drsResponse.getAccessMethods().get(0).getAccessUrl();
+
+    if (accessURL != null) {
+      var path = URI.create(accessURL.getUrl()).getPath();
+      return path == null ? null : path.replaceAll("^.*[\\\\/]", "");
+    }
+    return null;
+  }
+
+  private String getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {
+    if (drsProvider.useAliasesForLocalizationPath() && !isEmpty(drsResponse.getAliases())) {
+      return drsResponse.getAliases().get(0);
+    }
+    return null;
+  }
+
+  private Optional<String> getFenceAccessToken(
+      String drsUri,
+      AccessMethod.TypeEnum accessMethodType,
+      boolean useFallbackAuth,
+      DrsProvider drsProvider,
+      boolean forceAccessUrl,
+      String bearerToken) {
+    if (drsProvider.shouldFetchFenceAccessToken(
+        accessMethodType, useFallbackAuth, forceAccessUrl)) {
+
+      log.info(
+          "Requesting Bond access token for '{}' from '{}'",
+          drsUri,
+          drsProvider.getBondProvider().orElseThrow());
+
+      var bondApi = bondApiFactory.getApi(bearerToken);
+
+      var response =
+          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().toString());
+
+      return Optional.ofNullable(response.getToken());
+    } else {
+      return Optional.empty();
     }
   }
 
