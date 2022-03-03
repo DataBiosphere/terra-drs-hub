@@ -261,8 +261,8 @@ public class MetadataService {
       var ecmApi = externalCredsApiFactory.getApi(bearerToken);
 
       try {
-        // For now, we are only getting a RAS passport. In the future it may also fetch from
-        // other providers.
+        // For now, we are only getting a RAS passport. In the future it may also fetch from other
+        // providers.
         return List.of(ecmApi.getProviderPassport("ras"));
       } catch (HttpStatusCodeException e) {
         if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
