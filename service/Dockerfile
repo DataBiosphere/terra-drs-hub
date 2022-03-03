@@ -5,5 +5,5 @@ FROM us.gcr.io/broad-dsp-gcr-public/base/jre:11-debian
 
 # download and untar the cloud profiler
 RUN mkdir -p /opt/cprof && \
-  curl --no-progress-meter -q O https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent.tar.gz \
+  curl --no-progress-meter -q https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent.tar.gz \
   | tar xzv -C /opt/cprof
