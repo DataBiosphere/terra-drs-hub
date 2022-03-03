@@ -160,27 +160,12 @@ public class MetadataService {
       String drsUri,
       String bearerToken,
       boolean forceAccessUrl) {
-    DrsObject drsResponse = null;
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
-    if (Fields.shouldRequestMetadata(requestedFields)) {
-
-      var objectId = getObjectId(uriComponents);
-      var sendMetadataAuth = drsProvider.isMetadataAuth();
-      log.info(
-          "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
-          drsUri,
-          sendMetadataAuth,
-          uriComponents.getHost());
-
-      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
-      if (sendMetadataAuth) {
-        drsApi.setBearerToken(bearerToken);
-      }
-
-      drsResponse = drsApi.getObject(objectId, null);
-      drsMetadataBuilder.drsResponse(drsResponse);
-    }
+    var drsResponse =
+        maybeFetchDrsObject(
+            drsProvider.isMetadataAuth(), requestedFields, uriComponents, drsUri, bearerToken);
+    drsMetadataBuilder.drsResponse(drsResponse);
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
@@ -198,23 +183,7 @@ public class MetadataService {
       if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
         var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
 
-        List<String> passports = null;
-        // TODO: is this an else-if?
-        if (drsProvider.shouldFetchPassports(accessMethodType)) {
-          var ecmApi = externalCredsApiFactory.getApi(bearerToken);
-
-          try {
-            // For now, we are only getting a RAS passport. In the future it may also fetch from
-            // other providers.
-            passports = List.of(ecmApi.getProviderPassport("ras"));
-          } catch (HttpStatusCodeException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-              log.info("User does not have a passport.");
-            } else {
-              throw e;
-            }
-          }
-        }
+        var passports = maybeFetchPassports(drsProvider, bearerToken, accessMethodType);
 
         try {
           var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
@@ -234,7 +203,7 @@ public class MetadataService {
                   false);
 
           if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
-            accessUrl =
+            drsMetadataBuilder.accessUrl(
                 getAccessUrl(
                     drsProvider,
                     uriComponents,
@@ -244,9 +213,10 @@ public class MetadataService {
                     accessId,
                     passports,
                     providerAccessMethod.getFallbackAuth().get(),
-                    true);
+                    true));
+          } else {
+            drsMetadataBuilder.accessUrl(accessUrl);
           }
-          drsMetadataBuilder.accessUrl(accessUrl);
         } catch (RuntimeException e) {
           if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
             throw e;
@@ -258,6 +228,51 @@ public class MetadataService {
     }
 
     return drsMetadataBuilder.build();
+  }
+
+  private DrsObject maybeFetchDrsObject(
+      boolean sendMetadataAuth,
+      List<String> requestedFields,
+      UriComponents uriComponents,
+      String drsUri,
+      String bearerToken) {
+    if (Fields.shouldRequestMetadata(requestedFields)) {
+
+      var objectId = getObjectId(uriComponents);
+      log.info(
+          "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
+          drsUri,
+          sendMetadataAuth,
+          uriComponents.getHost());
+
+      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
+      if (sendMetadataAuth) {
+        drsApi.setBearerToken(bearerToken);
+      }
+
+      return drsApi.getObject(objectId, null);
+    }
+    return null;
+  }
+
+  private List<String> maybeFetchPassports(
+      DrsProvider drsProvider, String bearerToken, TypeEnum accessMethodType) {
+    if (drsProvider.shouldFetchPassports(accessMethodType)) {
+      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+
+      try {
+        // For now, we are only getting a RAS passport. In the future it may also fetch from
+        // other providers.
+        return List.of(ecmApi.getProviderPassport("ras"));
+      } catch (HttpStatusCodeException e) {
+        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+          log.info("User does not have a passport.");
+        } else {
+          throw e;
+        }
+      }
+    }
+    return null;
   }
 
   private AccessURL getAccessUrl(
