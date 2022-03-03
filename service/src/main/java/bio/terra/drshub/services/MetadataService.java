@@ -198,14 +198,62 @@ public class MetadataService {
       if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
         var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
 
-        drsMetadataBuilder.accessUrl(
-            getAccessUrl(
-                drsProvider,
-                uriComponents,
-                bearerToken,
-                forceAccessUrl,
-                accessMethodType,
-                accessId));
+        List<String> passports = null;
+        // TODO: is this an else-if?
+        if (drsProvider.shouldFetchPassports(accessMethodType)) {
+          var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+
+          try {
+            // For now, we are only getting a RAS passport. In the future it may also fetch from
+            // other providers.
+            passports = List.of(ecmApi.getProviderPassport("ras"));
+          } catch (HttpStatusCodeException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+              log.info("User does not have a passport.");
+            } else {
+              throw e;
+            }
+          }
+        }
+
+        try {
+          var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+
+          log.info("Requesting URL for {}", uriComponents.toUriString());
+
+          var accessUrl =
+              getAccessUrl(
+                  drsProvider,
+                  uriComponents,
+                  bearerToken,
+                  forceAccessUrl,
+                  accessMethodType,
+                  accessId,
+                  passports,
+                  providerAccessMethod.getAuth(),
+                  false);
+
+          if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+            accessUrl =
+                getAccessUrl(
+                    drsProvider,
+                    uriComponents,
+                    bearerToken,
+                    forceAccessUrl,
+                    accessMethodType,
+                    accessId,
+                    passports,
+                    providerAccessMethod.getFallbackAuth().get(),
+                    true);
+          }
+          drsMetadataBuilder.accessUrl(accessUrl);
+        } catch (RuntimeException e) {
+          if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
+            throw e;
+          } else {
+            log.warn("Ignoring error from fetching signed URL", e);
+          }
+        }
       }
     }
 
@@ -213,72 +261,6 @@ public class MetadataService {
   }
 
   private AccessURL getAccessUrl(
-      DrsProvider drsProvider,
-      UriComponents uriComponents,
-      String bearerToken,
-      boolean forceAccessUrl,
-      TypeEnum accessMethodType,
-      String accessId) {
-    List<String> passports = null;
-    // TODO: is this an else-if?
-    if (drsProvider.shouldFetchPassports(accessMethodType)) {
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
-
-      try {
-        // For now, we are only getting a RAS passport. In the future it may also fetch from other
-        // providers.
-        passports = List.of(ecmApi.getProviderPassport("ras"));
-      } catch (HttpStatusCodeException e) {
-        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-          log.info("User does not have a passport.");
-        } else {
-          throw e;
-        }
-      }
-    }
-
-    try {
-      var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
-
-      log.info("Requesting URL for {}", uriComponents.toUriString());
-
-      var accessUrl =
-          getAccessURL(
-              drsProvider,
-              uriComponents,
-              bearerToken,
-              forceAccessUrl,
-              accessMethodType,
-              accessId,
-              passports,
-              providerAccessMethod.getAuth(),
-              false);
-
-      if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
-        return getAccessURL(
-            drsProvider,
-            uriComponents,
-            bearerToken,
-            forceAccessUrl,
-            accessMethodType,
-            accessId,
-            passports,
-            providerAccessMethod.getFallbackAuth().get(),
-            true);
-      }
-
-      return accessUrl;
-    } catch (RuntimeException e) {
-      if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
-        throw e;
-      } else {
-        log.warn("Ignoring error from fetching signed URL", e);
-      }
-    }
-    return null;
-  }
-
-  private AccessURL getAccessURL(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String bearerToken,
