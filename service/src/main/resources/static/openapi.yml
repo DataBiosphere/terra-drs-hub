@@ -21,6 +21,33 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/metadata:
+    get:
+      summary: Get metadata about a DRS uri
+      tags: [ drsHub ]
+      operationId: getMetadata
+      parameters:
+        - in: query
+          name: uri
+          description: The DRS uri to get info about
+          required: true
+          schema:
+            type: string
+            format: uri
+        - in: query
+          name: signedUrl
+          description: Wether to also try to fetch a signed URL for the resource
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          $ref: '#/components/responses/MetadataResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /status:
     get:
       summary: Check status of the service.
@@ -61,6 +88,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ResourceMetadata'
+
+    MetadataResponse:
+      description: Information about the requested file
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResolvedMetadata'
 
     # Error Responses
     BadRequest:
@@ -122,9 +156,44 @@ components:
         bondProvider:
           type: string
 
+    ResolvedMetadata:
+      type: object
+      required:
+      properties:
+        contentType:
+          type: string
+        size:
+          type: integer
+          format: int64
+        timeCreated:
+          type: string
+          format: date-time
+        timeUpdated:
+          type: string
+          format: date-time
+        bucket:
+          type: string
+        name:
+          type: string
+        gsUri:
+          type: string
+        fileName:
+          type: string
+        accessUrl:
+          type: object
+          description: Object with a url field and an optional array of headers
+        hashes:
+          type: object
+          description: Map of hash type (i.e. md5) to value
+        localizationPath:
+          type: string
+        bondProvider:
+          type: string
+
+
     RequestObject:
       type: object
-      required: [url]
+      required: [ url ]
       properties:
         url:
           type: string

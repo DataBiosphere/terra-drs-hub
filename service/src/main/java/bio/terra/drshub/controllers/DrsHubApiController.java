@@ -4,6 +4,7 @@ import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.exception.UnauthorizedException;
 import bio.terra.drshub.generated.api.DrsHubApi;
 import bio.terra.drshub.generated.model.RequestObject;
+import bio.terra.drshub.generated.model.ResolvedMetadata;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.MetadataService;
@@ -41,6 +42,23 @@ public class DrsHubApiController implements DrsHubApi {
     var resourceMetadata =
         metadataService.fetchResourceMetadata(
             body.getUrl(), body.getFields(), auth.substring(7), forceAccessUrl);
+
+    return ResponseEntity.ok(resourceMetadata);
+  }
+
+  @Override
+  public ResponseEntity<ResolvedMetadata> getMetadata(String uri, Boolean signedUrl) {
+    var auth = request.getHeader("authorization");
+
+    if (auth == null) {
+      throw new UnauthorizedException("Authorization header is missing.");
+    }
+    var userAgent = request.getHeader("user-agent");
+    var ip = request.getHeader("X-Forwarded-For");
+
+    log.info("Received URL '{}' from agent '{}' on IP '{}'", uri, userAgent, ip);
+
+    var resourceMetadata = metadataService.fetchResourceMetadata(uri, auth.substring(7), signedUrl);
 
     return ResponseEntity.ok(resourceMetadata);
   }
