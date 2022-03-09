@@ -57,12 +57,8 @@ public interface DrsProviderInterface {
    *     fallbackAccessUrlAuth
    */
   default boolean shouldFetchFenceAccessToken(
-      AccessMethod.TypeEnum accessMethodType,
-      List<String> requestedFields,
-      boolean useFallbackAuth,
-      boolean forceAccessUrl) {
+      AccessMethod.TypeEnum accessMethodType, boolean useFallbackAuth, boolean forceAccessUrl) {
     return getBondProvider().isPresent()
-        && Fields.overlap(requestedFields, Fields.ACCESS_ID_FIELDS)
         && (forceAccessUrl
             || getAccessMethodConfigs().stream()
                 .anyMatch(
@@ -112,14 +108,12 @@ public interface DrsProviderInterface {
         && Fields.overlap(requestedFields, Fields.BOND_SA_FIELDS);
   }
 
-  default boolean shouldFetchPassports(
-      AccessMethod.TypeEnum accessMethodType, List<String> requestedFields) {
-    return Fields.overlap(requestedFields, Fields.ACCESS_ID_FIELDS)
-        && getAccessMethodConfigs().stream()
-            .anyMatch(
-                m ->
-                    m.getType().getReturnedEquivalent() == accessMethodType
-                        && m.getAuth() == AccessUrlAuthEnum.passport);
+  default boolean shouldFetchPassports(AccessMethod.TypeEnum accessMethodType) {
+    return getAccessMethodConfigs().stream()
+        .anyMatch(
+            m ->
+                m.getType().getReturnedEquivalent() == accessMethodType
+                    && m.getAuth() == AccessUrlAuthEnum.passport);
   }
 
   /**
