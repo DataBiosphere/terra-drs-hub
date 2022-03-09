@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -253,27 +252,30 @@ public class MetadataService {
       String drsUri,
       String bearerToken,
       boolean fetchSignedUrl) {
-    var resolvedMetadata = new ResolvedMetadata();
-
     var drsResponse =
         fetchDrsObject(drsProvider.isMetadataAuth(), uriComponents, drsUri, bearerToken);
 
-    resolvedMetadata
-        .timeCreated(drsResponse.getCreatedTime())
-        .timeUpdated(drsResponse.getUpdatedTime())
-        .hashes(getHashesMap(drsResponse.getChecksums()))
-        .size(drsResponse.getSize())
-        .contentType(drsResponse.getMimeType())
-        .fileName(getDrsFileName(drsResponse))
-        .localizationPath(getLocalizationPath(drsProvider, drsResponse))
-        .bondProvider(drsProvider.getBondProvider().map(Enum::toString).orElse(null));
+    var resolvedMetadata =
+        new ResolvedMetadata()
+            .timeCreated(drsResponse.getCreatedTime())
+            .timeUpdated(drsResponse.getUpdatedTime())
+            .hashes(getHashesMap(drsResponse.getChecksums()))
+            .size(drsResponse.getSize())
+            .contentType(drsResponse.getMimeType())
+            .fileName(getDrsFileName(drsResponse))
+            .localizationPath(getLocalizationPath(drsProvider, drsResponse))
+            .bondProvider(drsProvider.getBondProvider().map(Enum::toString).orElse(null));
 
-    var gsUrl = getGcsAccessURL(drsResponse);
-    var gsFileInfo = gsUrl.map(gsUriParseRegex::matcher);
-    if (gsFileInfo.map(Matcher::matches).orElse(false)) {
-      resolvedMetadata.setBucket(gsFileInfo.get().group("bucket"));
-      resolvedMetadata.setName(gsFileInfo.get().group("name"));
-    }
+    getGcsAccessURL(drsResponse)
+        .ifPresent(
+            gsUri -> {
+              resolvedMetadata.setGsUri(gsUri);
+              var gsUriMatcher = gsUriParseRegex.matcher(gsUri);
+              if (gsUriMatcher.matches()) {
+                resolvedMetadata.setBucket(gsUriMatcher.group("bucket"));
+                resolvedMetadata.setName(gsUriMatcher.group("name"));
+              }
+            });
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
