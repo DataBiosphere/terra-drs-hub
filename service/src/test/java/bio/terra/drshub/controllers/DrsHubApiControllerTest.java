@@ -1,5 +1,6 @@
 package bio.terra.drshub.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -21,6 +22,7 @@ import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
+import bio.terra.drshub.services.MetadataService;
 import bio.terra.externalcreds.api.OidcApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
@@ -65,6 +67,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Autowired private DrsHubConfig config;
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private MetadataService metadataService;
 
   @MockBean BondApiFactory bondApiFactory;
   @MockBean DrsApiFactory drsApiFactory;
@@ -392,7 +395,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             Map.of("url", cidProviderHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
 
     mvc.perform(post("/api/v4").contentType(MediaType.APPLICATION_JSON).content(requestBody))
-        .andExpect(status().is4xxClientError());
+        .andExpect(status().isUnauthorized());
   }
 
   @Test // 20
@@ -461,7 +464,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             cidProviderHost.drsUriHost,
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
-        .andExpect(status().is5xxServerError());
+        .andExpect(status().isInternalServerError());
   }
 
   @Test // 45
@@ -501,6 +504,37 @@ public class DrsHubApiControllerTest extends BaseTest {
             TEST_ACCESS_TOKEN, cidProviderHost.drsUriHost, drsObject.getId(), requestedFields)
         .andExpect(status().isOk())
         .andExpect(content().json(objectMapper.writeValueAsString(expectedMap), true));
+  }
+
+  @Test
+  void testResolvesDnsHostsAndProviders() {
+    for (var providerName : config.getDrsProviders().keySet()) {
+      var cidProviderHost = getProviderHosts(providerName);
+
+      var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost);
+      var testDnsUri = String.format("drs://%s/12345", cidProviderHost.dnsHost);
+
+      var resolvedUri = metadataService.getUriComponents(testUri);
+      var resolvedDnsUri = metadataService.getUriComponents(testDnsUri);
+
+      assertEquals(cidProviderHost.dnsHost, resolvedUri.getHost());
+      assertEquals(cidProviderHost.dnsHost, resolvedDnsUri.getHost());
+
+      var resolvedProvider = metadataService.determineDrsProvider(resolvedDnsUri);
+      assertEquals(cidProviderHost.drsProvider, resolvedProvider);
+    }
+  }
+
+  @Test
+  void testHandlesUnknownCid() throws Exception {
+    postDrsHubRequest(TEST_ACCESS_TOKEN, "dg.fake", "12345", List.of(Fields.NAME))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void testHandlesUnknownHost() throws Exception {
+    postDrsHubRequest(TEST_ACCESS_TOKEN, "badhost.com", "12345", List.of(Fields.NAME))
+        .andExpect(status().isBadRequest());
   }
 
   private ProviderHosts getProviderHosts(String provider) {

@@ -107,7 +107,7 @@ public class MetadataService {
     return buildResponseObject(requestedFields, metadata, provider);
   }
 
-  private UriComponents getUriComponents(String drsUri) {
+  public UriComponents getUriComponents(String drsUri) {
 
     var drsRegexMatch = drsRegex.matcher(drsUri);
 
@@ -131,7 +131,7 @@ public class MetadataService {
     }
   }
 
-  private DrsProvider determineDrsProvider(UriComponents uriComponents) {
+  public DrsProvider determineDrsProvider(UriComponents uriComponents) {
     var host = uriComponents.getHost();
     assert host != null;
 

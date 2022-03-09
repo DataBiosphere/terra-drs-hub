@@ -74,7 +74,7 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
           jsonGenerator.writeStringField(Fields.CONTENT_TYPE, response.getMimeType());
         }
 
-        var gsUrl = getGcsAccessURL(response).map(AccessURL::getUrl);
+        var gsUrl = getGcsAccessURL(response);
         if (f.equals(Fields.GS_URI)) {
           jsonGenerator.writeStringField(Fields.GS_URI, gsUrl.orElse(null));
         }
@@ -99,10 +99,11 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
         : checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
   }
 
-  private Optional<AccessURL> getGcsAccessURL(DrsObject drsObject) {
+  private Optional<String> getGcsAccessURL(DrsObject drsObject) {
     return drsObject.getAccessMethods().stream()
         .filter(m -> m.getType() == AccessMethod.TypeEnum.GS)
         .findFirst()
-        .map(AccessMethod::getAccessUrl);
+        .map(AccessMethod::getAccessUrl)
+        .map(AccessURL::getUrl);
   }
 }
