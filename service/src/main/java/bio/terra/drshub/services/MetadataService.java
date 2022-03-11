@@ -1,5 +1,6 @@
 package bio.terra.drshub.services;
 
+import static bio.terra.drshub.models.AccessUrlAuthEnum.passport;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
@@ -295,7 +296,8 @@ public class MetadataService {
             forceAccessUrl,
             bearerToken);
 
-    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
+    var drsApi =
+        drsApiFactory.getApiFromUriComponents(uriComponents, providerAccessMethodType == passport);
     var objectId = getObjectId(uriComponents);
 
     switch (providerAccessMethodType) {
