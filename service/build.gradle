@@ -31,8 +31,20 @@ apply from: 'generators.gradle'
 apply from: 'tooling.gradle'
 apply from: 'analysis.gradle'
 
+dependencyManagement {
+	dependencies {
+		dependencySet(group:'io.github.hakky54', version: '7.2.1') {
+			entry 'sslcontext-kickstart-for-apache4'
+			entry 'sslcontext-kickstart-for-pem'
+		}
+	}
+}
+
 dependencies {
 	annotationProcessor 'org.immutables:value:2.9.0'
+	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache4'
+	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
+
 	implementation('bio.terra:terra-common-lib:0.0.53-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
 		exclude group: 'org.liquibase', module: 'liquibase-core'
