@@ -29,7 +29,8 @@ public class RestTemplateConfig {
 
     var socketFactory = Apache4SslUtils.toSocketFactory(sslFactory);
 
-    var httpclient = HttpClients.custom().setSSLSocketFactory(socketFactory).build();
+    var httpclient =
+        HttpClients.custom().useSystemProperties().setSSLSocketFactory(socketFactory).build();
     return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpclient));
   }
 }
