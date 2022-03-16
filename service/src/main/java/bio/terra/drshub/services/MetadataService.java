@@ -164,8 +164,7 @@ public class MetadataService {
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
     var drsResponse =
-        maybeFetchDrsObject(
-            drsProvider.isMetadataAuth(), requestedFields, uriComponents, drsUri, bearerToken);
+        maybeFetchDrsObject(drsProvider, requestedFields, uriComponents, drsUri, bearerToken);
     drsMetadataBuilder.drsResponse(drsResponse);
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
@@ -232,12 +231,13 @@ public class MetadataService {
   }
 
   private DrsObject maybeFetchDrsObject(
-      boolean sendMetadataAuth,
+      DrsProvider drsProvider,
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
       String bearerToken) {
     if (Fields.shouldRequestMetadata(requestedFields)) {
+      var sendMetadataAuth = drsProvider.isMetadataAuth();
 
       var objectId = getObjectId(uriComponents);
       log.info(
@@ -246,7 +246,7 @@ public class MetadataService {
           sendMetadataAuth,
           uriComponents.getHost());
 
-      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents);
+      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
       if (sendMetadataAuth) {
         drsApi.setBearerToken(bearerToken);
       }
@@ -296,8 +296,7 @@ public class MetadataService {
             forceAccessUrl,
             bearerToken);
 
-    var drsApi =
-        drsApiFactory.getApiFromUriComponents(uriComponents, providerAccessMethodType == passport);
+    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
 
     switch (providerAccessMethodType) {

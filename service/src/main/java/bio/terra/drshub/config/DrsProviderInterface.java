@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 @Value.Modifiable
@@ -24,6 +25,17 @@ public interface DrsProviderInterface {
   Optional<BondProviderEnum> getBondProvider();
 
   ArrayList<ProviderAccessMethodConfig> getAccessMethodConfigs();
+
+  @Nullable
+  MTlsConfig getMTlsConfig();
+
+  @Value.Modifiable
+  @PropertiesInterfaceStyle
+  interface MTlsConfigInterface {
+    String getKeyPath();
+
+    String getCertPath();
+  }
 
   /**
    * This is hopefully a temporary measure until we can take the time to either get a new field
