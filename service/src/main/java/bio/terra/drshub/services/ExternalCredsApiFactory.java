@@ -24,6 +24,8 @@ public class ExternalCredsApiFactory {
     // ECM returns lots of responses as JSON string.
     // By default, these get intercepted by Spring's raw string converter, but they're quoted, so
     // they should be parsed as JSON.
+    // N.B. This means that any non-JSON responses won't be parsed correctly, so if ECM ever returns
+    // any other content-type, this would have to be revised. However, that seems unlikely.
     var restTemplate = new RestTemplate(List.of(jacksonConverter));
 
     var client = new ApiClient(restTemplate);
