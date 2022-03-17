@@ -33,7 +33,6 @@ public class DrsApiFactory {
   }
 
   private RestTemplate makeMTlsRestTemplate(String certPath, String keyPath) {
-
     var keyManager = PemUtils.loadIdentityMaterial(certPath, keyPath);
     var sslFactory = SSLFactory.builder().withIdentityMaterial(keyManager).build();
     var socketFactory = Apache4SslUtils.toSocketFactory(sslFactory);

@@ -29,10 +29,9 @@ public class ExternalCredsApiFactory {
     var restTemplate = new RestTemplate(List.of(jacksonConverter));
 
     var client = new ApiClient(restTemplate);
-    var ecmApi = new OidcApi(client);
-    ecmApi.getApiClient().setBasePath(drsHubConfig.getExternalcredsUrl());
-    ecmApi.getApiClient().setAccessToken(accessToken);
+    client.setBasePath(drsHubConfig.getExternalcredsUrl());
+    client.setAccessToken(accessToken);
 
-    return ecmApi;
+    return new OidcApi(client);
   }
 }
