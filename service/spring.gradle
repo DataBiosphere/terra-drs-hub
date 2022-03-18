@@ -6,6 +6,9 @@ dependencies {
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+	// allows mocking final classes
+	testImplementation 'org.mockito:mockito-inline'
 }
 
 test { useJUnitPlatform() }
