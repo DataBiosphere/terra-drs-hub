@@ -73,7 +73,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   @MockBean DrsApiFactory drsApiFactory;
   @MockBean ExternalCredsApiFactory externalCredsApiFactory;
 
-  @Test // 2
+  @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
     var cidProviderHost = getProviderHosts("passport");
 
@@ -97,7 +97,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                     true));
   }
 
-  @Test // 3
+  @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassportsUsingFallback()
       throws Exception {
     var cidProviderHost = getProviderHosts("passport");
@@ -127,9 +127,8 @@ public class DrsHubApiControllerTest extends BaseTest {
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
   }
 
-  // 4 don't do, not supporting dos
 
-  @Test // 5
+  @Test
   void testDoesNotFailWhenExtraDataSubmitted() throws Exception {
     var cidProviderHost = getProviderHosts("passport");
     var drsObject = drsObjectWithRandomId("gs");
@@ -152,7 +151,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
   }
 
-  @Test // 6
+  @Test
   void testDoesNotCallBondWhenOnlyDrsFieldsRequested() throws Exception {
     var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
     var cid = cidList.get(new Random().nextInt(cidList.size()));
@@ -187,7 +186,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     verify(bondApiFactory, times(0)).getApi(any());
   }
 
-  @Test // 7
+  @Test
   void testDrsProviderDoesNotSupportGoogle() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
 
@@ -200,7 +199,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(content().json("{}"));
   }
 
-  @Test // 8
+  @Test
   void testDrsProviderDoesSupportGoogle() throws Exception {
     var cidProviderHost = getProviderHosts("bioDataCatalyst");
 
@@ -223,7 +222,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                             content().json(new ObjectMapper().writeValueAsString(bondSaKey))))));
   }
 
-  @Test // 8b
+  @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequested() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
@@ -250,7 +249,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
   }
 
-  @Test // 9, 10, 11, 12
+  @Test
   void testForceFetchAccessUrlAllProviders() throws Exception {
     var providersList =
         config.getDrsProviders().entrySet().stream()
@@ -305,7 +304,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     }
   }
 
-  @Test // 13, 15
+  @Test
   void testUsesProvidedFilename() throws Exception {
     var cidProviderHost = getProviderHosts("bioDataCatalyst");
 
@@ -329,7 +328,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                 .json(objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, fileName)), true));
   }
 
-  @Test // 14
+  @Test
   void testParsesMissingFilenameFromAccessUrl() throws Exception {
     var cidProviderHost = getProviderHosts("bioDataCatalyst");
 
@@ -353,7 +352,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                 .json(objectMapper.writeValueAsString(Map.of(Fields.FILE_NAME, fileName)), true));
   }
 
-  @Test // 16
+  @Test
   void testReturns400WhenNoFieldsRequested() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
@@ -363,7 +362,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 17
+  @Test
   void testReturns400IfFieldsIsNotAList() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
@@ -373,7 +372,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 18
+  @Test
   void testReturns400IfInvalidFieldRequested() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
@@ -387,7 +386,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 19
+  @Test
   void testReturns401IfNoAuthHeaderIsSent() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
@@ -398,7 +397,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().isUnauthorized());
   }
 
-  @Test // 20
+  @Test
   void testReturns400IfNotGivenUrl() throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
@@ -407,7 +406,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 21
+  @Test
   void testReturns400IfGivenDgUrlWithoutPath() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
@@ -417,7 +416,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 22
+  @Test
   void testShouldReturn400IfGivenDgUrlWithOnlyPath() throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
@@ -426,12 +425,12 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 23
+  @Test
   void testShouldReturn400IfNoDataPostedWithRequest() throws Exception {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, "").andExpect(status().isBadRequest());
   }
 
-  @Test // 24
+  @Test
   void testReturns400IfGivenInvalidUrlValue() throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
@@ -440,7 +439,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
 
-  @Test // 25, 26
+  @Test
   void testShouldReturnUnderlyingStatusIfDataObjectResolutionFails() throws Exception {
     var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
     var cid = cidList.get(new Random().nextInt(cidList.size()));
@@ -454,7 +453,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
   }
 
-  @Test // 27
+  @Test
   void testReturns500IfKeyRetrievalFromBondFails() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
@@ -467,7 +466,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().isInternalServerError());
   }
 
-  @Test // 45
+  @Test
   void testShouldReturnUnderlyingStatusIfGettingAccessUrlFails() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
@@ -485,7 +484,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
   }
 
-  @Test // 46
+  @Test
   void testReturnsNullForFieldsMissingInDrsResponse() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
 
