@@ -1,39 +1,38 @@
 package bio.terra.drshub.services;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import bio.terra.drshub.BaseTest;
-import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.config.MTlsConfig;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class DrsApiFactoryTest extends BaseTest {
   @Autowired DrsApiFactory drsApiFactory;
-  @Autowired private DrsHubConfig config;
 
   @Test
   void testMTlsConfigured() {
-    var drsProvider = config.getDrsProviders().get("passport");
-    var spy = Mockito.spy(drsApiFactory);
+    var mTlsConfig = MTlsConfig.create().setCertPath("fake.crt").setKeyPath("fake.key");
+    var drsProvider = DrsProvider.create().setMTlsConfig(mTlsConfig);
+    var spy = spy(drsApiFactory);
 
     spy.getApiFromUriComponents(
         UriComponentsBuilder.newInstance().host("test").build(), drsProvider);
 
-    Mockito.verify(spy)
-        .makeMTlsRestTemplate(
-            drsProvider.getMTlsConfig().getCertPath(), drsProvider.getMTlsConfig().getKeyPath());
+    verify(spy).makeMTlsRestTemplate(mTlsConfig.getCertPath(), mTlsConfig.getKeyPath());
   }
 
   @Test
   void testMTlsNotConfigured() {
-    var drsProvider = config.getDrsProviders().get("kidsFirst");
-    var spy = Mockito.spy(drsApiFactory);
+    var drsProvider = DrsProvider.create();
+    var spy = spy(drsApiFactory);
 
     spy.getApiFromUriComponents(
         UriComponentsBuilder.newInstance().host("test").build(), drsProvider);
 
-    Mockito.verify(spy, Mockito.never())
-        .makeMTlsRestTemplate(ArgumentMatchers.anyString(), ArgumentMatchers.anyString());
+    verify(spy, never()).makeMTlsRestTemplate(anyString(), anyString());
   }
 }
