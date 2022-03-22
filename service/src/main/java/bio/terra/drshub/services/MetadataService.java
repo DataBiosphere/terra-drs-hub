@@ -8,6 +8,7 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
+import bio.terra.drshub.generated.model.ResolvedMetadata;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
@@ -15,6 +16,7 @@ import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
+import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -71,6 +74,9 @@ public class MetadataService {
           "(?:dos|drs)://(?:(?<cidHost>dg\\.[0-9a-z-]+)|(?<fullHost>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
           Pattern.CASE_INSENSITIVE);
 
+  public static final Pattern gsUriParseRegex =
+      Pattern.compile("gs://(?<bucket>[^/]+)/(?<name>.+)", Pattern.CASE_INSENSITIVE);
+
   private final DrsHubConfig drsHubConfig;
   private final BondApiFactory bondApiFactory;
   private final ExternalCredsApiFactory externalCredsApiFactory;
@@ -106,6 +112,16 @@ public class MetadataService {
             provider, requestedFields, uriComponents, drsUri, accessToken, forceAccessUrl);
 
     return buildResponseObject(requestedFields, metadata, provider);
+  }
+
+  public ResolvedMetadata fetchResourceMetadata(
+      String drsUri, String accessToken, boolean fetchSignedUrl) {
+    var uriComponents = getUriComponents(drsUri);
+    var provider = determineDrsProvider(uriComponents);
+
+    log.info("Drs URI '{}' will use provider {}", drsUri, provider.getName());
+
+    return fetchMetadata(provider, uriComponents, drsUri, accessToken, fetchSignedUrl);
   }
 
   public UriComponents getUriComponents(String drsUri) {
@@ -230,6 +246,88 @@ public class MetadataService {
     return drsMetadataBuilder.build();
   }
 
+  private ResolvedMetadata fetchMetadata(
+      DrsProvider drsProvider,
+      UriComponents uriComponents,
+      String drsUri,
+      String bearerToken,
+      boolean fetchSignedUrl) {
+    var drsResponse = fetchDrsObject(drsProvider, uriComponents, drsUri, bearerToken);
+
+    var resolvedMetadata =
+        new ResolvedMetadata()
+            .timeCreated(drsResponse.getCreatedTime())
+            .timeUpdated(drsResponse.getUpdatedTime())
+            .hashes(getHashesMap(drsResponse.getChecksums()))
+            .size(drsResponse.getSize())
+            .contentType(drsResponse.getMimeType())
+            .fileName(getDrsFileName(drsResponse))
+            .localizationPath(getLocalizationPath(drsProvider, drsResponse))
+            .bondProvider(drsProvider.getBondProvider().map(Enum::toString).orElse(null));
+
+    getGcsAccessURL(drsResponse)
+        .ifPresent(
+            gsUri -> {
+              resolvedMetadata.setGsUri(gsUri);
+              var gsUriMatcher = gsUriParseRegex.matcher(gsUri);
+              if (gsUriMatcher.matches()) {
+                resolvedMetadata.setBucket(gsUriMatcher.group("bucket"));
+                resolvedMetadata.setName(gsUriMatcher.group("name"));
+              }
+            });
+
+    var accessMethod = getAccessMethod(drsResponse, drsProvider);
+    var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
+
+    if (fetchSignedUrl) {
+      var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
+
+      var passports = maybeFetchPassports(drsProvider, bearerToken, accessMethodType);
+
+      try {
+        var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+
+        log.info("Requesting URL for {}", uriComponents.toUriString());
+
+        var accessUrl =
+            getAccessUrl(
+                drsProvider,
+                uriComponents,
+                bearerToken,
+                true,
+                accessMethodType,
+                accessId,
+                passports,
+                providerAccessMethod.getAuth(),
+                false);
+
+        if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+          resolvedMetadata.accessUrl(
+              getAccessUrl(
+                  drsProvider,
+                  uriComponents,
+                  bearerToken,
+                  true,
+                  accessMethodType,
+                  accessId,
+                  passports,
+                  providerAccessMethod.getFallbackAuth().get(),
+                  true));
+        } else {
+          resolvedMetadata.accessUrl(accessUrl);
+        }
+      } catch (RuntimeException e) {
+        if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
+          throw e;
+        } else {
+          log.warn("Ignoring error from fetching signed URL", e);
+        }
+      }
+    }
+
+    return resolvedMetadata;
+  }
+
   private DrsObject maybeFetchDrsObject(
       DrsProvider drsProvider,
       List<String> requestedFields,
@@ -237,23 +335,28 @@ public class MetadataService {
       String drsUri,
       String bearerToken) {
     if (Fields.shouldRequestMetadata(requestedFields)) {
-      var sendMetadataAuth = drsProvider.isMetadataAuth();
-
-      var objectId = getObjectId(uriComponents);
-      log.info(
-          "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
-          drsUri,
-          sendMetadataAuth,
-          uriComponents.getHost());
-
-      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
-      if (sendMetadataAuth) {
-        drsApi.setBearerToken(bearerToken);
-      }
-
-      return drsApi.getObject(objectId, null);
+      return fetchDrsObject(drsProvider, uriComponents, drsUri, bearerToken);
     }
     return null;
+  }
+
+  private DrsObject fetchDrsObject(
+      DrsProvider drsProvider, UriComponents uriComponents, String drsUri, String bearerToken) {
+    var sendMetadataAuth = drsProvider.isMetadataAuth();
+
+    var objectId = getObjectId(uriComponents);
+    log.info(
+        "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
+        drsUri,
+        sendMetadataAuth,
+        uriComponents.getHost());
+
+    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    if (sendMetadataAuth) {
+      drsApi.setBearerToken(bearerToken);
+    }
+
+    return drsApi.getObject(objectId, null);
   }
 
   private List<String> maybeFetchPassports(
@@ -413,5 +516,19 @@ public class MetadataService {
         .drsMetadata(drsMetadata)
         .drsProvider(drsProvider)
         .build();
+  }
+
+  public static Map<String, String> getHashesMap(List<Checksum> checksums) {
+    return checksums.isEmpty()
+        ? null
+        : checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
+  }
+
+  public static Optional<String> getGcsAccessURL(DrsObject drsObject) {
+    return drsObject.getAccessMethods().stream()
+        .filter(m -> m.getType() == AccessMethod.TypeEnum.GS)
+        .findFirst()
+        .map(AccessMethod::getAccessUrl)
+        .map(AccessURL::getUrl);
   }
 }

@@ -1,27 +1,19 @@
 package bio.terra.drshub.models;
 
+import static bio.terra.drshub.services.MetadataService.getGcsAccessURL;
+import static bio.terra.drshub.services.MetadataService.getHashesMap;
+import static bio.terra.drshub.services.MetadataService.gsUriParseRegex;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import io.github.ga4gh.drs.model.AccessMethod;
-import io.github.ga4gh.drs.model.AccessURL;
-import io.github.ga4gh.drs.model.Checksum;
-import io.github.ga4gh.drs.model.DrsObject;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.springframework.boot.jackson.JsonComponent;
 
 @JsonComponent
 public class AnnotatedResourceMetadataSerializer extends JsonSerializer<AnnotatedResourceMetadata> {
-
-  private static final Pattern gsUriParseRegex =
-      Pattern.compile("gs://(?<bucket>[^/]+)/(?<name>.+)", Pattern.CASE_INSENSITIVE);
 
   @Override
   public void serialize(
@@ -91,19 +83,5 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
       }
     }
     jsonGenerator.writeEndObject();
-  }
-
-  private Map<String, String> getHashesMap(List<Checksum> checksums) {
-    return checksums.isEmpty()
-        ? null
-        : checksums.stream().collect(Collectors.toMap(Checksum::getType, Checksum::getChecksum));
-  }
-
-  private Optional<String> getGcsAccessURL(DrsObject drsObject) {
-    return drsObject.getAccessMethods().stream()
-        .filter(m -> m.getType() == AccessMethod.TypeEnum.GS)
-        .findFirst()
-        .map(AccessMethod::getAccessUrl)
-        .map(AccessURL::getUrl);
   }
 }
