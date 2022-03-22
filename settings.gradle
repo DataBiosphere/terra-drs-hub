@@ -1,4 +1,17 @@
 pluginManagement {
+	repositories {
+		resolutionStrategy {
+			eachPlugin {
+				if (requested.id.id == 'bio.terra.test-runner-plugin') {
+					useModule("bio.terra:terra-test-runner:${requested.version}")
+				}
+			}
+		}
+		maven {
+			url 'https://broadinstitute.jfrog.io/artifactory/plugins-snapshot'
+		}
+		gradlePluginPortal()
+	}
 	plugins {
 		id 'io.freefair.lombok' version '6.4.1'
 		id 'org.hidetake.swagger.generator' version '2.19.2'
@@ -6,4 +19,4 @@ pluginManagement {
 }
 
 rootProject.name = 'drshub'
-include 'service'
+include 'service', 'integration', 'client-resttemplate'
