@@ -141,7 +141,7 @@ jobs:
         run: ./gradlew --build-cache :integration:runTest --args="suites/FullIntegration.json /tmp/foo"
 
   notify-slack:
-    needs: [ build, jib, unit-tests ]
+    needs: [ build, jib, unit-tests, integration-tests ]
     runs-on: ubuntu-latest
 
     if: failure() && github.ref == 'refs/heads/dev'
@@ -158,7 +158,7 @@ jobs:
           text: 'Build failed :sadpanda:'
 
   dispatch-tag:
-    needs: [ build, jib, unit-tests ]
+    needs: [ build, jib, unit-tests, integration-tests ]
     runs-on: ubuntu-latest
 
     if: success() && github.ref == 'refs/heads/dev'
