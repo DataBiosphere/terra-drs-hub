@@ -67,6 +67,10 @@ drshub:
           auth: passport
           fetchAccessUrl: true
           fallbackAuth: fence_token
+      mTlsConfig:
+        keyPath: rendered/ras-mtls-client.key
+        certPath: rendered/ras-mtls-client.crt
+
     terraDataRepo:
       name: Terra Data Repo (TDR)
       hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
