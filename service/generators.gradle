@@ -71,7 +71,7 @@ compileJava.dependsOn tasks.generateSwaggerCode
 // a dependency on swagger code generation for that code, so things can't be up-to-date
 afterEvaluate {
 	tasks.each {
-		if (it.name.startsWith('generateEffectiveLombokConfig') &&
+		if (it.name.containsIgnoreCase('lombok') &&
 				it.hasProperty('paths') &&
 				it.paths.intersect(swaggerSourcePaths.collect({ file(it) }))) {
 			it.dependsOn(generateSwaggerCode)

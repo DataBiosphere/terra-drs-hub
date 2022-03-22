@@ -252,8 +252,7 @@ public class MetadataService {
       String drsUri,
       String bearerToken,
       boolean fetchSignedUrl) {
-    var drsResponse =
-        fetchDrsObject(drsProvider.isMetadataAuth(), uriComponents, drsUri, bearerToken);
+    var drsResponse = fetchDrsObject(drsProvider, uriComponents, drsUri, bearerToken);
 
     var resolvedMetadata =
         new ResolvedMetadata()
