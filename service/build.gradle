@@ -52,6 +52,6 @@ dependencies {
 		exclude group: 'bio.terra', module: 'stairway'
 		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-data-jdbc'
 	}
-	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-fa74f75'
+	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-1b67d8b'
 	implementation 'bio.terra:externalcreds-client-resttemplate:0.72.0-SNAPSHOT'
 }
