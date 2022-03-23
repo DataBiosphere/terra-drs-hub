@@ -114,10 +114,10 @@ jobs:
             ~/.gradle/wrapper
           key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
 
-#      - name: Render GitHub Secrets
-#        env:
-#          DEV_FIRECLOUD_ACCOUNT_B64: ${{ secrets.DEV_FIRECLOUD_ACCOUNT_B64 }}
-#        run: echo "$DEV_FIRECLOUD_ACCOUNT_B64" | base64 -d >"./integration/src/main/resources/rendered/user-delegated-sa.json"
+      - name: Render GitHub Secrets
+        env:
+          DEV_FIRECLOUD_ACCOUNT_B64: ${{ secrets.DEV_FIRECLOUD_ACCOUNT_B64 }}
+        run: echo "$DEV_FIRECLOUD_ACCOUNT_B64" | base64 -d >"./integration/src/main/resources/rendered/user-delegated-sa.json"
 
       - name: Launch the background process for integration tests
         run: ./gradlew --build-cache :service:bootRunDev | tee bootrun.log &
