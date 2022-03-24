@@ -35,7 +35,7 @@ public class ClientTestUtils {
   }
 
   /**
-   * Build the ECM API client object for the given test user and server specifications. The test
+   * Build the DRS Hub API client object for the given test user and server specifications. The test
    * user's token is always refreshed. If a test user isn't configured (e.g. when running locally),
    * return an un-authenticated client.
    *
