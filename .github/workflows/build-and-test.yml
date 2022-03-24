@@ -120,7 +120,7 @@ jobs:
         run: echo "$DEV_FIRECLOUD_ACCOUNT_B64" | base64 -d >"./integration/src/main/resources/rendered/user-delegated-sa.json"
 
       - name: Launch the background process for integration tests
-        run: ./gradlew --build-cache :service:applicationDev | tee application.log &
+        run: ./gradlew --build-cache :service:bootRunDev | tee application.log &
 
       - name: Prep the integration project
         run: ./gradlew --build-cache :integration:classes
