@@ -120,7 +120,7 @@ jobs:
         run: echo "$DEV_FIRECLOUD_ACCOUNT_B64" | base64 -d >"./integration/src/main/resources/rendered/user-delegated-sa.json"
 
       - name: Launch the background process for integration tests
-        run: ./gradlew --build-cache :service:bootRunDev | tee bootrun.log &
+        run: ./gradlew --build-cache :service:applicationDev | tee application.log &
 
       - name: Prep the integration project
         run: ./gradlew --build-cache :integration:classes
@@ -132,13 +132,21 @@ jobs:
           if [[ $resultStatus == 0 ]]; then
             echo "Server started successfully"
           else
-            echo "Server did not start successfully. Dumping log file"
-            cat bootrun.log
+            echo "Server did not start successfully."
             exit 1
           fi
 
       - name: Run the integration test suite
         run: ./gradlew --build-cache :integration:runTest --args="suites/FullIntegration.json /tmp/foo"
+
+      - name: Archive logs
+        id: archive_logs
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: application-logs
+          path: |
+            application.log
 
   notify-slack:
     needs: [ build, jib, unit-tests, integration-tests ]
