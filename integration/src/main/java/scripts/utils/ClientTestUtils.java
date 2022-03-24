@@ -18,7 +18,7 @@ public class ClientTestUtils {
       List.of("openid", "email", "profile", "https://www.googleapis.com/auth/cloud-platform");
 
   /**
-   * Build the ECM API client object for the server specifications. No access token is needed for
+   * Build the DRS Hub API client object for the server specifications. No access token is needed for
    * this API client.
    *
    * @param server the server we are testing against
