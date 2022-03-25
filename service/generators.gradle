@@ -1,6 +1,6 @@
 dependencies {
 	implementation 'io.swagger.core.v3:swagger-annotations'
-	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.5.2'
+	runtimeOnly 'org.webjars.npm:swagger-ui-dist:4.6.2'
 	swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli'
 
 	// Versioned by Spring:
@@ -35,11 +35,6 @@ swaggerSources {
 		inputFile = file('src/main/resources/vendor/bond.yaml')
 		code(makeClientCodeClosure('bio.terra.bond'))
 	}
-
-	externalcreds {
-		inputFile = file('src/main/resources/vendor/externalcreds.yml')
-		code(makeClientCodeClosure('bio.terra.externalcreds'))
-	}
 }
 
 def makeClientCodeClosure(String id) {
@@ -65,7 +60,6 @@ Set<String> swaggerSourcePaths = [
 		"${swaggerSources.server.code.outputDir}/src/main/java",
 		"${swaggerSources.ga4gh.code.outputDir}/src/main/java",
 		"${swaggerSources.bond.code.outputDir}/src/main/java",
-		"${swaggerSources.externalcreds.code.outputDir}/src/main/java"
 ]
 
 

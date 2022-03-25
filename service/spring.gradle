@@ -7,8 +7,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
-	// allows mocking final classes
-	testImplementation 'org.mockito:mockito-inline'
+	implementation 'org.apache.httpcomponents:httpclient'
 }
 
 test { useJUnitPlatform() }

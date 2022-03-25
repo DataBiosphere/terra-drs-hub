@@ -2,6 +2,7 @@ package bio.terra.drshub.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -655,7 +656,8 @@ public class DrsHubApiControllerTest extends BaseTest {
     var mockDrsApi = mock(DrsApi.class);
 
     when(drsApiFactory.getApiFromUriComponents(
-            UriComponentsBuilder.newInstance().host(drsHost).path(drsObject.getId()).build()))
+            eq(UriComponentsBuilder.newInstance().host(drsHost).path(drsObject.getId()).build()),
+            any()))
         .thenReturn(mockDrsApi);
     when(mockDrsApi.getObject(drsObject.getId(), null)).thenReturn(drsObject);
 
