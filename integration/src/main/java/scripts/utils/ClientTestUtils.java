@@ -18,8 +18,8 @@ public class ClientTestUtils {
       List.of("openid", "email", "profile", "https://www.googleapis.com/auth/cloud-platform");
 
   /**
-   * Build the DRS Hub API client object for the server specifications. No access token is needed for
-   * this API client.
+   * Build the DRS Hub API client object for the server specifications. No access token is needed
+   * for this API client.
    *
    * @param server the server we are testing against
    * @return the API client object for this user
