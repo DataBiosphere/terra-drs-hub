@@ -1,0 +1,10 @@
+{
+  "name": "FullIntegration",
+  "description": "All integration tests",
+  "serverSpecificationFile": "drshub-local.json",
+  "testConfigurationFiles": [
+    "integration/GetStatus.json",
+    "integration/GetVersion.json"
+  ]
+}
+

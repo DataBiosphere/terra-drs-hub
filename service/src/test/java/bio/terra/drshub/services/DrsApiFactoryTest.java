@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class DrsApiFactoryTest extends BaseTest {
+
   @Autowired DrsApiFactory drsApiFactory;
 
   @Test

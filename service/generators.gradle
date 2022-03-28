@@ -10,7 +10,7 @@ dependencies {
 
 swaggerSources {
 	server {
-		inputFile = file('src/main/resources/static/openapi.yml')
+		inputFile = file('../common/openapi.yml')
 		code {
 			language = 'spring'
 			components = ['models', 'apis']
