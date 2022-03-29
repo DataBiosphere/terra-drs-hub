@@ -11,3 +11,5 @@ repositories { mavenCentral() }
 
 apply from: 'artifactory.gradle'
 apply from: 'swagger.gradle'
+
+targetCompatibility = JavaLanguageVersion.of(11)
