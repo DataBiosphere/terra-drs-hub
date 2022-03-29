@@ -26,7 +26,7 @@ public class DrsProviderTest extends BaseTest {
     // returns true when there are no problems identifying the relevant configs
     var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
     accessMethods.add(testAccessMethodConfig);
-    DrsProvider drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
+    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
 
     assertTrue(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
   }
@@ -36,7 +36,7 @@ public class DrsProviderTest extends BaseTest {
     // returns false when the access methods are valid but there's no bond provider set
     var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
     accessMethods.add(testAccessMethodConfig);
-    DrsProvider drsProvider =
+    var drsProvider =
         createRandomDrsProvider()
             .setAccessMethodConfigs(accessMethods)
             .setBondProvider(Optional.empty());
@@ -47,7 +47,7 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenNoAccessMethods() {
     // returns false when there are no access method configs
-    DrsProvider drsProvider = createRandomDrsProvider().setAccessMethodConfigs(new ArrayList<>());
+    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(new ArrayList<>());
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
   }
@@ -57,7 +57,7 @@ public class DrsProviderTest extends BaseTest {
     // returns false when no access method configs have matching access method types
     var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
     accessMethods.add(testAccessMethodConfig);
-    DrsProvider drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
+    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.FTP, false, false));
   }
@@ -67,7 +67,7 @@ public class DrsProviderTest extends BaseTest {
     // returns false when there are no access method configs with fence auth method
     var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
     accessMethods.add(testAccessMethodConfig.setAuth(AccessUrlAuthEnum.passport));
-    DrsProvider drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
+    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
   }
