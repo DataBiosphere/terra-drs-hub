@@ -128,7 +128,6 @@ public class DrsHubApiControllerTest extends BaseTest {
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
   }
 
-
   @Test
   void testDoesNotFailWhenExtraDataSubmitted() throws Exception {
     var cidProviderHost = getProviderHosts("passport");
