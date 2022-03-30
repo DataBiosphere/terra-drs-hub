@@ -9,6 +9,7 @@ import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.BondProviderEnum;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,8 +25,7 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenReturnsTrue() {
     // returns true when there are no problems identifying the relevant configs
-    var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
-    accessMethods.add(testAccessMethodConfig);
+    var accessMethods = new ArrayList<>(List.of(testAccessMethodConfig));
     var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
 
     assertTrue(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
@@ -34,8 +34,7 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenNoBondProvider() {
     // returns false when the access methods are valid but there's no bond provider set
-    var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
-    accessMethods.add(testAccessMethodConfig);
+    var accessMethods = new ArrayList<>(List.of(testAccessMethodConfig));
     var drsProvider =
         createRandomDrsProvider()
             .setAccessMethodConfigs(accessMethods)
@@ -55,8 +54,7 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenNoMatchingAccessMethodTypes() {
     // returns false when no access method configs have matching access method types
-    var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
-    accessMethods.add(testAccessMethodConfig);
+    var accessMethods = new ArrayList<>(List.of(testAccessMethodConfig));
     var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.FTP, false, false));
@@ -65,8 +63,8 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenNoValidAccessMethods() {
     // returns false when there are no access method configs with fence auth method
-    var accessMethods = new ArrayList<ProviderAccessMethodConfig>();
-    accessMethods.add(testAccessMethodConfig.setAuth(AccessUrlAuthEnum.passport));
+    var accessMethods =
+        new ArrayList<>(List.of(testAccessMethodConfig.setAuth(AccessUrlAuthEnum.passport)));
     var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
