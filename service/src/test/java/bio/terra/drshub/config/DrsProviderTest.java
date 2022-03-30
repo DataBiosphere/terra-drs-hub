@@ -21,12 +21,13 @@ public class DrsProviderTest extends BaseTest {
           .setType(AccessMethodConfigTypeEnum.gs)
           .setAuth(AccessUrlAuthEnum.fence_token)
           .setFetchAccessUrl(true);
+  private final ArrayList<ProviderAccessMethodConfig> testAccessMethods =
+      new ArrayList<>(List.of(testAccessMethodConfig));
 
   @Test
   void testShouldFetchFenceAccessTokenReturnsTrue() {
     // returns true when there are no problems identifying the relevant configs
-    var accessMethods = new ArrayList<>(List.of(testAccessMethodConfig));
-    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
+    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(testAccessMethods);
 
     assertTrue(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
   }
@@ -34,10 +35,9 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenNoBondProvider() {
     // returns false when the access methods are valid but there's no bond provider set
-    var accessMethods = new ArrayList<>(List.of(testAccessMethodConfig));
     var drsProvider =
         createRandomDrsProvider()
-            .setAccessMethodConfigs(accessMethods)
+            .setAccessMethodConfigs(testAccessMethods)
             .setBondProvider(Optional.empty());
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
@@ -54,8 +54,7 @@ public class DrsProviderTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessTokenNoMatchingAccessMethodTypes() {
     // returns false when no access method configs have matching access method types
-    var accessMethods = new ArrayList<>(List.of(testAccessMethodConfig));
-    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(accessMethods);
+    var drsProvider = createRandomDrsProvider().setAccessMethodConfigs(testAccessMethods);
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.FTP, false, false));
   }
