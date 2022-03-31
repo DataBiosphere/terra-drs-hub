@@ -33,10 +33,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 @Slf4j
 public record MetadataService(
-    DrsHubConfig drsHubConfig,
     BondApiFactory bondApiFactory,
-    ExternalCredsApiFactory externalCredsApiFactory,
-    DrsApiFactory drsApiFactory) {
+    DrsApiFactory drsApiFactory,
+    DrsHubConfig drsHubConfig,
+    ExternalCredsApiFactory externalCredsApiFactory) {
 
   /**
    * DOS or DRS schemes are allowed as of <a
