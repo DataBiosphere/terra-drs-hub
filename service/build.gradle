@@ -14,8 +14,6 @@ plugins {
 	id 'org.hidetake.swagger.generator'
 }
 
-compileJava { options.release = 11 }
-
 repositories {
 	mavenCentral()
 	maven { url 'https://broadinstitute.jfrog.io/artifactory/libs-snapshot' }

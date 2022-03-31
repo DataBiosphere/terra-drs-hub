@@ -40,7 +40,7 @@ public class PublicApiControllerTest extends BaseTest {
         .andExpect(
             content()
                 .json(
-                    "{\"gitTag\": \"gitTag\", \"gitHash\": \"gitHash\", "
-                        + "\"github\": \"github\", \"build\": \"build\"}"));
+                    """
+                    {"gitTag": "gitTag", "gitHash": "gitHash", "github": "github", "build": "build"}"""));
   }
 }

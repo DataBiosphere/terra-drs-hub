@@ -9,16 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-public class ExternalCredsApiFactory {
-
-  private final DrsHubConfig drsHubConfig;
-  private final MappingJackson2HttpMessageConverter jacksonConverter;
-
-  public ExternalCredsApiFactory(
-      DrsHubConfig drsHubConfig, MappingJackson2HttpMessageConverter jacksonConverter) {
-    this.drsHubConfig = drsHubConfig;
-    this.jacksonConverter = jacksonConverter;
-  }
+public record ExternalCredsApiFactory(
+    DrsHubConfig drsHubConfig, MappingJackson2HttpMessageConverter jacksonConverter) {
 
   public OidcApi getApi(String accessToken) {
     // ECM returns lots of responses as JSON string.
