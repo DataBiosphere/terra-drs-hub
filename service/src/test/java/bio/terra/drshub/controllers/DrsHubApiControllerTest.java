@@ -283,7 +283,7 @@ public class DrsHubApiControllerTest extends BaseTest {
           .ifPresent(p -> mockBondLinkAccessTokenApi(p, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
 
       mvc.perform(
-              post("/api/v4")
+              post("/api/v4/drs/resolve")
                   .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
                   .header("drshub-force-access-url", "true")
                   .contentType(MediaType.APPLICATION_JSON)
@@ -393,7 +393,10 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of("url", cidProviderHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
 
-    mvc.perform(post("/api/v4").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+    mvc.perform(
+            post("/api/v4/drs/resolve")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
         .andExpect(status().isUnauthorized());
   }
 
@@ -612,7 +615,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   private ResultActions postDrsHubRequestRaw(String accessToken, String requestBody)
       throws Exception {
     return mvc.perform(
-        post("/api/v4")
+        post("/api/v4/drs/resolve")
             .header("authorization", "bearer " + accessToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));

@@ -27,7 +27,7 @@ public class DrsHubApiController implements DrsHubApi {
   }
 
   @Override
-  public ResponseEntity<ResourceMetadata> getFile(RequestObject body) {
+  public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
     var auth = request.getHeader("authorization");
 
     validateRequest(body, auth);
