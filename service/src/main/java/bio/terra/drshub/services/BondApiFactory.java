@@ -5,13 +5,7 @@ import bio.terra.drshub.config.DrsHubConfig;
 import org.springframework.stereotype.Service;
 
 @Service
-public class BondApiFactory {
-
-  private final DrsHubConfig drsHubConfig;
-
-  public BondApiFactory(DrsHubConfig drsHubConfig) {
-    this.drsHubConfig = drsHubConfig;
-  }
+public record BondApiFactory(DrsHubConfig drsHubConfig) {
 
   public BondApi getApi(String bearerToken) {
     var bondApi = new BondApi();

@@ -258,7 +258,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                     p.getValue().getAccessMethodConfigs().stream()
                         .anyMatch(c -> !c.isFetchAccessUrl()))
             .map(Entry::getKey)
-            .collect(Collectors.toList());
+            .toList();
 
     for (var providerName : providersList) {
       var cidProviderHost = getProviderHosts(providerName);
@@ -679,17 +679,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     return mockDrsApi;
   }
 
-  private static class ProviderHosts {
-    final String drsUriHost;
-    final String dnsHost;
-    final DrsProvider drsProvider;
-
-    public ProviderHosts(String drsUriHost, String dnsHost, DrsProvider drsProvider) {
-      this.drsUriHost = drsUriHost;
-      this.dnsHost = dnsHost;
-      this.drsProvider = drsProvider;
-    }
-  }
+  private record ProviderHosts(String drsUriHost, String dnsHost, DrsProvider drsProvider) {}
 
   private DrsObject drsObjectWithRandomId(String accessMethod) {
     return new DrsObject()

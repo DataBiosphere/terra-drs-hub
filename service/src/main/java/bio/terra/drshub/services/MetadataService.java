@@ -1,6 +1,5 @@
 package bio.terra.drshub.services;
 
-import static bio.terra.drshub.models.AccessUrlAuthEnum.passport;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
@@ -33,7 +32,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @Slf4j
-public class MetadataService {
+public record MetadataService(
+    DrsHubConfig drsHubConfig,
+    BondApiFactory bondApiFactory,
+    ExternalCredsApiFactory externalCredsApiFactory,
+    DrsApiFactory drsApiFactory) {
 
   /**
    * DOS or DRS schemes are allowed as of <a
@@ -70,22 +73,6 @@ public class MetadataService {
       Pattern.compile(
           "(?:dos|drs)://(?:(?<cidHost>dg\\.[0-9a-z-]+)|(?<fullHost>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
           Pattern.CASE_INSENSITIVE);
-
-  private final DrsHubConfig drsHubConfig;
-  private final BondApiFactory bondApiFactory;
-  private final ExternalCredsApiFactory externalCredsApiFactory;
-  private final DrsApiFactory drsApiFactory;
-
-  public MetadataService(
-      DrsHubConfig drsHubConfig,
-      BondApiFactory bondApiFactory,
-      ExternalCredsApiFactory externalCredsApiFactory,
-      DrsApiFactory drsApiFactory) {
-    this.drsHubConfig = drsHubConfig;
-    this.bondApiFactory = bondApiFactory;
-    this.externalCredsApiFactory = externalCredsApiFactory;
-    this.drsApiFactory = drsApiFactory;
-  }
 
   public AnnotatedResourceMetadata fetchResourceMetadata(
       String drsUri, List<String> rawRequestedFields, String accessToken, Boolean forceAccessUrl) {
