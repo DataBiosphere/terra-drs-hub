@@ -75,6 +75,7 @@ drshub:
       name: Terra Data Repo (TDR)
       hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
       metadataAuth: true
+      useAliasesForLocalizationPath: true
       accessMethodConfigs:
         - type: gs
           auth: current_request
