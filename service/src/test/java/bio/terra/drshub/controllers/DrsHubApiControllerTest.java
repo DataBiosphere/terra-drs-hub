@@ -55,6 +55,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @AutoConfigureMockMvc
@@ -247,6 +248,49 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+  }
+
+  @Test
+  void testBondUnauthorized() throws Exception {
+    var cidProviderHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+
+    mockBondLinkAccessTokenApiError(
+        cidProviderHost.drsProvider.getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED, "", HttpHeaders.EMPTY, null, null));
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            cidProviderHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void testBondNotFound() throws Exception {
+    var cidProviderHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+
+    mockBondLinkAccessTokenApiError(
+        cidProviderHost.drsProvider.getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        HttpClientErrorException.create(HttpStatus.NOT_FOUND, "", HttpHeaders.EMPTY, null, null));
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            cidProviderHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
+        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -627,6 +671,14 @@ public class DrsHubApiControllerTest extends BaseTest {
     when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.name()))
         .thenReturn(new AccessTokenObject().token(bondSaToken));
+    return mockBondApi;
+  }
+
+  private BondApi mockBondLinkAccessTokenApiError(
+      BondProviderEnum bondProvider, String accessToken, RestClientException exception) {
+    var mockBondApi = mock(BondApi.class);
+    when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
+    when(mockBondApi.getLinkAccessToken(bondProvider.name())).thenThrow(exception);
     return mockBondApi;
   }
 
