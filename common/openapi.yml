@@ -3,11 +3,11 @@ info:
   title: drsHub
   version: 2.0.0
 paths:
-  /api/v4:
+  /api/v4/drs/resolve:
     post:
       summary: Get a file
       tags: [ drsHub ]
-      operationId: getFile
+      operationId: resolveDrs
       requestBody:
         content:
           application/json:

@@ -3,7 +3,7 @@
   "description": "drshub Local env.",
 
   "samUri": "https://sam.dsde-dev.broadinstitute.org",
-  "policyManagerUri": "http://localhost:8080",
+  "drsHubUri": "http://localhost:8080",
 
   "testRunnerServiceAccountFile": "delegate-user-sa.json",
 

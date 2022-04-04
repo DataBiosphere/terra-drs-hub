@@ -1,0 +1,17 @@
+{
+  "name": "ResolveTdrDrs",
+  "description": "Resolved DRS URI from TDR.",
+  "serverSpecificationFile": "drshub-local.json",
+  "kubernetes": {},
+  "application": {},
+  "testScripts": [
+    {
+      "name": "ResolveTdrDrs",
+      "numberOfUserJourneyThreadsToRun": 1,
+      "userJourneyThreadPoolSize": 2,
+      "expectedTimeForEach": 10,
+      "expectedTimeForEachUnit": "SECONDS"
+    }
+  ],
+  "testUserFiles": ["scarlett.json"]
+}

@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
+import org.immutables.value.Value.Default;
 
 @Value.Modifiable
 @PropertiesInterfaceStyle
@@ -42,6 +43,7 @@ public interface DrsProviderInterface {
    * added to the DRS spec or implement a temporary spec extension with the Terra Data Repo team.
    * See BT-417 for more details.
    */
+  @Default
   default boolean useAliasesForLocalizationPath() {
     return false;
   }

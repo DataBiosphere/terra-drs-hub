@@ -4,7 +4,8 @@
   "serverSpecificationFile": "drshub-local.json",
   "testConfigurationFiles": [
     "integration/GetStatus.json",
-    "integration/GetVersion.json"
+    "integration/GetVersion.json",
+    "integration/ResolveTdrDrs.json"
   ]
 }
 

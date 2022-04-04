@@ -55,6 +55,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @AutoConfigureMockMvc
@@ -250,6 +251,49 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test
+  void testBondUnauthorized() throws Exception {
+    var cidProviderHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+
+    mockBondLinkAccessTokenApiError(
+        cidProviderHost.drsProvider.getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED, "", HttpHeaders.EMPTY, null, null));
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            cidProviderHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void testBondNotFound() throws Exception {
+    var cidProviderHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3");
+
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+
+    mockBondLinkAccessTokenApiError(
+        cidProviderHost.drsProvider.getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        HttpClientErrorException.create(HttpStatus.NOT_FOUND, "", HttpHeaders.EMPTY, null, null));
+
+    postDrsHubRequest(
+            TEST_ACCESS_TOKEN,
+            cidProviderHost.drsUriHost,
+            drsObject.getId(),
+            List.of(Fields.ACCESS_URL))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
   void testForceFetchAccessUrlAllProviders() throws Exception {
     var providersList =
         config.getDrsProviders().entrySet().stream()
@@ -283,7 +327,7 @@ public class DrsHubApiControllerTest extends BaseTest {
           .ifPresent(p -> mockBondLinkAccessTokenApi(p, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
 
       mvc.perform(
-              post("/api/v4")
+              post("/api/v4/drs/resolve")
                   .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
                   .header("drshub-force-access-url", "true")
                   .contentType(MediaType.APPLICATION_JSON)
@@ -393,7 +437,10 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of("url", cidProviderHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
 
-    mvc.perform(post("/api/v4").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+    mvc.perform(
+            post("/api/v4/drs/resolve")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
         .andExpect(status().isUnauthorized());
   }
 
@@ -612,7 +659,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   private ResultActions postDrsHubRequestRaw(String accessToken, String requestBody)
       throws Exception {
     return mvc.perform(
-        post("/api/v4")
+        post("/api/v4/drs/resolve")
             .header("authorization", "bearer " + accessToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
@@ -624,6 +671,14 @@ public class DrsHubApiControllerTest extends BaseTest {
     when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.name()))
         .thenReturn(new AccessTokenObject().token(bondSaToken));
+    return mockBondApi;
+  }
+
+  private BondApi mockBondLinkAccessTokenApiError(
+      BondProviderEnum bondProvider, String accessToken, RestClientException exception) {
+    var mockBondApi = mock(BondApi.class);
+    when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
+    when(mockBondApi.getLinkAccessToken(bondProvider.name())).thenThrow(exception);
     return mockBondApi;
   }
 
