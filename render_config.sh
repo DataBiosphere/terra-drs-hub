@@ -16,6 +16,8 @@ fi
 
 $VAULT_COMMAND -field=value "$DRSHUB_VAULT_PATH/ras-mtls-client.crt" >"$SERVICE_OUTPUT_LOCATION/ras-mtls-client.crt"
 $VAULT_COMMAND -field=value "$DRSHUB_VAULT_PATH/ras-mtls-client.key" >"$SERVICE_OUTPUT_LOCATION/ras-mtls-client.key"
+$VAULT_COMMAND -field=swagger-client-id "$DRSHUB_VAULT_PATH/swagger-client-id" >"$SERVICE_OUTPUT_LOCATION/swagger-client-id"
+
 
 $VAULT_COMMAND -field=data -format=json "secret/dsde/firecloud/$ENV/common/firecloud-account.json" >"$INTEGRATION_OUTPUT_LOCATION/user-delegated-sa.json"
 
