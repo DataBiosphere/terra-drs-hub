@@ -38,40 +38,9 @@ public record MetadataService(
     DrsHubConfig drsHubConfig,
     ExternalCredsApiFactory externalCredsApiFactory) {
 
-  /**
-   * DOS or DRS schemes are allowed as of <a
-   * href="https://ucsc-cgl.atlassian.net/browse/AZUL-702">AZUL-702</a>
-   *
-   * <p>The many, many forms of Compact Identifier-based (CIB) DRS URIs to W3C/IETF HTTPS URL
-   * conversion:
-   *
-   * <ul>
-   *   <li>https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.1.0/docs/#_compact_identifier_based_drs_uris
-   *   <li>https://docs.google.com/document/d/1Wf4enSGOEXD5_AE-uzLoYqjIp5MnePbZ6kYTVFp1WoM/edit
-   *   <li>https://broadworkbench.atlassian.net/browse/BT-4?focusedCommentId=35980
-   *   <li>etc.
-   * </ul>
-   *
-   * <p>Note: GA4GH CIB URIs are incompatible with W3C/IETF URIs and the various standard libraries
-   * that parse them:
-   *
-   * <ul>
-   *   <li>https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Definition
-   *   <li>https://tools.ietf.org/html/rfc3986
-   *   <li>https://cr.openjdk.java.net/~dfuchs/writeups/updating-uri/
-   *   <li>etc.
-   * </ul>
-   *
-   * <p>Additionally, there are previous non-CIB DOS/DRS URIs that *are* compatible with W3C/IETF
-   * URIs format too. Instead of encoding the `/` in the protocol suffix to `%2F` they seem to pass
-   * it through just as a `/` in the HTTPS URL.
-   *
-   * <p>If you update *any* of the below be sure to link to the supporting docs and update the
-   * comments above!
-   */
   private static final Pattern drsRegex =
       Pattern.compile(
-          "(?:dos|drs)://(?:(?<cidHost>dg\\.[0-9a-z-]+)|(?<fullHost>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)(?<query>\\?(.*))?",
+          "(?:dos|drs)://(?:(?<compactId>dg\\.[0-9a-z-]+)|(?<hostname>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)",
           Pattern.CASE_INSENSITIVE);
 
   public AnnotatedResourceMetadata fetchResourceMetadata(
@@ -95,27 +64,48 @@ public record MetadataService(
     return buildResponseObject(requestedFields, metadata, provider);
   }
 
+  /**
+   * DRS schemes are allowed as of <a
+   * href="https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.2.0/docs/">DRS
+   * 1.2</a>
+   *
+   * <p>DOS is still supported as a URI scheme in case there are URIs in that form in the wild
+   * however all providers support DRS 1.2. So parsing the URI treats DOS and DRS interchangeably
+   * but the resolution is all DRS 1.2
+   *
+   * <p>Note: GA4GH Compact Identifier based URIs are incompatible with W3C/IETF URIs and the
+   * various standard libraries that parse them because they use colons as a delimiter. However,
+   * there are some Compact Identifier based URIs that use slashes as a delimiter. This code assumes
+   * that if the host part of the URI is of the form dg.[0-9a-z-]+ then it is a Compact Identifier.
+   *
+   * <p>If you update *any* of the below be sure to link to the supporting docs and update the
+   * comments above!
+   */
   public UriComponents getUriComponents(String drsUri) {
 
     var drsRegexMatch = drsRegex.matcher(drsUri);
 
     if (drsRegexMatch.matches()) {
-      var cid = drsRegexMatch.group("cidHost");
-      if (cid != null && !drsHubConfig.getCompactIdHosts().containsKey(cid)) {
-        throw new BadRequestException(
-            String.format("Could not find matching host for compact id [%s].", cid));
-      }
-
+      var compactIdHost =
+          Optional.ofNullable(drsRegexMatch.group("compactId"))
+              .map(compactId -> drsHubConfig.getCompactIdHosts().get(compactId.toLowerCase()));
+      var hostname = Optional.ofNullable(drsRegexMatch.group("hostname"));
       var dnsHost =
-          cid == null ? drsRegexMatch.group("fullHost") : drsHubConfig.getCompactIdHosts().get(cid);
+          compactIdHost
+              .or(() -> hostname)
+              .orElseThrow(
+                  () ->
+                      new BadRequestException(
+                          String.format(
+                              "Could not find matching host for compact id [%s].",
+                              drsRegexMatch.group("compactId"))));
 
       return UriComponentsBuilder.newInstance()
           .host(dnsHost)
           .path(URLEncoder.encode(drsRegexMatch.group("suffix"), StandardCharsets.UTF_8))
-          .query(drsRegexMatch.group("query"))
           .build();
     } else {
-      throw new BadRequestException(String.format("[%s] is not a valid DOS/DRS URI.", drsUri));
+      throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
     }
   }
 
