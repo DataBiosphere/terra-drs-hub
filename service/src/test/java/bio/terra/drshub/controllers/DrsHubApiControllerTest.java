@@ -583,6 +583,18 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().isBadRequest());
   }
 
+  @Test
+  void testHandlesUnparsableHost() throws Exception {
+    postDrsHubRequest(TEST_ACCESS_TOKEN, "?", "12345", List.of(Fields.NAME))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void testHandlesQueryString() throws Exception {
+    postDrsHubRequest(TEST_ACCESS_TOKEN, TDR_TEST_HOST, "12345?foo=bar", List.of(Fields.NAME))
+        .andExpect(status().isBadRequest());
+  }
+
   private ProviderHosts getProviderHosts(String provider) {
     var drsProvider = config.getDrsProviders().get(provider);
     if (Objects.equals(provider, "terraDataRepo")) {

@@ -6,6 +6,7 @@ drshub:
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
   compactIdHosts:
+    # it is important for case-insensitive matching that the keys here are all lower case
     "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
     "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
     "dg.anv0": staging.theanvil.io
