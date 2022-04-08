@@ -681,7 +681,7 @@ public class DrsHubApiControllerTest extends BaseTest {
       BondProviderEnum bondProvider, String accessToken, String bondSaToken) {
     var mockBondApi = mock(BondApi.class);
     when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
-    when(mockBondApi.getLinkAccessToken(bondProvider.name()))
+    when(mockBondApi.getLinkAccessToken(bondProvider.getUriValue()))
         .thenReturn(new AccessTokenObject().token(bondSaToken));
     return mockBondApi;
   }
@@ -690,7 +690,7 @@ public class DrsHubApiControllerTest extends BaseTest {
       BondProviderEnum bondProvider, String accessToken, RestClientException exception) {
     var mockBondApi = mock(BondApi.class);
     when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
-    when(mockBondApi.getLinkAccessToken(bondProvider.name())).thenThrow(exception);
+    when(mockBondApi.getLinkAccessToken(bondProvider.getUriValue())).thenThrow(exception);
     return mockBondApi;
   }
 

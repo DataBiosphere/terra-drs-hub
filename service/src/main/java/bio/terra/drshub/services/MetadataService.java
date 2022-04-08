@@ -16,8 +16,6 @@ import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,7 +100,7 @@ public record MetadataService(
 
       return UriComponentsBuilder.newInstance()
           .host(dnsHost)
-          .path(URLEncoder.encode(drsRegexMatch.group("suffix"), StandardCharsets.UTF_8))
+          .path(drsRegexMatch.group("suffix"))
           .build();
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
@@ -150,7 +148,7 @@ public record MetadataService(
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var bondApi = bondApiFactory.getApi(bearerToken);
       drsMetadataBuilder.bondSaKey(
-          bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().toString()));
+          bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().getUriValue()));
     }
 
     if (drsResponse != null) {
@@ -374,7 +372,7 @@ public record MetadataService(
       var bondApi = bondApiFactory.getApi(bearerToken);
 
       var response =
-          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().toString());
+          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());
 
       return Optional.ofNullable(response.getToken());
     } else {
