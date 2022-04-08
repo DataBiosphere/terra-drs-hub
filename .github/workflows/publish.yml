@@ -71,7 +71,7 @@ jobs:
           token: ${{ secrets.BROADBOT_TOKEN }}
           repository: broadinstitute/terra-helmfile
           event-type: update-service
-          client-payload: '{"service": "drs-hub", "version": "${{ steps.tag.outputs.tag }}", "dev_only": false}'
+          client-payload: '{"service": "drshub", "version": "${{ steps.tag.outputs.tag }}", "dev_only": false}'
 
       - name: Notify slack on failure
         uses: 8398a7/action-slack@v3
