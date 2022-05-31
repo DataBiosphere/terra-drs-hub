@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.bond.model.SaKeyObject;
+import bio.terra.common.iam.TokenAuthenticatedRequest;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
@@ -61,7 +62,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @AutoConfigureMockMvc
 public class DrsHubApiControllerTest extends BaseTest {
 
-  public static final String TEST_ACCESS_TOKEN = "I am an access token";
+  public static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
   public static final String TEST_BOND_SA_TOKEN = "I am a bond SA token";
   public static final AccessURL TEST_ACCESS_URL = new AccessURL().url("I am a signed access url");
   public static final String TEST_PASSPORT = "I am a passport";
@@ -680,7 +681,8 @@ public class DrsHubApiControllerTest extends BaseTest {
   private BondApi mockBondLinkAccessTokenApi(
       BondProviderEnum bondProvider, String accessToken, String bondSaToken) {
     var mockBondApi = mock(BondApi.class);
-    when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
+    when(bondApiFactory.getApi(TokenAuthenticatedRequest.builder().setToken(accessToken).build()))
+        .thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.getUriValue()))
         .thenReturn(new AccessTokenObject().token(bondSaToken));
     return mockBondApi;
@@ -689,7 +691,8 @@ public class DrsHubApiControllerTest extends BaseTest {
   private BondApi mockBondLinkAccessTokenApiError(
       BondProviderEnum bondProvider, String accessToken, RestClientException exception) {
     var mockBondApi = mock(BondApi.class);
-    when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
+    when(bondApiFactory.getApi(TokenAuthenticatedRequest.builder().setToken(accessToken).build()))
+        .thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.getUriValue())).thenThrow(exception);
     return mockBondApi;
   }
@@ -697,7 +700,8 @@ public class DrsHubApiControllerTest extends BaseTest {
   private BondApi mockBondLinkSaKeyApi(
       BondProviderEnum bondProvider, String accessToken, Object bondSaKey) {
     var mockBondApi = mock(BondApi.class);
-    when(bondApiFactory.getApi(accessToken)).thenReturn(mockBondApi);
+    when(bondApiFactory.getApi(TokenAuthenticatedRequest.builder().setToken(accessToken).build()))
+        .thenReturn(mockBondApi);
     when(mockBondApi.getLinkSaKey(bondProvider.name()))
         .thenReturn(new SaKeyObject().data(bondSaKey));
     return mockBondApi;

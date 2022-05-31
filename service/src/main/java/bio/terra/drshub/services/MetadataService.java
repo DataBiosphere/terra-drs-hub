@@ -3,6 +3,7 @@ package bio.terra.drshub.services;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
+import bio.terra.common.iam.TokenAuthenticatedRequest;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
@@ -42,7 +43,10 @@ public record MetadataService(
           Pattern.CASE_INSENSITIVE);
 
   public AnnotatedResourceMetadata fetchResourceMetadata(
-      String drsUri, List<String> rawRequestedFields, String accessToken, Boolean forceAccessUrl) {
+      String drsUri,
+      List<String> rawRequestedFields,
+      TokenAuthenticatedRequest tokenAuthenticatedRequest,
+      Boolean forceAccessUrl) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -57,7 +61,12 @@ public record MetadataService(
 
     var metadata =
         fetchMetadata(
-            provider, requestedFields, uriComponents, drsUri, accessToken, forceAccessUrl);
+            provider,
+            requestedFields,
+            uriComponents,
+            drsUri,
+            tokenAuthenticatedRequest,
+            forceAccessUrl);
 
     return buildResponseObject(requestedFields, metadata, provider);
   }
@@ -134,19 +143,20 @@ public record MetadataService(
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
-      String bearerToken,
+      TokenAuthenticatedRequest tokenAuthenticatedRequest,
       boolean forceAccessUrl) {
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
     var drsResponse =
-        maybeFetchDrsObject(drsProvider, requestedFields, uriComponents, drsUri, bearerToken);
+        maybeFetchDrsObject(
+            drsProvider, requestedFields, uriComponents, drsUri, tokenAuthenticatedRequest);
     drsMetadataBuilder.drsResponse(drsResponse);
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
-      var bondApi = bondApiFactory.getApi(bearerToken);
+      var bondApi = bondApiFactory.getApi(tokenAuthenticatedRequest);
       drsMetadataBuilder.bondSaKey(
           bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().getUriValue()));
     }
@@ -158,7 +168,8 @@ public record MetadataService(
       if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
         var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
 
-        var passports = maybeFetchPassports(drsProvider, bearerToken, accessMethodType);
+        var passports =
+            maybeFetchPassports(drsProvider, tokenAuthenticatedRequest, accessMethodType);
 
         try {
           var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
@@ -169,7 +180,7 @@ public record MetadataService(
               getAccessUrl(
                   drsProvider,
                   uriComponents,
-                  bearerToken,
+                  tokenAuthenticatedRequest,
                   forceAccessUrl,
                   accessMethodType,
                   accessId,
@@ -182,7 +193,7 @@ public record MetadataService(
                 getAccessUrl(
                     drsProvider,
                     uriComponents,
-                    bearerToken,
+                    tokenAuthenticatedRequest,
                     forceAccessUrl,
                     accessMethodType,
                     accessId,
@@ -210,7 +221,7 @@ public record MetadataService(
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
-      String bearerToken) {
+      TokenAuthenticatedRequest tokenAuthenticatedRequest) {
     if (Fields.shouldRequestMetadata(requestedFields)) {
       var sendMetadataAuth = drsProvider.isMetadataAuth();
 
@@ -223,7 +234,7 @@ public record MetadataService(
 
       var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
       if (sendMetadataAuth) {
-        drsApi.setBearerToken(bearerToken);
+        drsApi.setBearerToken(tokenAuthenticatedRequest.getToken());
       }
 
       return drsApi.getObject(objectId, null);
@@ -232,9 +243,11 @@ public record MetadataService(
   }
 
   private List<String> maybeFetchPassports(
-      DrsProvider drsProvider, String bearerToken, TypeEnum accessMethodType) {
+      DrsProvider drsProvider,
+      TokenAuthenticatedRequest tokenAuthenticatedRequest,
+      TypeEnum accessMethodType) {
     if (drsProvider.shouldFetchPassports(accessMethodType)) {
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+      var ecmApi = externalCredsApiFactory.getApi(tokenAuthenticatedRequest.getToken());
 
       try {
         // For now, we are only getting a RAS passport. In the future it may also fetch from other
@@ -254,7 +267,7 @@ public record MetadataService(
   private AccessURL getAccessUrl(
       DrsProvider drsProvider,
       UriComponents uriComponents,
-      String bearerToken,
+      TokenAuthenticatedRequest tokenAuthenticatedRequest,
       boolean forceAccessUrl,
       TypeEnum accessMethodType,
       String accessId,
@@ -269,7 +282,7 @@ public record MetadataService(
             useFallbackAuth,
             drsProvider,
             forceAccessUrl,
-            bearerToken);
+            tokenAuthenticatedRequest);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
@@ -356,11 +369,11 @@ public record MetadataService(
 
   private Optional<String> getFenceAccessToken(
       String drsUri,
-      AccessMethod.TypeEnum accessMethodType,
+      TypeEnum accessMethodType,
       boolean useFallbackAuth,
       DrsProvider drsProvider,
       boolean forceAccessUrl,
-      String bearerToken) {
+      TokenAuthenticatedRequest tokenAuthenticatedRequest) {
     if (drsProvider.shouldFetchFenceAccessToken(
         accessMethodType, useFallbackAuth, forceAccessUrl)) {
 
@@ -369,7 +382,7 @@ public record MetadataService(
           drsUri,
           drsProvider.getBondProvider().orElseThrow());
 
-      var bondApi = bondApiFactory.getApi(bearerToken);
+      var bondApi = bondApiFactory.getApi(tokenAuthenticatedRequest);
 
       var response =
           bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());

@@ -1,7 +1,7 @@
 package bio.terra.drshub.controllers;
 
 import bio.terra.common.exception.BadRequestException;
-import bio.terra.common.exception.UnauthorizedException;
+import bio.terra.common.iam.TokenAuthenticatedRequestFactory;
 import bio.terra.drshub.generated.api.DrsHubApi;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
@@ -20,17 +20,21 @@ public class DrsHubApiController implements DrsHubApi {
 
   private final HttpServletRequest request;
   private final MetadataService metadataService;
+  private final TokenAuthenticatedRequestFactory tokenAuthenticatedRequestFactory;
 
-  public DrsHubApiController(HttpServletRequest request, MetadataService metadataService) {
+  public DrsHubApiController(
+      HttpServletRequest request,
+      MetadataService metadataService,
+      TokenAuthenticatedRequestFactory tokenAuthenticatedRequestFactory) {
     this.request = request;
     this.metadataService = metadataService;
+    this.tokenAuthenticatedRequestFactory = tokenAuthenticatedRequestFactory;
   }
 
   @Override
   public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
-    var auth = request.getHeader("authorization");
-
-    validateRequest(body, auth);
+    var tokenAuthenticatedRequest = tokenAuthenticatedRequestFactory.from(request);
+    validateRequest(body);
 
     var userAgent = request.getHeader("user-agent");
     var forceAccessUrl = Objects.equals(request.getHeader("drshub-force-access-url"), "true");
@@ -40,15 +44,12 @@ public class DrsHubApiController implements DrsHubApi {
 
     var resourceMetadata =
         metadataService.fetchResourceMetadata(
-            body.getUrl(), body.getFields(), auth.substring(7), forceAccessUrl);
+            body.getUrl(), body.getFields(), tokenAuthenticatedRequest, forceAccessUrl);
 
     return ResponseEntity.ok(resourceMetadata);
   }
 
-  private void validateRequest(RequestObject body, String auth) {
-    if (auth == null) {
-      throw new UnauthorizedException("Authorization header is missing.");
-    }
+  private void validateRequest(RequestObject body) {
     var errors = new ArrayList<String>();
 
     if (body == null || body.getUrl() == null) {
