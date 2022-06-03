@@ -1,7 +1,7 @@
 package bio.terra.drshub.controllers;
 
 import bio.terra.common.exception.BadRequestException;
-import bio.terra.common.iam.TokenAuthenticatedRequestFactory;
+import bio.terra.common.iam.BearerTokenFactory;
 import bio.terra.drshub.generated.api.DrsHubApi;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
@@ -20,20 +20,20 @@ public class DrsHubApiController implements DrsHubApi {
 
   private final HttpServletRequest request;
   private final MetadataService metadataService;
-  private final TokenAuthenticatedRequestFactory tokenAuthenticatedRequestFactory;
+  private final BearerTokenFactory bearerTokenFactory;
 
   public DrsHubApiController(
       HttpServletRequest request,
       MetadataService metadataService,
-      TokenAuthenticatedRequestFactory tokenAuthenticatedRequestFactory) {
+      BearerTokenFactory bearerTokenFactory) {
     this.request = request;
     this.metadataService = metadataService;
-    this.tokenAuthenticatedRequestFactory = tokenAuthenticatedRequestFactory;
+    this.bearerTokenFactory = bearerTokenFactory;
   }
 
   @Override
   public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
-    var tokenAuthenticatedRequest = tokenAuthenticatedRequestFactory.from(request);
+    var bearerToken = bearerTokenFactory.from(request);
     validateRequest(body);
 
     var userAgent = request.getHeader("user-agent");
@@ -44,7 +44,7 @@ public class DrsHubApiController implements DrsHubApi {
 
     var resourceMetadata =
         metadataService.fetchResourceMetadata(
-            body.getUrl(), body.getFields(), tokenAuthenticatedRequest, forceAccessUrl);
+            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl);
 
     return ResponseEntity.ok(resourceMetadata);
   }

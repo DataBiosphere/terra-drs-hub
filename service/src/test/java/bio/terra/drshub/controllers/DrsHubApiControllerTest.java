@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.bond.model.SaKeyObject;
-import bio.terra.common.iam.TokenAuthenticatedRequest;
+import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
@@ -681,8 +681,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   private BondApi mockBondLinkAccessTokenApi(
       BondProviderEnum bondProvider, String accessToken, String bondSaToken) {
     var mockBondApi = mock(BondApi.class);
-    when(bondApiFactory.getApi(TokenAuthenticatedRequest.builder().setToken(accessToken).build()))
-        .thenReturn(mockBondApi);
+    when(bondApiFactory.getApi(new BearerToken(accessToken))).thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.getUriValue()))
         .thenReturn(new AccessTokenObject().token(bondSaToken));
     return mockBondApi;
@@ -691,8 +690,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   private BondApi mockBondLinkAccessTokenApiError(
       BondProviderEnum bondProvider, String accessToken, RestClientException exception) {
     var mockBondApi = mock(BondApi.class);
-    when(bondApiFactory.getApi(TokenAuthenticatedRequest.builder().setToken(accessToken).build()))
-        .thenReturn(mockBondApi);
+    when(bondApiFactory.getApi(new BearerToken(accessToken))).thenReturn(mockBondApi);
     when(mockBondApi.getLinkAccessToken(bondProvider.getUriValue())).thenThrow(exception);
     return mockBondApi;
   }
@@ -700,8 +698,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   private BondApi mockBondLinkSaKeyApi(
       BondProviderEnum bondProvider, String accessToken, Object bondSaKey) {
     var mockBondApi = mock(BondApi.class);
-    when(bondApiFactory.getApi(TokenAuthenticatedRequest.builder().setToken(accessToken).build()))
-        .thenReturn(mockBondApi);
+    when(bondApiFactory.getApi(new BearerToken(accessToken))).thenReturn(mockBondApi);
     when(mockBondApi.getLinkSaKey(bondProvider.name()))
         .thenReturn(new SaKeyObject().data(bondSaKey));
     return mockBondApi;
