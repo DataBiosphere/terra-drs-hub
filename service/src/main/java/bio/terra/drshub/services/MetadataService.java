@@ -3,6 +3,7 @@ package bio.terra.drshub.services;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
+import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
@@ -42,7 +43,10 @@ public record MetadataService(
           Pattern.CASE_INSENSITIVE);
 
   public AnnotatedResourceMetadata fetchResourceMetadata(
-      String drsUri, List<String> rawRequestedFields, String accessToken, Boolean forceAccessUrl) {
+      String drsUri,
+      List<String> rawRequestedFields,
+      BearerToken bearerToken,
+      Boolean forceAccessUrl) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -57,7 +61,7 @@ public record MetadataService(
 
     var metadata =
         fetchMetadata(
-            provider, requestedFields, uriComponents, drsUri, accessToken, forceAccessUrl);
+            provider, requestedFields, uriComponents, drsUri, bearerToken, forceAccessUrl);
 
     return buildResponseObject(requestedFields, metadata, provider);
   }
@@ -134,7 +138,7 @@ public record MetadataService(
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
-      String bearerToken,
+      BearerToken bearerToken,
       boolean forceAccessUrl) {
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
@@ -210,7 +214,7 @@ public record MetadataService(
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
-      String bearerToken) {
+      BearerToken bearerToken) {
     if (Fields.shouldRequestMetadata(requestedFields)) {
       var sendMetadataAuth = drsProvider.isMetadataAuth();
 
@@ -223,7 +227,7 @@ public record MetadataService(
 
       var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
       if (sendMetadataAuth) {
-        drsApi.setBearerToken(bearerToken);
+        drsApi.setBearerToken(bearerToken.getToken());
       }
 
       return drsApi.getObject(objectId, null);
@@ -232,9 +236,9 @@ public record MetadataService(
   }
 
   private List<String> maybeFetchPassports(
-      DrsProvider drsProvider, String bearerToken, TypeEnum accessMethodType) {
+      DrsProvider drsProvider, BearerToken bearerToken, TypeEnum accessMethodType) {
     if (drsProvider.shouldFetchPassports(accessMethodType)) {
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken);
+      var ecmApi = externalCredsApiFactory.getApi(bearerToken.getToken());
 
       try {
         // For now, we are only getting a RAS passport. In the future it may also fetch from other
@@ -254,7 +258,7 @@ public record MetadataService(
   private AccessURL getAccessUrl(
       DrsProvider drsProvider,
       UriComponents uriComponents,
-      String bearerToken,
+      BearerToken bearerToken,
       boolean forceAccessUrl,
       TypeEnum accessMethodType,
       String accessId,
@@ -356,11 +360,11 @@ public record MetadataService(
 
   private Optional<String> getFenceAccessToken(
       String drsUri,
-      AccessMethod.TypeEnum accessMethodType,
+      TypeEnum accessMethodType,
       boolean useFallbackAuth,
       DrsProvider drsProvider,
       boolean forceAccessUrl,
-      String bearerToken) {
+      BearerToken bearerToken) {
     if (drsProvider.shouldFetchFenceAccessToken(
         accessMethodType, useFallbackAuth, forceAccessUrl)) {
 

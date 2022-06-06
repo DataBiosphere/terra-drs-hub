@@ -11,9 +11,10 @@ import org.springframework.context.annotation.FilterType;
 @EnableAutoConfiguration
 @ComponentScan(
     basePackages = {
-        "bio.terra.drshub",
-        "bio.terra.common.logging",
-        "bio.terra.common.tracing"
+      "bio.terra.drshub",
+      "bio.terra.common.logging",
+      "bio.terra.common.tracing",
+      "bio.terra.common.iam"
     },
     excludeFilters = @Filter(type = FilterType.ANNOTATION, classes = SpringBootConfiguration.class))
 public class DrsHubApplication {

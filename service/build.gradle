@@ -43,7 +43,7 @@ dependencies {
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache4'
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
 
-	implementation('bio.terra:terra-common-lib:0.0.53-SNAPSHOT') {
+	implementation('bio.terra:terra-common-lib:0.0.60-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
 		exclude group: 'org.liquibase', module: 'liquibase-core'
 		exclude group: 'bio.terra', module: 'stairway-gcp'
