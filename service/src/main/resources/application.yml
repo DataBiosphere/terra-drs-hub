@@ -119,8 +119,8 @@ spring:
 
 terra.common:
   tracing:
-    stackdriverExportEnabled: ${CLOUD_TRACE_ENABLED:false}
-    samplingRate: ${SAMPLING_PROBABILITY:0}
+    stackdriverExportEnabled: true
+    samplingRate: 1
 
 ---
 spring.config.activate.on-profile: prod
