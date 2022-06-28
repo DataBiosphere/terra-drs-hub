@@ -1,18 +1,11 @@
 # This workflow runs DrsHub's nightly tests, which currently only includes (very basic) performance tests
 
-name: Nightly Tests
-
-#on:
-#  workflow_dispatch: {}
-#  repository_dispatch:
-#    types: [nightly-tests]
+name: Nightly Perf Tests
 
 on:
-  push:
-    branches: [ dev ]
-    paths-ignore: [ '*.md' ]
-  pull_request:
-    branches: [ '**' ]
+  workflow_dispatch: {}
+  repository_dispatch:
+    types: [nightly-tests]
 
 jobs:
   performance-tests:
