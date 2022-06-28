@@ -2,10 +2,17 @@
 
 name: Nightly Tests
 
+#on:
+#  workflow_dispatch: {}
+#  repository_dispatch:
+#    types: [nightly-tests]
+
 on:
-  workflow_dispatch: {}
-  repository_dispatch:
-    types: [nightly-tests]
+  push:
+    branches: [ dev ]
+    paths-ignore: [ '*.md' ]
+  pull_request:
+    branches: [ '**' ]
 
 jobs:
   performance-tests:
