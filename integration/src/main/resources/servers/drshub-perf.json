@@ -1,0 +1,42 @@
+{
+  "name": "drshub-perf",
+  "description": "DrsHub Performance Testing Environment",
+
+  "samUri": "https://sam.dsde-perf.broadinstitute.org",
+  "drsHubUri": "https://drshub.dsde-dev.broadinstitute.org",
+
+  "cluster": {
+    "clusterName": "terra-perf",
+    "clusterShortName": "terra-perf",
+    "region": "us-central1",
+    "zone": "us-central1-a",
+    "project": "broad-dsde-perf",
+    "namespace": "terra-perf",
+    "containerName": "drshub",
+    "apiComponentLabel":  "drshub"
+  },
+  "deploymentScript": {},
+  "testRunnerServiceAccountFile": "testrunner-sa.json",
+
+  "skipDeployment": true,
+  "skipKubernetes": true,
+
+  "versionScripts": [
+    {
+      "name": "ReadFromTerraHelmfileRepo",
+      "description": "Version from https://github.com/broadinstitute/terra-helmfile",
+      "parametersMap": {
+        "app-name": "drshub",
+        "base-file-path": "terra-helmfile/versions/app/dev.yaml",
+        "override-file-path": "terra-helmfile/environments/live/perf.yaml"
+      }
+    },
+    {
+      "name": "ReadFromGitCommitLog",
+      "description": "Hash of git branch from Git Commit Log",
+      "parametersMap": {
+        "git-dir": "../.git"
+      }
+    }
+  ]
+}
