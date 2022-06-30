@@ -2,6 +2,7 @@ package bio.terra.drshub.controllers;
 
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerTokenFactory;
+import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.generated.api.DrsHubApi;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
@@ -42,11 +43,10 @@ public class DrsHubApiController implements DrsHubApi {
 
     log.info("Received URL '{}' from agent '{}' on IP '{}'", body.getUrl(), userAgent, ip);
 
-    var resourceMetadata =
-        metadataService.fetchResourceMetadata(
-            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl);
-
-    return ResponseEntity.ok(resourceMetadata);
+    throw new DrsHubException(
+        "Intentionally throwing Internal Server Error to test error reporting"
+            + " for https://broadworkbench.atlassian.net/browse/ID-83 on the dev env ; please do not"
+            + " send this change beyond the dev env");
   }
 
   private void validateRequest(RequestObject body) {
