@@ -74,6 +74,8 @@ but this can be changed by providing values in the `fields` array.
 ## Architecture
 DrsHub is a Java 17 Spring Boot application running in Kubernetes. As it simply resolves urls and doesn't have any state, it has no database. For developer convenience, a Swagger UI is provided.
 
+Some architecture diagrams can be found in [LucidChart](https://lucid.app/documents#/documents?folder_id=297026717)
+
 ## Development
 
 ### Setup
