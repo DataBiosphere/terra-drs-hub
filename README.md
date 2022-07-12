@@ -100,3 +100,18 @@ Adding `--stacktrace` can give you more debugging information, if needed.
 ### Logging
 By default, DrsHub will emit logs in the Stackdriver JSON format. 
 To disable this behavior for local development, add `DRSHUB_LOG_APPENDER=Console-Standard` to your environment when running DrsHub.
+
+## Deployment
+DrsHub runs in Kubernetes in GCP. Current deployments can be found at:
+- Dev
+  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-dev/terra-dev/drshub-deployment/overview?project=broad-dsde-dev)
+  - [Swagger UI](https://drshub.dsde-dev.broadinstitute.org/)
+- Alpha
+  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-alpha/terra-alpha/drshub-deployment/overview?project=broad-dsde-alpha)
+  - [Swagger UI](https://drshub.dsde-alpha.broadinstitute.org/)
+- Perf
+  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-perf/terra-perf/drshub-deployment/overview?project=broad-dsde-perf)
+  - [Swagger UI](https://drshub.dsde-perf.broadinstitute.org/)
+- Staging
+  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-staging/terra-staging/drshub-deployment/overview?project=broad-dsde-staging)
+  - [Swagger UI](https://drshub.dsde-staging.broadinstitute.org/)
