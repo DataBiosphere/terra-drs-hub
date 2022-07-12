@@ -35,7 +35,7 @@ Request bodies should look like
 ```json
 {
   "url": "string",
-  "fields": ["String"]
+  "fields": ["string"]
 }
 ```
 where `url` is the DRS URL to resolve and `fields` is any of
@@ -80,6 +80,8 @@ Some architecture diagrams can be found in [LucidChart](https://lucid.app/docume
 
 ### Setup
 Install Java 17 SDK from your preferred provider. A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/). If developing in IntelliJ, you can just configure the Project SDK to use Java 17.
+
+You must use [git-secrets](https://github.com/awslabs/git-secrets). You should be doing this anyway for all of your repositories.
 
 Before running anything, make sure to run `./render_configs <ENV>` to render secrets locally. The default `<ENV>` is `dev`, which is what you should use for local running and testing.
 
