@@ -78,6 +78,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Git secrets setup
+        run: |
+          git clone https://github.com/awslabs/git-secrets.git ~/git-secrets
+          cd ~/git-secrets
+          git checkout b9e96b3212fa06aea65964ff0d5cda84ce935f38
+          sudo make install
+
+      - name: Secrets check
+        run: |
+          ./minnie-kenny.sh --force
+          git secrets --scan-history
+
       - name: Gradle cache
         uses: actions/cache@v2
         with:
@@ -105,18 +117,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Git secrets setup
-        run: |
-          git clone https://github.com/awslabs/git-secrets.git ~/git-secrets
-          cd ~/git-secrets
-          git checkout b9e96b3212fa06aea65964ff0d5cda84ce935f38
-          sudo make install
-
-      - name: Secrets check
-        run: |
-          ./minnie-kenny.sh --force
-          git secrets --scan-history
 
       - name: Gradle cache
         uses: actions/cache@v2
