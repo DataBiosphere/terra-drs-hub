@@ -1,8 +1,8 @@
-# Dr. Shub, MD (Also known as DrsHub)
-
+# DrsHub (Also known as Dr. Shub, MD)
 ## Overview
-DrsHub is a Java Spring Boot rewrite of the Cloud Function [Martha](https://github.com/broadinstitute/martha), specifically, its v3 API.
-The purpose of DrsHub is to resolve [DRS](https://ga4gh.github.io/data-repository-service-schemas/preview/develop/docs/) URLs for Terra services.
+DrsHub is the [DRS](https://ga4gh.github.io/data-repository-service-schemas/preview/develop/docs/) resolution service for Terra.  
+
+It is a Java Spring Boot rewrite of the deprecated Cloud Function [Martha](https://github.com/broadinstitute/martha), specifically, its v3 API.
 
 ## DRS Providers
 Currently, DrsHub supports the following DRS Providers:
@@ -28,8 +28,8 @@ Currently, DrsHub supports the following DRS Providers:
     - Fence Tokens
 
 ## Usage
-To resolve a DRS URL, perform an HTTP `POST` to the `/api/v4/drs/resolve`.
-The content-type of your request should be application/json with the content/body of your request encoded accordingly.
+To resolve a DRS URL, perform an HTTP `POST` to `/api/v4/drs/resolve`.
+The content-type of your request should be `application/json` with the content/body of your request encoded accordingly.
 
 Request bodies should look like 
 ```json
@@ -55,7 +55,7 @@ timeCreated
 timeUpdated
 ```
 
-By default, the response will include 
+If no `fields` are specified in the request, the response will include the following `fields` by default:
 ```text
 bucket
 contentType
@@ -69,7 +69,6 @@ timeCreated
 timeUpdated
 googleServiceAccount
 ```
-but this can be changed by providing values in the `fields` array.
 
 ## Architecture
 DrsHub is a Java 17 Spring Boot application running in Kubernetes. As it simply resolves urls and doesn't have any state, it has no database. For developer convenience, a Swagger UI is provided.
