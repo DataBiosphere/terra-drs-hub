@@ -177,3 +177,22 @@ jobs:
         with:
           workflow: Tag
           token: ${{ secrets.BROADBOT_TOKEN }}
+
+  source-clear:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: SourceClear scan
+        env:
+          SRCCLR_API_TOKEN: ${{ secrets.SRCCLR_API_TOKEN }}
+        run: ./gradlew --build-cache srcclr
+

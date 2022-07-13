@@ -12,6 +12,7 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
+    id 'com.srcclr.gradle'
 }
 
 repositories {
