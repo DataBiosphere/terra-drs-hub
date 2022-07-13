@@ -53,6 +53,11 @@ dependencies {
 	}
 	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-1b67d8b'
 	implementation 'bio.terra:externalcreds-client-resttemplate:0.72.0-SNAPSHOT'
+	implementation 'io.sentry:sentry-logback:6.1.4'
+	implementation 'org.codehaus.janino:janino:3.1.7' // Provides if/else xml parsing for logback config
+	implementation('org.springframework.cloud:spring-cloud-gcp-starter-logging:1.2.8.RELEASE') {
+		exclude group: 'org.springframework', module: 'spring-jcl'
+	}
 }
 
 sonarqube {

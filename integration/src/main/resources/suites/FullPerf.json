@@ -1,0 +1,9 @@
+{
+  "name": "FullPerf",
+  "description": "All perf tests",
+  "serverSpecificationFile": "drshub-perf.json",
+  "testConfigurationFiles": [
+    "perf/GetStatus.json",
+    "perf/GetVersion.json"
+  ]
+}
