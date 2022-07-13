@@ -79,7 +79,10 @@ Some architecture diagrams can be found in [LucidChart](https://lucid.app/docume
 ## Development
 
 ### Setup
-Install Java 17 SDK from your preferred provider. A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/). If developing in IntelliJ, you can just configure the Project SDK to use Java 17.
+Install Java 17 SDK from your preferred provider. A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/). 
+
+If developing in IntelliJ, you can just configure the Project SDK to use Java 17. 
+You'll also need to set the Gradle JVM, located at `Preferences | Build, Execution, Deployment | Build Tools | Gradle`.
 
 You must use [git-secrets](https://github.com/awslabs/git-secrets). You should be doing this anyway for all of your repositories.
 DrsHub uses [Minnie Kenny](https://minnie-kenny.readthedocs.io/en/latest/), and is configured to run `minnie_kenny.sh` on `./gradlew test` tasks, ensuring that git-secrets is set up.
