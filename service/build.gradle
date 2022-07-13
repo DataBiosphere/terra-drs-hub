@@ -58,8 +58,8 @@ dependencies {
 // TODO: update this for drshub sonarcloud instance
 sonarqube {
 	properties {
-		property "sonar.projectName", "terra-external-credentials-manager-service"
-		property "sonar.projectKey", "DataBiosphere_terra-external-credentials-manager"
+		property "sonar.projectName", "terra-drs-hub"
+		property "sonar.projectKey", "DataBiosphere_terra-drs-hub"
 		property "sonar.organization", "broad-databiosphere"
 		property "sonar.host.url", "https://sonarcloud.io"
 		property "sonar.sources", "src/main/java,src/main/resources/templates"
