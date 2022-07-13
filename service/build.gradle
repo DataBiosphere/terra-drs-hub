@@ -55,7 +55,6 @@ dependencies {
 	implementation 'bio.terra:externalcreds-client-resttemplate:0.72.0-SNAPSHOT'
 }
 
-// TODO: update this for drshub sonarcloud instance
 sonarqube {
 	properties {
 		property "sonar.projectName", "terra-drs-hub"
