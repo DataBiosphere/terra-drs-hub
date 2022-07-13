@@ -82,7 +82,8 @@ Some architecture diagrams can be found in [LucidChart](https://lucid.app/docume
 Install Java 17 SDK from your preferred provider. A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/). If developing in IntelliJ, you can just configure the Project SDK to use Java 17.
 
 You must use [git-secrets](https://github.com/awslabs/git-secrets). You should be doing this anyway for all of your repositories.
-`minnie_kenny.sh` will run on `./gradlew test` tasks, and ensures that git-secrets is set up. You can also run it manually to make sure `git-secrets` is set up without testing.
+DrsHub uses [Minnie Kenny](https://minnie-kenny.readthedocs.io/en/latest/), and is configured to run `minnie_kenny.sh` on `./gradlew test` tasks, ensuring that git-secrets is set up.
+You can also run it manually to make sure `git-secrets` is set up without testing.
 
 Before running anything, make sure to run `./render_configs <ENV>` to render secrets locally. The default `<ENV>` is `dev`, which is what you should use for local running and testing.
 
