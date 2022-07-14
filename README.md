@@ -123,3 +123,7 @@ DrsHub runs in Kubernetes in GCP. Current deployments can be found at:
 - Staging
   - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-staging/terra-staging/drshub-deployment/overview?project=broad-dsde-staging)
   - [Swagger UI](https://drshub.dsde-staging.broadinstitute.org/)
+
+## SonarCloud Status
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=DataBiosphere_terra-drs-hub&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DataBiosphere_terra-drs-hub)
+
