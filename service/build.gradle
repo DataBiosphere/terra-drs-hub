@@ -12,7 +12,8 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
-    id 'com.srcclr.gradle' version '3.1.12'
+  id 'com.srcclr.gradle' version '3.1.12'
+	id 'org.sonarqube'
 }
 
 repositories {
@@ -57,5 +58,15 @@ dependencies {
 	implementation 'org.codehaus.janino:janino:3.1.7' // Provides if/else xml parsing for logback config
 	implementation('org.springframework.cloud:spring-cloud-gcp-starter-logging:1.2.8.RELEASE') {
 		exclude group: 'org.springframework', module: 'spring-jcl'
+	}
+}
+
+sonarqube {
+	properties {
+		property "sonar.projectName", "terra-drs-hub"
+		property "sonar.projectKey", "DataBiosphere_terra-drs-hub"
+		property "sonar.organization", "broad-databiosphere"
+		property "sonar.host.url", "https://sonarcloud.io"
+		property "sonar.sources", "src/main/java,src/main/resources/templates"
 	}
 }
