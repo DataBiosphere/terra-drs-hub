@@ -31,6 +31,8 @@
         </then>
     </if>
 
+    <logger name="bio.terra.common.logging.RequestLoggingFilter" level="off" />
+
     <root level="INFO">
         <appender-ref ref="${DRSHUB_LOG_APPENDER}"/>
         <if condition='isDefined("SENTRY_DSN")'>
