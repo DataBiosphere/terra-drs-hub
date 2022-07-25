@@ -46,5 +46,9 @@ jobs:
         run: echo ::set-output name=name::gcr.io/${GOOGLE_PROJECT}/${SERVICE_NAME}:${{ steps.tag.outputs.tag }}
       - name: Build image locally with jib
         run: './gradlew :service:jibDockerBuild --image=${{ steps.image-name.outputs.name }} -Djib.console=plain'
+      - name: Scan for Docker vulnerabilities
+        uses: broadinstitute/dsp-appsec-trivy-action@v1
+        with:
+          image: ${{ steps.image-name.outputs.name }}
       - name: Push GCR image
         run: 'docker push ${{ steps.image-name.outputs.name }}'
