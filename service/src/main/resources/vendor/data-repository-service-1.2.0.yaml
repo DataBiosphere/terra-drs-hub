@@ -973,6 +973,30 @@ paths:
         - $ref: '#/components/parameters/ObjectId'
       requestBody:
         $ref: '#/components/requestBodies/PostObjectBody'
+    options:
+      summary: Get Authorization info about a DrsObject.
+      description: >-
+        Returns a list of Authorizations that can be used to determine how to authorize requests to GetObject or PostObject.
+      operationId: OptionsObject
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+        - $ref: '#/components/parameters/Expand'
+      responses:
+        '200':
+          $ref: '#/components/responses/200AuthorizationsFound'
+        '204':
+          $ref: '#/components/responses/204AuthorizationsNotSupported'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFoundDrsObject'
+        '405':
+          $ref: '#/components/responses/405AuthorizationsNotSupported'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Objects
+      x-swagger-router-controller: ga4gh.drs.server
   /objects/{object_id}/access/{access_id}:
     get:
       summary: Get a URL for fetching bytes
@@ -1541,6 +1565,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AccessURL'
+    200AuthorizationsFound:
+      description: The `Authorizations` were found successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthFound'
+    204AuthorizationsNotSupported:
+      description: Currently `Authorizations` are not supported for this object. Default to `None`
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthNotSupported'
+    405AuthorizationsNotSupported:
+      description: Currently `Authorizations` are not supported for this object. Default to `None`
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   parameters:
     ObjectId:
       in: path
