@@ -8,6 +8,9 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
+import bio.terra.drshub.logging.AuditLogEvent;
+import bio.terra.drshub.logging.AuditLogEventType;
+import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
@@ -35,7 +38,8 @@ public record MetadataService(
     BondApiFactory bondApiFactory,
     DrsApiFactory drsApiFactory,
     DrsHubConfig drsHubConfig,
-    ExternalCredsApiFactory externalCredsApiFactory) {
+    ExternalCredsApiFactory externalCredsApiFactory,
+    AuditLogger auditLogger) {
 
   private static final Pattern drsRegex =
       Pattern.compile(
@@ -46,7 +50,8 @@ public record MetadataService(
       String drsUri,
       List<String> rawRequestedFields,
       BearerToken bearerToken,
-      Boolean forceAccessUrl) {
+      Boolean forceAccessUrl,
+      String ip) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -61,7 +66,7 @@ public record MetadataService(
 
     var metadata =
         fetchMetadata(
-            provider, requestedFields, uriComponents, drsUri, bearerToken, forceAccessUrl);
+            provider, requestedFields, uriComponents, drsUri, bearerToken, forceAccessUrl, ip);
 
     return buildResponseObject(requestedFields, metadata, provider);
   }
@@ -139,7 +144,8 @@ public record MetadataService(
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken,
-      boolean forceAccessUrl) {
+      boolean forceAccessUrl,
+      String ip) {
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
     var drsResponse =
@@ -164,8 +170,17 @@ public record MetadataService(
 
         var passports = maybeFetchPassports(drsProvider, bearerToken, accessMethodType);
 
+        AccessUrlAuthEnum auth = null;
+        AuditLogEvent.Builder auditEventBuilder =
+            new AuditLogEvent.Builder()
+                .auditLogEventType(AuditLogEventType.DrsResolutionFailed)
+                .dRSUrl(uriComponents.toUriString())
+                .providerName(drsProvider.getName())
+                .clientIP(Optional.ofNullable(ip));
+
         try {
           var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+          auth = providerAccessMethod.getAuth();
 
           log.info("Requesting URL for {}", uriComponents.toUriString());
 
@@ -178,10 +193,11 @@ public record MetadataService(
                   accessMethodType,
                   accessId,
                   passports,
-                  providerAccessMethod.getAuth(),
+                  auth,
                   false);
 
           if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+            auth = providerAccessMethod.getFallbackAuth().get();
             drsMetadataBuilder.accessUrl(
                 getAccessUrl(
                     drsProvider,
@@ -191,12 +207,22 @@ public record MetadataService(
                     accessMethodType,
                     accessId,
                     passports,
-                    providerAccessMethod.getFallbackAuth().get(),
+                    auth,
                     true));
           } else {
             drsMetadataBuilder.accessUrl(accessUrl);
           }
+          auditLogger.logEvent(
+              auditEventBuilder
+                  .auditLogEventType(AuditLogEventType.DrsResolutionSucceeded)
+                  .authType(auth)
+                  .build());
         } catch (RuntimeException e) {
+          auditLogger.logEvent(
+              auditEventBuilder
+                  .auditLogEventType(AuditLogEventType.DrsResolutionFailed)
+                  .authType(Optional.ofNullable(auth))
+                  .build());
           if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
             throw e;
           } else {
