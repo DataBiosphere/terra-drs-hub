@@ -8,6 +8,9 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
+import bio.terra.drshub.logging.AuditLogEvent;
+import bio.terra.drshub.logging.AuditLogEventType;
+import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
@@ -35,7 +38,8 @@ public record MetadataService(
     BondApiFactory bondApiFactory,
     DrsApiFactory drsApiFactory,
     DrsHubConfig drsHubConfig,
-    ExternalCredsApiFactory externalCredsApiFactory) {
+    ExternalCredsApiFactory externalCredsApiFactory,
+    AuditLogger auditLogger) {
 
   private static final Pattern drsRegex =
       Pattern.compile(
@@ -46,7 +50,8 @@ public record MetadataService(
       String drsUri,
       List<String> rawRequestedFields,
       BearerToken bearerToken,
-      Boolean forceAccessUrl) {
+      Boolean forceAccessUrl,
+      String ip) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -61,7 +66,7 @@ public record MetadataService(
 
     var metadata =
         fetchMetadata(
-            provider, requestedFields, uriComponents, drsUri, bearerToken, forceAccessUrl);
+            provider, requestedFields, uriComponents, drsUri, bearerToken, forceAccessUrl, ip);
 
     return buildResponseObject(requestedFields, metadata, provider);
   }
@@ -139,12 +144,26 @@ public record MetadataService(
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken,
-      boolean forceAccessUrl) {
+      boolean forceAccessUrl,
+      String ip) {
+
+    AuditLogEvent.Builder auditEventBuilder =
+        new AuditLogEvent.Builder()
+            .dRSUrl(uriComponents.toUriString())
+            .providerName(drsProvider.getName())
+            .clientIP(Optional.ofNullable(ip));
     var drsMetadataBuilder = new DrsMetadata.Builder();
 
-    var drsResponse =
-        maybeFetchDrsObject(drsProvider, requestedFields, uriComponents, drsUri, bearerToken);
-    drsMetadataBuilder.drsResponse(drsResponse);
+    final DrsObject drsResponse;
+    try {
+      drsResponse =
+          maybeFetchDrsObject(drsProvider, requestedFields, uriComponents, drsUri, bearerToken);
+      drsMetadataBuilder.drsResponse(drsResponse);
+    } catch (Exception e) {
+      auditLogger.logEvent(
+          auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
+      throw e;
+    }
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
@@ -166,6 +185,7 @@ public record MetadataService(
 
         try {
           var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+          auditEventBuilder.authType(providerAccessMethod.getAuth());
 
           log.info("Requesting URL for {}", uriComponents.toUriString());
 
@@ -182,6 +202,7 @@ public record MetadataService(
                   false);
 
           if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
+            auditEventBuilder.authType(providerAccessMethod.getFallbackAuth().get());
             drsMetadataBuilder.accessUrl(
                 getAccessUrl(
                     drsProvider,
@@ -197,6 +218,8 @@ public record MetadataService(
             drsMetadataBuilder.accessUrl(accessUrl);
           }
         } catch (RuntimeException e) {
+          auditLogger.logEvent(
+              auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
           if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
             throw e;
           } else {
@@ -206,6 +229,8 @@ public record MetadataService(
       }
     }
 
+    auditLogger.logEvent(
+        auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionSucceeded).build());
     return drsMetadataBuilder.build();
   }
 

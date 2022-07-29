@@ -44,7 +44,7 @@ public class DrsHubApiController implements DrsHubApi {
 
     var resourceMetadata =
         metadataService.fetchResourceMetadata(
-            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl);
+            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl, ip);
 
     return ResponseEntity.ok(resourceMetadata);
   }
