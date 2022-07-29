@@ -32,7 +32,7 @@ drshub:
       accessMethodConfigs:
         - type: gs
           auth: fence_token
-          fetchAccessUrl: false
+          fetchAccessUrl: true
     crdc:
       name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
       hostRegex: '.*\.datacommons\.io'
@@ -41,7 +41,7 @@ drshub:
       accessMethodConfigs:
         - type: gs
           auth: fence_token
-          fetchAccessUrl: false
+          fetchAccessUrl: true
         - type: s3
           auth: fence_token
           fetchAccessUrl: true
