@@ -387,7 +387,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     drsObject
         .getAccessMethods()
         .get(0)
-        .setAccessUrl((AllOfAccessMethodAccessUrl) new AccessURL().url("gs://bucket/" + fileName));
+        .setAccessUrl((AllOfAccessMethodAccessUrl) new AllOfAccessMethodAccessUrl().url("gs://bucket/" + fileName));
 
     mockDrsApi(cidProviderHost.dnsHost, drsObject);
 
