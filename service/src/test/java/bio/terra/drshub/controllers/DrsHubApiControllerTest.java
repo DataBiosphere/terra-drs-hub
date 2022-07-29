@@ -172,7 +172,9 @@ public class DrsHubApiControllerTest extends BaseTest {
             .accessMethods(
                 List.of(
                     new AccessMethod()
-                        .accessUrl((AllOfAccessMethodAccessUrl) new AccessURL().url("gs://foobar"))
+                        .accessUrl(
+                            (AllOfAccessMethodAccessUrl)
+                                new AllOfAccessMethodAccessUrl().url("gs://foobar"))
                         .type(TypeEnum.GS)));
 
     mockDrsApi(host, drsObject);
@@ -360,7 +362,8 @@ public class DrsHubApiControllerTest extends BaseTest {
         .getAccessMethods()
         .get(0)
         .setAccessUrl(
-            (AllOfAccessMethodAccessUrl) new AccessURL().url("gs://bucket/bad.different.name.txt"));
+            (AllOfAccessMethodAccessUrl)
+                new AllOfAccessMethodAccessUrl().url("gs://bucket/bad.different.name.txt"));
 
     mockDrsApi(cidProviderHost.dnsHost, drsObject);
 
