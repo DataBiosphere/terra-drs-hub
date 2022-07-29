@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
+import io.github.ga4gh.drs.model.AllOfAccessMethodAccessUrl;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.time.format.DateTimeFormatter;
@@ -171,7 +172,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             .accessMethods(
                 List.of(
                     new AccessMethod()
-                        .accessUrl(new AccessURL().url("gs://foobar"))
+                        .accessUrl((AllOfAccessMethodAccessUrl) new AccessURL().url("gs://foobar"))
                         .type(TypeEnum.GS)));
 
     mockDrsApi(host, drsObject);
@@ -358,7 +359,8 @@ public class DrsHubApiControllerTest extends BaseTest {
     drsObject
         .getAccessMethods()
         .get(0)
-        .setAccessUrl(new AccessURL().url("gs://bucket/bad.different.name.txt"));
+        .setAccessUrl(
+            (AllOfAccessMethodAccessUrl) new AccessURL().url("gs://bucket/bad.different.name.txt"));
 
     mockDrsApi(cidProviderHost.dnsHost, drsObject);
 
@@ -382,7 +384,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     drsObject
         .getAccessMethods()
         .get(0)
-        .setAccessUrl(new AccessURL().url("gs://bucket/" + fileName));
+        .setAccessUrl((AllOfAccessMethodAccessUrl) new AccessURL().url("gs://bucket/" + fileName));
 
     mockDrsApi(cidProviderHost.dnsHost, drsObject);
 
