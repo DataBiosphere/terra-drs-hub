@@ -41,7 +41,7 @@ drshub:
       accessMethodConfigs:
         - type: gs
           auth: fence_token
-          fetchAccessUrl: false
+          fetchAccessUrl: true
         - type: s3
           auth: fence_token
           fetchAccessUrl: true
