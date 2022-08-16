@@ -15,9 +15,11 @@ import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
+import io.github.ga4gh.drs.model.Authorizations;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.util.List;
@@ -136,6 +138,23 @@ public record MetadataService(
                     String.format(
                         "Could not determine DRS provider for id `%s`",
                         uriComponents.toUriString())));
+  }
+
+  @VisibleForTesting
+  Optional<Authorizations> fetchDrsAuthorizations(
+      DrsProvider drsProvider, UriComponents uriComponents) {
+    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    var objectId = getObjectId(uriComponents);
+    try {
+      return Optional.ofNullable(drsApi.optionsObject(objectId));
+    } catch (RestClientException ex) {
+      log.warn(
+          "Failed to get authorizations for {} from OPTIONS endpoint for DRS Provider {}. "
+              + "Falling back to configured authorizations",
+          objectId,
+          drsProvider.getName());
+      return Optional.empty();
+    }
   }
 
   private DrsMetadata fetchMetadata(

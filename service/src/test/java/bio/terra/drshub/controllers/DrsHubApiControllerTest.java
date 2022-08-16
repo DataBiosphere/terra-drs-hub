@@ -16,8 +16,6 @@ import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
-import bio.terra.drshub.config.DrsHubConfig;
-import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.BondProviderEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.Fields;
@@ -40,11 +38,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +64,6 @@ public class DrsHubApiControllerTest extends BaseTest {
   public static final AccessURL TEST_ACCESS_URL = new AccessURL().url("I am a signed access url");
   public static final String TEST_PASSPORT = "I am a passport";
   public static final String TDR_TEST_HOST = "jade.datarepo-dev.broadinstitute.org";
-  @Autowired private DrsHubConfig config;
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private MetadataService metadataService;
@@ -84,13 +79,13 @@ public class DrsHubApiControllerTest extends BaseTest {
     var drsObject = drsObjectWithRandomId("gs");
 
     mockDrsApiAccessUrlWithPassport(
-        cidProviderHost.dnsHost, drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
+        cidProviderHost.dnsHost(), drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -108,16 +103,18 @@ public class DrsHubApiControllerTest extends BaseTest {
     var drsObject = drsObjectWithRandomId("gs");
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "gs", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "gs", TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+        cidProviderHost.drsProvider().getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        TEST_BOND_SA_TOKEN);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -136,16 +133,18 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("passport");
     var drsObject = drsObjectWithRandomId("gs");
 
-    mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "gs", TEST_ACCESS_URL);
+    mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "gs", TEST_ACCESS_URL);
 
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+        cidProviderHost.drsProvider().getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        TEST_BOND_SA_TOKEN);
 
     var requestBody =
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
-                String.format("drs://%s/%s", cidProviderHost.drsUriHost, drsObject.getId()),
+                String.format("drs://%s/%s", cidProviderHost.drsUriHost(), drsObject.getId()),
                 "fields",
                 List.of(Fields.CONTENT_TYPE),
                 "foo",
@@ -197,7 +196,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             UUID.randomUUID().toString(),
             List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
         .andExpect(status().isOk())
@@ -210,11 +209,11 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     var bondSaKey = Map.of("foo", "sa key");
     mockBondLinkSaKeyApi(
-        cidProviderHost.drsProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, bondSaKey);
+        cidProviderHost.drsProvider().getBondProvider().get(), TEST_ACCESS_TOKEN, bondSaKey);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             UUID.randomUUID().toString(),
             List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
         .andExpect(status().isOk())
@@ -233,14 +232,16 @@ public class DrsHubApiControllerTest extends BaseTest {
     var drsObject = drsObjectWithRandomId("s3");
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "s3", TEST_ACCESS_URL);
 
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+        cidProviderHost.drsProvider().getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        TEST_BOND_SA_TOKEN);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -260,17 +261,17 @@ public class DrsHubApiControllerTest extends BaseTest {
     var drsObject = drsObjectWithRandomId("s3");
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "s3", TEST_ACCESS_URL);
 
     mockBondLinkAccessTokenApiError(
-        cidProviderHost.drsProvider.getBondProvider().get(),
+        cidProviderHost.drsProvider().getBondProvider().get(),
         TEST_ACCESS_TOKEN,
         HttpClientErrorException.create(
             HttpStatus.UNAUTHORIZED, "", HttpHeaders.EMPTY, null, null));
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isUnauthorized());
@@ -282,16 +283,16 @@ public class DrsHubApiControllerTest extends BaseTest {
     var drsObject = drsObjectWithRandomId("s3");
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost, drsObject, "s3", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "s3", TEST_ACCESS_URL);
 
     mockBondLinkAccessTokenApiError(
-        cidProviderHost.drsProvider.getBondProvider().get(),
+        cidProviderHost.drsProvider().getBondProvider().get(),
         TEST_ACCESS_TOKEN,
         HttpClientErrorException.create(HttpStatus.NOT_FOUND, "", HttpHeaders.EMPTY, null, null));
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isNotFound());
@@ -312,7 +313,7 @@ public class DrsHubApiControllerTest extends BaseTest {
       var cidProviderHost = getProviderHosts(providerName);
 
       var accessMethod =
-          cidProviderHost.drsProvider.getAccessMethodConfigs().stream()
+          cidProviderHost.drsProvider().getAccessMethodConfigs().stream()
               .filter(c -> !c.isFetchAccessUrl())
               .findAny()
               .get()
@@ -323,10 +324,10 @@ public class DrsHubApiControllerTest extends BaseTest {
       var drsObject = drsObjectWithRandomId(accessMethod);
 
       mockDrsApiAccessUrlWithToken(
-          cidProviderHost.dnsHost, drsObject, accessMethod, TEST_ACCESS_URL);
+          cidProviderHost.dnsHost(), drsObject, accessMethod, TEST_ACCESS_URL);
 
       cidProviderHost
-          .drsProvider
+          .drsProvider()
           .getBondProvider()
           .ifPresent(p -> mockBondLinkAccessTokenApi(p, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
 
@@ -340,7 +341,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                           Map.of(
                               "url",
                               String.format(
-                                  "drs://%s/%s", cidProviderHost.drsUriHost, drsObject.getId()),
+                                  "drs://%s/%s", cidProviderHost.drsUriHost(), drsObject.getId()),
                               "fields",
                               List.of(Fields.ACCESS_URL)))))
           .andExpect(status().isOk())
@@ -365,11 +366,11 @@ public class DrsHubApiControllerTest extends BaseTest {
             (AllOfAccessMethodAccessUrl)
                 new AllOfAccessMethodAccessUrl().url("gs://bucket/bad.different.name.txt"));
 
-    mockDrsApi(cidProviderHost.dnsHost, drsObject);
+    mockDrsApi(cidProviderHost.dnsHost(), drsObject);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.FILE_NAME))
         .andExpect(status().isOk())
@@ -387,13 +388,15 @@ public class DrsHubApiControllerTest extends BaseTest {
     drsObject
         .getAccessMethods()
         .get(0)
-        .setAccessUrl((AllOfAccessMethodAccessUrl) new AllOfAccessMethodAccessUrl().url("gs://bucket/" + fileName));
+        .setAccessUrl(
+            (AllOfAccessMethodAccessUrl)
+                new AllOfAccessMethodAccessUrl().url("gs://bucket/" + fileName));
 
-    mockDrsApi(cidProviderHost.dnsHost, drsObject);
+    mockDrsApi(cidProviderHost.dnsHost(), drsObject);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.FILE_NAME))
         .andExpect(status().isOk())
@@ -407,7 +410,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost, "fields", List.of("")));
+            Map.of("url", cidProviderHost.drsUriHost(), "fields", List.of("")));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -417,7 +420,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost, "fields", "not a list"));
+            Map.of("url", cidProviderHost.drsUriHost(), "fields", "not a list"));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -429,7 +432,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
-                cidProviderHost.drsUriHost,
+                cidProviderHost.drsUriHost(),
                 "fields",
                 List.of("fake field", "fake field 2")));
 
@@ -441,7 +444,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of("url", cidProviderHost.drsUriHost(), "fields", List.of(Fields.CONTENT_TYPE)));
 
     mvc.perform(
             post("/api/v4/drs/resolve")
@@ -464,7 +467,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost, "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of("url", cidProviderHost.drsUriHost(), "fields", List.of(Fields.CONTENT_TYPE)));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -513,7 +516,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isInternalServerError());
@@ -524,14 +527,16 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
 
-    when(mockDrsApi(cidProviderHost.dnsHost, drsObject).getAccessURL(drsObject.getId(), "s3"))
+    when(mockDrsApi(cidProviderHost.dnsHost(), drsObject).getAccessURL(drsObject.getId(), "s3"))
         .thenThrow(new HttpServerErrorException(HttpStatus.NOT_IMPLEMENTED, "forced sad response"));
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider.getBondProvider().get(), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN);
+        cidProviderHost.drsProvider().getBondProvider().get(),
+        TEST_ACCESS_TOKEN,
+        TEST_BOND_SA_TOKEN);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost,
+            cidProviderHost.drsUriHost(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
@@ -550,30 +555,30 @@ public class DrsHubApiControllerTest extends BaseTest {
     expectedMap.put(Fields.TIME_CREATED, formatter.format(createdTime.toInstant()));
     expectedMap.put(Fields.LOCALIZATION_PATH, null);
 
-    mockDrsApi(cidProviderHost.dnsHost, drsObject);
+    mockDrsApi(cidProviderHost.dnsHost(), drsObject);
 
     postDrsHubRequest(
-            TEST_ACCESS_TOKEN, cidProviderHost.drsUriHost, drsObject.getId(), requestedFields)
+            TEST_ACCESS_TOKEN, cidProviderHost.drsUriHost(), drsObject.getId(), requestedFields)
         .andExpect(status().isOk())
         .andExpect(content().json(objectMapper.writeValueAsString(expectedMap), true));
   }
 
   @Test
-  void testResolvesDnsHostsAndProviders() {
+  void testResolvesdnsHostsAndProviders() {
     for (var providerName : config.getDrsProviders().keySet()) {
       var cidProviderHost = getProviderHosts(providerName);
 
-      var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost);
-      var testDnsUri = String.format("drs://%s/12345", cidProviderHost.dnsHost);
+      var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
+      var testDnsUri = String.format("drs://%s/12345", cidProviderHost.dnsHost());
 
       var resolvedUri = metadataService.getUriComponents(testUri);
       var resolvedDnsUri = metadataService.getUriComponents(testDnsUri);
 
-      assertEquals(cidProviderHost.dnsHost, resolvedUri.getHost());
-      assertEquals(cidProviderHost.dnsHost, resolvedDnsUri.getHost());
+      assertEquals(cidProviderHost.dnsHost(), resolvedUri.getHost());
+      assertEquals(cidProviderHost.dnsHost(), resolvedDnsUri.getHost());
 
       var resolvedProvider = metadataService.determineDrsProvider(resolvedDnsUri);
-      assertEquals(cidProviderHost.drsProvider, resolvedProvider);
+      assertEquals(cidProviderHost.drsProvider(), resolvedProvider);
     }
   }
 
@@ -599,20 +604,6 @@ public class DrsHubApiControllerTest extends BaseTest {
   void testHandlesQueryString() throws Exception {
     postDrsHubRequest(TEST_ACCESS_TOKEN, TDR_TEST_HOST, "12345?foo=bar", List.of(Fields.NAME))
         .andExpect(status().isBadRequest());
-  }
-
-  private ProviderHosts getProviderHosts(String provider) {
-    var drsProvider = config.getDrsProviders().get(provider);
-    if (Objects.equals(provider, "terraDataRepo")) {
-      return new ProviderHosts(TDR_TEST_HOST, TDR_TEST_HOST, drsProvider);
-    }
-
-    var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());
-    return config.getCompactIdHosts().entrySet().stream()
-        .filter(h -> drsHostRegex.matcher(h.getValue()).matches())
-        .findFirst()
-        .map(entry -> new ProviderHosts(entry.getKey(), entry.getValue(), drsProvider))
-        .get();
   }
 
   /**
@@ -751,8 +742,6 @@ public class DrsHubApiControllerTest extends BaseTest {
     when(mockDrsApi.getAccessURL(drsObject.getId(), accessId)).thenReturn(accessUrl);
     return mockDrsApi;
   }
-
-  private record ProviderHosts(String drsUriHost, String dnsHost, DrsProvider drsProvider) {}
 
   private DrsObject drsObjectWithRandomId(String accessMethod) {
     return new DrsObject()
