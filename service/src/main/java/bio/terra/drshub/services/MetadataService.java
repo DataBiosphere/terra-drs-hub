@@ -8,6 +8,7 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
+import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -20,6 +21,7 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Authorizations;
+import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.util.List;
@@ -159,6 +161,16 @@ public record MetadataService(
 
   Authorizations getAuthorizationsForObject(
       DrsProvider drsProvider, UriComponents uriComponents) {
+      var drsAuthorizations = fetchDrsAuthorizations(drsProvider, uriComponents).orElseGet(()->{
+        var bondProvider = drsProvider.getBondProvider();
+        if (bondProvider.isPresent()) {
+          var provider = bondProvider.get();
+          var type = SupportedTypesEnum.BEARERAUTH;
+          var issuer = List.of(provider.getUriValue());
+          return new Authorizations().bearerAuthIssuers(issuer).supportedTypes(List.of(type));
+        }
+      });
+
     // call fetchDrsAuthorizations
     // if bearer auth, map to bond provider
     // always return populated Authorizations
