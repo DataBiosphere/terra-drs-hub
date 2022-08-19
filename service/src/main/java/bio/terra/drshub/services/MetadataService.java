@@ -157,6 +157,13 @@ public record MetadataService(
     }
   }
 
+  Authorizations getAuthorizationsForObject(
+      DrsProvider drsProvider, UriComponents uriComponents) {
+    // call fetchDrsAuthorizations
+    // if bearer auth, map to bond provider
+    // always return populated Authorizations
+  }
+
   private DrsMetadata fetchMetadata(
       DrsProvider drsProvider,
       List<String> requestedFields,
