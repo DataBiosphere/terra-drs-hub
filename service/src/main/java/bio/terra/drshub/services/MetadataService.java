@@ -4,34 +4,32 @@ import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
-import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
-import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
+import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.util.AuthUtils;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Authorizations;
-import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -43,6 +41,7 @@ public record MetadataService(
     DrsApiFactory drsApiFactory,
     DrsHubConfig drsHubConfig,
     ExternalCredsApiFactory externalCredsApiFactory,
+    AuthUtils authUtils,
     AuditLogger auditLogger) {
 
   private static final Pattern drsRegex =
@@ -159,23 +158,6 @@ public record MetadataService(
     }
   }
 
-  Authorizations getAuthorizationsForObject(
-      DrsProvider drsProvider, UriComponents uriComponents) {
-      var drsAuthorizations = fetchDrsAuthorizations(drsProvider, uriComponents).orElseGet(()->{
-        var bondProvider = drsProvider.getBondProvider();
-        if (bondProvider.isPresent()) {
-          var provider = bondProvider.get();
-          var type = SupportedTypesEnum.BEARERAUTH;
-          var issuer = List.of(provider.getUriValue());
-          return new Authorizations().bearerAuthIssuers(issuer).supportedTypes(List.of(type));
-        }
-      });
-
-    // call fetchDrsAuthorizations
-    // if bearer auth, map to bond provider
-    // always return populated Authorizations
-  }
-
   private DrsMetadata fetchMetadata(
       DrsProvider drsProvider,
       List<String> requestedFields,
@@ -190,18 +172,27 @@ public record MetadataService(
             .dRSUrl(uriComponents.toUriString())
             .providerName(drsProvider.getName())
             .clientIP(Optional.ofNullable(ip));
-    var drsMetadataBuilder = new DrsMetadata.Builder();
 
     final DrsObject drsResponse;
-    try {
-      drsResponse =
-          maybeFetchDrsObject(drsProvider, requestedFields, uriComponents, drsUri, bearerToken);
-      drsMetadataBuilder.drsResponse(drsResponse);
-    } catch (Exception e) {
-      auditLogger.logEvent(
-          auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
-      throw e;
+    final List<DrsHubAuthorization> authorizations;
+
+    if (Fields.shouldRequestMetadata(requestedFields)) {
+      try {
+        authorizations =
+            authUtils.buildAuthorizations(drsProvider, uriComponents, bearerToken, forceAccessUrl);
+        drsResponse = fetchDrsObject(drsProvider, uriComponents, drsUri, bearerToken);
+      } catch (Exception e) {
+        auditLogger.logEvent(
+            auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
+        throw e;
+      }
+    } else {
+      authorizations = List.of();
+      drsResponse = null;
     }
+
+    var drsMetadataBuilder = new DrsMetadata.Builder();
+    drsMetadataBuilder.drsResponse(drsResponse);
 
     var accessMethod = getAccessMethod(drsResponse, drsProvider);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
@@ -218,9 +209,6 @@ public record MetadataService(
 
       if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
         var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
-
-        var passports = maybeFetchPassports(drsProvider, bearerToken, accessMethodType);
-
         try {
           var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
           auditEventBuilder.authType(providerAccessMethod.getAuth());
@@ -231,30 +219,11 @@ public record MetadataService(
               getAccessUrl(
                   drsProvider,
                   uriComponents,
-                  bearerToken,
-                  forceAccessUrl,
-                  accessMethodType,
                   accessId,
-                  passports,
-                  providerAccessMethod.getAuth(),
-                  false);
-
-          if (accessUrl == null && providerAccessMethod.getFallbackAuth().isPresent()) {
-            auditEventBuilder.authType(providerAccessMethod.getFallbackAuth().get());
-            drsMetadataBuilder.accessUrl(
-                getAccessUrl(
-                    drsProvider,
-                    uriComponents,
-                    bearerToken,
-                    forceAccessUrl,
-                    accessMethodType,
-                    accessId,
-                    passports,
-                    providerAccessMethod.getFallbackAuth().get(),
-                    true));
-          } else {
-            drsMetadataBuilder.accessUrl(accessUrl);
-          }
+                  accessMethodType,
+                  authorizations,
+                  auditEventBuilder);
+          drsMetadataBuilder.accessUrl(accessUrl);
         } catch (RuntimeException e) {
           auditLogger.logEvent(
               auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
@@ -272,106 +241,78 @@ public record MetadataService(
     return drsMetadataBuilder.build();
   }
 
-  private DrsObject maybeFetchDrsObject(
+  private DrsObject fetchDrsObject(
       DrsProvider drsProvider,
-      List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken) {
-    if (Fields.shouldRequestMetadata(requestedFields)) {
-      var sendMetadataAuth = drsProvider.isMetadataAuth();
+    var sendMetadataAuth = drsProvider.isMetadataAuth();
 
-      var objectId = getObjectId(uriComponents);
-      log.info(
-          "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
-          drsUri,
-          sendMetadataAuth,
-          uriComponents.getHost());
+    var objectId = getObjectId(uriComponents);
+    log.info(
+        "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
+        drsUri,
+        sendMetadataAuth,
+        uriComponents.getHost());
 
-      var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
-      if (sendMetadataAuth) {
-        drsApi.setBearerToken(bearerToken.getToken());
-      }
-
-      return drsApi.getObject(objectId, null);
+    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    if (sendMetadataAuth) {
+      drsApi.setBearerToken(bearerToken.getToken());
     }
-    return null;
-  }
 
-  private List<String> maybeFetchPassports(
-      DrsProvider drsProvider, BearerToken bearerToken, TypeEnum accessMethodType) {
-    if (drsProvider.shouldFetchPassports(accessMethodType)) {
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken.getToken());
-
-      try {
-        // For now, we are only getting a RAS passport. In the future it may also fetch from other
-        // providers.
-        return List.of(ecmApi.getProviderPassport("ras"));
-      } catch (HttpStatusCodeException e) {
-        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-          log.info("User does not have a passport.");
-        } else {
-          throw e;
-        }
-      }
-    }
-    return null;
+    return drsApi.getObject(objectId, null);
   }
 
   private AccessURL getAccessUrl(
       DrsProvider drsProvider,
       UriComponents uriComponents,
-      BearerToken bearerToken,
-      boolean forceAccessUrl,
-      TypeEnum accessMethodType,
       String accessId,
-      List<String> passports,
-      AccessUrlAuthEnum providerAccessMethodType,
-      boolean useFallbackAuth) {
-
-    var accessToken =
-        getFenceAccessToken(
-            uriComponents.toUriString(),
-            accessMethodType,
-            useFallbackAuth,
-            drsProvider,
-            forceAccessUrl,
-            bearerToken);
+      TypeEnum accessMethodType,
+      List<DrsHubAuthorization> drsHubAuthorizations,
+      AuditLogEvent.Builder auditLogEventBuilder) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
 
-    switch (providerAccessMethodType) {
-      case passport:
-        if (!isEmpty(passports)) {
-          try {
-            return drsApi.postAccessURL(Map.of("passports", passports), objectId, accessId);
-          } catch (RestClientException e) {
-            log.error(
-                "Passport authorized request failed for {} with error {}",
-                uriComponents.toUriString(),
-                e.getMessage());
-          }
-        }
-        // if we made it this far, there are no passports or there was an error using them so return
-        // nothing.
-        return null;
-      case current_request:
-        accessToken.ifPresent(drsApi::setBearerToken);
-        return drsApi.getAccessURL(objectId, accessId);
-      case fence_token:
-        if (accessToken.isPresent()) {
-          drsApi.setBearerToken(accessToken.get());
-          return drsApi.getAccessURL(objectId, accessId);
-        } else {
-          throw new BadRequestException(
-              String.format(
-                  "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
-                  uriComponents.toUriString()));
-        }
-      default:
-        throw new DrsHubException("This should be impossible, unknown auth type");
+    for (var authorization : drsHubAuthorizations) {
+      Optional<Object> auth = authorization.auths().apply(accessMethodType);
+      var foo =
+          switch (authorization.authType()) {
+            case NONE -> drsApi.getAccessURL(objectId, accessId);
+            case BASICAUTH -> {
+              auth.map(Object::toString).ifPresent(drsApi::setBearerToken);
+              yield drsApi.getAccessURL(objectId, accessId);
+            }
+            case BEARERAUTH -> {
+              drsApi.setBearerToken(
+                  auth.map(Objects::toString)
+                      .orElseThrow(
+                          () ->
+                              new BadRequestException(
+                                  String.format(
+                                      "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
+                                      uriComponents.toUriString()))));
+              yield drsApi.getAccessURL(objectId, accessId);
+            }
+            case PASSPORTAUTH -> {
+              try {
+                yield drsApi.postAccessURL(
+                    Map.of("passports", auth.orElse(List.of(""))), objectId, accessId);
+              } catch (RestClientException e) {
+                log.error(
+                    "Passport authorized request failed for {} with error {}",
+                    uriComponents.toUriString(),
+                    e.getMessage());
+                yield null;
+              }
+            }
+          };
+      if (foo != null) {
+        auditLogEventBuilder.authType(AccessUrlAuthEnum.fromDrsAuthType(authorization.authType()));
+        return foo;
+      }
     }
+    return null;
   }
 
   private String getObjectId(UriComponents uriComponents) {
@@ -419,32 +360,6 @@ public record MetadataService(
       return drsResponse.getAliases().get(0);
     }
     return null;
-  }
-
-  private Optional<String> getFenceAccessToken(
-      String drsUri,
-      TypeEnum accessMethodType,
-      boolean useFallbackAuth,
-      DrsProvider drsProvider,
-      boolean forceAccessUrl,
-      BearerToken bearerToken) {
-    if (drsProvider.shouldFetchFenceAccessToken(
-        accessMethodType, useFallbackAuth, forceAccessUrl)) {
-
-      log.info(
-          "Requesting Bond access token for '{}' from '{}'",
-          drsUri,
-          drsProvider.getBondProvider().orElseThrow());
-
-      var bondApi = bondApiFactory.getApi(bearerToken);
-
-      var response =
-          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());
-
-      return Optional.ofNullable(response.getToken());
-    } else {
-      return Optional.empty();
-    }
   }
 
   private AnnotatedResourceMetadata buildResponseObject(
