@@ -333,6 +333,8 @@ public class DrsHubApiControllerTest extends BaseTest {
           .getBondProvider()
           .ifPresent(p -> mockBondLinkAccessTokenApi(p, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
 
+      mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
+
       mvc.perform(
               post("/api/v4/drs/resolve")
                   .header("authorization", "bearer " + TEST_ACCESS_TOKEN)

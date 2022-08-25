@@ -1,7 +1,6 @@
 package bio.terra.drshub.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -11,7 +10,6 @@ import bio.terra.bond.api.BondApi;
 import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.externalcreds.api.OidcApi;
@@ -81,7 +79,6 @@ public class AuthServiceTest extends BaseTest {
                 List.of(
                     Authorizations.SupportedTypesEnum.PASSPORTAUTH,
                     Authorizations.SupportedTypesEnum.BEARERAUTH,
-                    Authorizations.SupportedTypesEnum.BASICAUTH,
                     Authorizations.SupportedTypesEnum.NONE));
 
     var passport = "I am a passport";
@@ -93,8 +90,7 @@ public class AuthServiceTest extends BaseTest {
 
     var resolvedUri = metadataService.getUriComponents(testUri);
 
-    when(drsApiFactory.getApiFromUriComponents(resolvedUri, cidProviderHost.drsProvider()))
-        .thenReturn(drsApi);
+    when(drsApiFactory.getApiFromUriComponents(any(), any())).thenReturn(drsApi);
     when(drsApi.optionsObject(any())).thenReturn(expectedAuthorizations);
 
     when(bondApiFactory.getApi(any())).thenReturn(bondApi);
@@ -106,23 +102,37 @@ public class AuthServiceTest extends BaseTest {
         authService.buildAuthorizations(
             cidProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken), true);
 
-    assertEquals(4, authorizations.size());
-    Set<Optional<Object>> collect =
+    Set<Optional<Object>> secrets =
         authorizations.stream()
-            .map(a -> a.auths().apply(AccessMethod.TypeEnum.GS))
+            .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS))
             .collect(Collectors.toSet());
 
     Set<Optional<Object>> expected =
-        Set.of(
-            Optional.of(List.of(passport)),
-            Optional.of(fencetoken),
-            Optional.of(bearerToken),
-            Optional.empty());
+        Set.of(Optional.of(List.of(passport)), Optional.of(fencetoken), Optional.empty());
 
-    assertEquals(expected, collect);
+    // This time, it should have the fence token, not the bearer token.
+    assertEquals(expected, secrets);
 
     verify(bondApi).getLinkAccessToken(any());
     verify(oidcApi).getProviderPassport(any());
+
+    // TDR should result in using the current request bearer token instead of the fence token.
+    var bearerProviderHost = getProviderHosts("passportBearerFallback");
+    testUri = String.format("drs://%s/12345", bearerProviderHost.drsUriHost());
+    resolvedUri = metadataService.getUriComponents(testUri);
+
+    authorizations =
+        authService.buildAuthorizations(
+            bearerProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken), true);
+
+    secrets =
+        authorizations.stream()
+            .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS))
+            .collect(Collectors.toSet());
+
+    expected = Set.of(Optional.of(List.of(passport)), Optional.of(bearerToken), Optional.empty());
+
+    assertEquals(expected, secrets);
   }
 
   @Test
@@ -144,10 +154,7 @@ public class AuthServiceTest extends BaseTest {
     // Should only return fence_token authorizations
     assertPresent(
         authorizations.stream()
-            .filter(
-                a ->
-                    AccessUrlAuthEnum.fromDrsAuthType(a.authType())
-                        == AccessUrlAuthEnum.fence_token)
+            .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
             .findAny());
   }
 
@@ -173,24 +180,7 @@ public class AuthServiceTest extends BaseTest {
     // Should not return fence_token authorizations
     assertEmpty(
         authorizations.stream()
-            .filter(
-                a ->
-                    AccessUrlAuthEnum.fromDrsAuthType(a.authType())
-                        == AccessUrlAuthEnum.fence_token)
+            .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
             .findAny());
-  }
-
-  @Test
-  void testDrsSupportedAuthToAccessUrlAuth() {
-    assertNull(AccessUrlAuthEnum.fromDrsAuthType(Authorizations.SupportedTypesEnum.NONE));
-    assertEquals(
-        AccessUrlAuthEnum.current_request,
-        AccessUrlAuthEnum.fromDrsAuthType(Authorizations.SupportedTypesEnum.BASICAUTH));
-    assertEquals(
-        AccessUrlAuthEnum.fence_token,
-        AccessUrlAuthEnum.fromDrsAuthType(Authorizations.SupportedTypesEnum.BEARERAUTH));
-    assertEquals(
-        AccessUrlAuthEnum.passport,
-        AccessUrlAuthEnum.fromDrsAuthType(Authorizations.SupportedTypesEnum.PASSPORTAUTH));
   }
 }

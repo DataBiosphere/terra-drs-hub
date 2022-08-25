@@ -1,6 +1,7 @@
 package bio.terra.drshub.services;
 
 import bio.terra.common.iam.BearerToken;
+import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
@@ -77,19 +78,38 @@ public record AuthService(
     return switch (authType) {
       case NONE -> new DrsHubAuthorization(
           authType, (AccessMethod.TypeEnum accessType) -> Optional.empty());
-      case BASICAUTH -> new DrsHubAuthorization(
-          authType,
-          (AccessMethod.TypeEnum accessType) -> Optional.ofNullable(bearerToken.getToken()));
+      case BASICAUTH -> throw new DrsHubException(
+          "DRSHub does not currently support basic username/password authentication");
       case BEARERAUTH -> new DrsHubAuthorization(
           authType,
           (AccessMethod.TypeEnum accessType) ->
-              getFenceAccessToken(
-                  components.toUriString(),
-                  accessType,
-                  false,
-                  drsProvider,
-                  forceAccessUrl,
-                  bearerToken));
+              switch (drsProvider.getAccessMethodByType(accessType).getAuth()) {
+                case fence_token -> getFenceAccessToken(
+                    components.toUriString(),
+                    accessType,
+                    false,
+                    drsProvider,
+                    forceAccessUrl,
+                    bearerToken);
+                case current_request -> Optional.ofNullable(bearerToken.getToken());
+                case passport -> drsProvider
+                    .getAccessMethodByType(accessType)
+                    .getFallbackAuth()
+                    .flatMap(
+                        auth ->
+                            switch (auth) {
+                              case fence_token -> getFenceAccessToken(
+                                  components.toUriString(),
+                                  accessType,
+                                  false,
+                                  drsProvider,
+                                  forceAccessUrl,
+                                  bearerToken);
+                              case current_request -> Optional.ofNullable(bearerToken.getToken());
+                              default -> throw new DrsHubException(
+                                  "Auth mismatch. DRS Provider requests bearer auth, but DRSHub config does not specify what bearer auth to use");
+                            });
+              });
       case PASSPORTAUTH -> new DrsHubAuthorization(
           authType,
           (AccessMethod.TypeEnum accessType) ->
@@ -106,7 +126,7 @@ public record AuthService(
       Boolean useFallbackAuth) {
     return switch (authType) {
       case current_request -> new DrsHubAuthorization(
-          Authorizations.SupportedTypesEnum.BASICAUTH,
+          Authorizations.SupportedTypesEnum.BEARERAUTH,
           accessType -> Optional.ofNullable(bearerToken.getToken()));
 
       case fence_token -> new DrsHubAuthorization(

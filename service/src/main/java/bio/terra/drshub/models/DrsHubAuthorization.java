@@ -6,5 +6,5 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public record DrsHubAuthorization(
-    Authorizations.SupportedTypesEnum authType,
-    Function<AccessMethod.TypeEnum, Optional<Object>> auths) {}
+    Authorizations.SupportedTypesEnum drsAuthType,
+    Function<AccessMethod.TypeEnum, Optional<Object>> getAuthForAccessMethodType) {}

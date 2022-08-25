@@ -10,7 +10,6 @@ import bio.terra.drshub.config.DrsProviderInterface;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
@@ -256,14 +255,12 @@ public record MetadataService(
     var objectId = getObjectId(uriComponents);
 
     for (var authorization : drsHubAuthorizations) {
-      Optional<Object> auth = authorization.auths().apply(accessMethodType);
+      Optional<Object> auth = authorization.getAuthForAccessMethodType().apply(accessMethodType);
       var accessUrl =
-          switch (authorization.authType()) {
+          switch (authorization.drsAuthType()) {
             case NONE -> drsApi.getAccessURL(objectId, accessId);
-            case BASICAUTH -> {
-              auth.map(Object::toString).ifPresent(drsApi::setBearerToken);
-              yield drsApi.getAccessURL(objectId, accessId);
-            }
+            case BASICAUTH -> throw new BadRequestException(
+                "DRSHub does not support basic username/password authentication at this time.");
             case BEARERAUTH -> {
               drsApi.setBearerToken(
                   auth.map(Objects::toString)
@@ -289,7 +286,8 @@ public record MetadataService(
             }
           };
       if (accessUrl != null) {
-        auditLogEventBuilder.authType(AccessUrlAuthEnum.fromDrsAuthType(authorization.authType()));
+        auditLogEventBuilder.authType(
+            drsProvider.getAccessMethodByType(accessMethodType).getAuth());
         return accessUrl;
       }
     }
