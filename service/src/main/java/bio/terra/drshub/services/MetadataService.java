@@ -15,12 +15,9 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
-import bio.terra.drshub.util.AuthUtils;
-import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
-import io.github.ga4gh.drs.model.Authorizations;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.util.List;
@@ -41,7 +38,7 @@ public record MetadataService(
     DrsApiFactory drsApiFactory,
     DrsHubConfig drsHubConfig,
     ExternalCredsApiFactory externalCredsApiFactory,
-    AuthUtils authUtils,
+    AuthService authService,
     AuditLogger auditLogger) {
 
   private static final Pattern drsRegex =
@@ -141,23 +138,6 @@ public record MetadataService(
                         uriComponents.toUriString())));
   }
 
-  @VisibleForTesting
-  Optional<Authorizations> fetchDrsAuthorizations(
-      DrsProvider drsProvider, UriComponents uriComponents) {
-    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
-    var objectId = getObjectId(uriComponents);
-    try {
-      return Optional.ofNullable(drsApi.optionsObject(objectId));
-    } catch (RestClientException ex) {
-      log.warn(
-          "Failed to get authorizations for {} from OPTIONS endpoint for DRS Provider {}. "
-              + "Falling back to configured authorizations",
-          objectId,
-          drsProvider.getName());
-      return Optional.empty();
-    }
-  }
-
   private DrsMetadata fetchMetadata(
       DrsProvider drsProvider,
       List<String> requestedFields,
@@ -179,7 +159,8 @@ public record MetadataService(
     if (Fields.shouldRequestMetadata(requestedFields)) {
       try {
         authorizations =
-            authUtils.buildAuthorizations(drsProvider, uriComponents, bearerToken, forceAccessUrl);
+            authService.buildAuthorizations(
+                drsProvider, uriComponents, bearerToken, forceAccessUrl);
         drsResponse = fetchDrsObject(drsProvider, uriComponents, drsUri, bearerToken);
       } catch (Exception e) {
         auditLogger.logEvent(
@@ -276,7 +257,7 @@ public record MetadataService(
 
     for (var authorization : drsHubAuthorizations) {
       Optional<Object> auth = authorization.auths().apply(accessMethodType);
-      var foo =
+      var accessUrl =
           switch (authorization.authType()) {
             case NONE -> drsApi.getAccessURL(objectId, accessId);
             case BASICAUTH -> {
@@ -307,9 +288,9 @@ public record MetadataService(
               }
             }
           };
-      if (foo != null) {
+      if (accessUrl != null) {
         auditLogEventBuilder.authType(AccessUrlAuthEnum.fromDrsAuthType(authorization.authType()));
-        return foo;
+        return accessUrl;
       }
     }
     return null;

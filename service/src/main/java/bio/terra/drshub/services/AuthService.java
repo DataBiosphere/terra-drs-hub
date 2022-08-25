@@ -1,12 +1,9 @@
-package bio.terra.drshub.util;
+package bio.terra.drshub.services;
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
-import bio.terra.drshub.services.BondApiFactory;
-import bio.terra.drshub.services.DrsApiFactory;
-import bio.terra.drshub.services.ExternalCredsApiFactory;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
@@ -16,14 +13,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
 
-@Component
+@Service
 @Slf4j
-public record AuthUtils(
+public record AuthService(
     BondApiFactory bondApiFactory,
     DrsApiFactory drsApiFactory,
     ExternalCredsApiFactory externalCredsApiFactory) {

@@ -193,6 +193,8 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Test
   void testDrsProviderDoesNotSupportGoogle() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
+    var drsObject = drsObjectWithRandomId("s3").name("foobar");
+    //    mockDrsApi(cidProviderHost.drsUriHost(), drsObject);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
