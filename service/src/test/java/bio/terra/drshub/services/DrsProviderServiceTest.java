@@ -6,7 +6,7 @@ import bio.terra.drshub.BaseTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class DrsProviderServiceTest extends BaseTest {
+class DrsProviderServiceTest extends BaseTest {
 
   @Autowired private DrsProviderService drsProviderService;
 

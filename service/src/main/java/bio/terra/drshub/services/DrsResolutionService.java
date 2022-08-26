@@ -86,13 +86,8 @@ public record DrsResolutionService(
             .clientIP(Optional.ofNullable(ip));
 
     final DrsObject drsResponse;
-    final List<DrsHubAuthorization> authorizations;
-
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
-        authorizations =
-            authService.buildAuthorizations(
-                drsProvider, uriComponents, bearerToken, forceAccessUrl);
         drsResponse = fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken);
       } catch (Exception e) {
         auditLogger.logEvent(
@@ -100,7 +95,6 @@ public record DrsResolutionService(
         throw e;
       }
     } else {
-      authorizations = List.of();
       drsResponse = null;
     }
 
@@ -116,41 +110,69 @@ public record DrsResolutionService(
     }
 
     if (drsResponse != null) {
-      getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
-      drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
-
-      if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
-        var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
-        try {
-          var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
-          auditEventBuilder.authType(providerAccessMethod.getAuth());
-
-          log.info("Requesting URL for {}", uriComponents.toUriString());
-
-          var accessUrl =
-              fetchDrsObjectAccessUrl(
-                  drsProvider,
-                  uriComponents,
-                  accessId,
-                  accessMethodType,
-                  authorizations,
-                  auditEventBuilder);
-          drsMetadataBuilder.accessUrl(accessUrl);
-        } catch (RuntimeException e) {
-          auditLogger.logEvent(
-              auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
-          if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
-            throw e;
-          } else {
-            log.warn("Ignoring error from fetching signed URL", e);
-          }
-        }
-      }
+      setDrsResponseValues(
+          drsMetadataBuilder,
+          drsResponse,
+          drsProvider,
+          accessMethod,
+          accessMethodType,
+          requestedFields,
+          uriComponents,
+          auditEventBuilder,
+          bearerToken,
+          forceAccessUrl);
     }
 
     auditLogger.logEvent(
         auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionSucceeded).build());
     return drsMetadataBuilder.build();
+  }
+
+  private void setDrsResponseValues(
+      DrsMetadata.Builder drsMetadataBuilder,
+      DrsObject drsResponse,
+      DrsProvider drsProvider,
+      Optional<AccessMethod> accessMethod,
+      TypeEnum accessMethodType,
+      List<String> requestedFields,
+      UriComponents uriComponents,
+      AuditLogEvent.Builder auditEventBuilder,
+      BearerToken bearerToken,
+      boolean forceAccessUrl) {
+
+    getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
+    drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
+
+    if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
+      var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
+      try {
+        var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
+        auditEventBuilder.authType(providerAccessMethod.getAuth());
+        var authorizations =
+            authService.buildAuthorizations(
+                drsProvider, uriComponents, bearerToken, forceAccessUrl);
+
+        log.info("Requesting URL for {}", uriComponents.toUriString());
+
+        var accessUrl =
+            fetchDrsObjectAccessUrl(
+                drsProvider,
+                uriComponents,
+                accessId,
+                accessMethodType,
+                authorizations,
+                auditEventBuilder);
+        drsMetadataBuilder.accessUrl(accessUrl);
+      } catch (RuntimeException e) {
+        auditLogger.logEvent(
+            auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
+        if (DrsProviderInterface.shouldFailOnAccessUrlFail(accessMethodType)) {
+          throw e;
+        } else {
+          log.warn("Ignoring error from fetching signed URL", e);
+        }
+      }
+    }
   }
 
   private DrsObject fetchObjectInfo(

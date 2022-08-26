@@ -11,7 +11,6 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -70,7 +69,7 @@ public record AuthService(
         .map(
             authType ->
                 mapDrsAuthType(authType, drsProvider, components, bearerToken, forceAccessUrl))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private DrsHubAuthorization mapDrsAuthType(
@@ -153,7 +152,7 @@ public record AuthService(
               }
               return Stream.of(primaryAuth);
             })
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private DrsHubAuthorization mapAccessMethodConfigAuthType(

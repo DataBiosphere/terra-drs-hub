@@ -66,11 +66,11 @@ public class Fields {
 
   public static final List<String> ACCESS_ID_FIELDS = List.of(ACCESS_URL);
 
-  public static Boolean overlap(List<String> requestedFields, List<String> serviceFields) {
+  public static boolean overlap(List<String> requestedFields, List<String> serviceFields) {
     return serviceFields.stream().anyMatch(requestedFields::contains);
   }
 
-  public static Boolean shouldRequestObjectInfo(List<String> requestedFields) {
+  public static boolean shouldRequestObjectInfo(List<String> requestedFields) {
     return overlap(requestedFields, METADATA_FIELDS);
   }
 }

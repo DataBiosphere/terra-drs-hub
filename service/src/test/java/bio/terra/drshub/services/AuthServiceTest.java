@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.web.client.RestClientException;
 
-public class AuthServiceTest extends BaseTest {
+class AuthServiceTest extends BaseTest {
 
   @Autowired private AuthService authService;
   @Autowired private DrsProviderService drsProviderService;

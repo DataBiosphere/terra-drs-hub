@@ -8,7 +8,6 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
@@ -56,9 +55,7 @@ public interface DrsProviderInterface {
   }
 
   default List<AccessMethodConfigTypeEnum> getAccessMethodConfigTypes() {
-    return getAccessMethodConfigs().stream()
-        .map(ProviderAccessMethodConfig::getType)
-        .collect(Collectors.toList());
+    return getAccessMethodConfigs().stream().map(ProviderAccessMethodConfig::getType).toList();
   }
 
   /**
