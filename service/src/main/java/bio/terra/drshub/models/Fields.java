@@ -70,7 +70,7 @@ public class Fields {
     return serviceFields.stream().anyMatch(requestedFields::contains);
   }
 
-  public static Boolean shouldRequestMetadata(List<String> requestedFields) {
+  public static Boolean shouldRequestObjectInfo(List<String> requestedFields) {
     return overlap(requestedFields, METADATA_FIELDS);
   }
 }

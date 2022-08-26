@@ -4,7 +4,6 @@ import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
-import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
 import bio.terra.drshub.logging.AuditLogEvent;
@@ -23,29 +22,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @Slf4j
-public record MetadataService(
-    BondApiFactory bondApiFactory,
+public record DrsResolutionService(
     DrsApiFactory drsApiFactory,
-    DrsHubConfig drsHubConfig,
-    ExternalCredsApiFactory externalCredsApiFactory,
+    DrsProviderService drsProviderService,
     AuthService authService,
     AuditLogger auditLogger) {
 
-  private static final Pattern drsRegex =
-      Pattern.compile(
-          "(?:dos|drs)://(?:(?<compactId>dg\\.[0-9a-z-]+)|(?<hostname>[^?/]+\\.[^?/]+))[:/](?<suffix>[^?]*)",
-          Pattern.CASE_INSENSITIVE);
-
-  public AnnotatedResourceMetadata fetchResourceMetadata(
+  /**
+   * Resolve the Drs Object for the provided uri, including requested fields.
+   *
+   * @param drsUri uri (but a string) of the object to resolve
+   * @param rawRequestedFields requested fields as provided by the user
+   * @param bearerToken the user's bearer token
+   * @param forceAccessUrl if true, force the fetching of the access url
+   * @param ip ip address for audit logging purposes
+   * @return All the object info plus some details about the request
+   */
+  public AnnotatedResourceMetadata resolveDrsObject(
       String drsUri,
       List<String> rawRequestedFields,
       BearerToken bearerToken,
@@ -54,8 +54,8 @@ public record MetadataService(
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
-    var uriComponents = getUriComponents(drsUri);
-    var provider = determineDrsProvider(uriComponents);
+    var uriComponents = drsProviderService.getUriComponents(drsUri);
+    var provider = drsProviderService.determineDrsProvider(uriComponents);
 
     log.info(
         "Drs URI '{}' will use provider {}, requested fields {}",
@@ -64,80 +64,15 @@ public record MetadataService(
         String.join(", ", requestedFields));
 
     var metadata =
-        fetchMetadata(
+        fetchObject(
             provider, requestedFields, uriComponents, drsUri, bearerToken, forceAccessUrl, ip);
 
     return buildResponseObject(requestedFields, metadata, provider);
   }
 
-  /**
-   * DRS schemes are allowed as of <a
-   * href="https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.2.0/docs/">DRS
-   * 1.2</a>
-   *
-   * <p>DOS is still supported as a URI scheme in case there are URIs in that form in the wild
-   * however all providers support DRS 1.2. So parsing the URI treats DOS and DRS interchangeably
-   * but the resolution is all DRS 1.2
-   *
-   * <p>Note: GA4GH Compact Identifier based URIs are incompatible with W3C/IETF URIs and the
-   * various standard libraries that parse them because they use colons as a delimiter. However,
-   * there are some Compact Identifier based URIs that use slashes as a delimiter. This code assumes
-   * that if the host part of the URI is of the form dg.[0-9a-z-]+ then it is a Compact Identifier.
-   *
-   * <p>If you update *any* of the below be sure to link to the supporting docs and update the
-   * comments above!
-   */
-  public UriComponents getUriComponents(String drsUri) {
-
-    var drsRegexMatch = drsRegex.matcher(drsUri);
-
-    if (drsRegexMatch.matches()) {
-      var compactIdHost =
-          Optional.ofNullable(drsRegexMatch.group("compactId"))
-              .map(compactId -> drsHubConfig.getCompactIdHosts().get(compactId.toLowerCase()));
-      var hostname = Optional.ofNullable(drsRegexMatch.group("hostname"));
-      var dnsHost =
-          compactIdHost
-              .or(() -> hostname)
-              .orElseThrow(
-                  () ->
-                      new BadRequestException(
-                          String.format(
-                              "Could not find matching host for compact id [%s].",
-                              drsRegexMatch.group("compactId"))));
-
-      return UriComponentsBuilder.newInstance()
-          .host(dnsHost)
-          .path(drsRegexMatch.group("suffix"))
-          .build();
-    } else {
-      throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
-    }
-  }
-
-  public DrsProvider determineDrsProvider(UriComponents uriComponents) {
-    var host = uriComponents.getHost();
-    assert host != null;
-
-    if (host.endsWith("dataguids.org")) {
-      throw new BadRequestException(
-          "dataguids.org data has moved. See: https://support.terra.bio/hc/en-us/articles/360060681132");
-    }
-
-    var providers = drsHubConfig.getDrsProviders();
-
-    return providers.values().stream()
-        .filter(p -> host.matches(p.getHostRegex()))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new BadRequestException(
-                    String.format(
-                        "Could not determine DRS provider for id `%s`",
-                        uriComponents.toUriString())));
-  }
-
-  private DrsMetadata fetchMetadata(
+  // Fetch the DRS Object
+  // First, get the object info. If its not
+  private DrsMetadata fetchObject(
       DrsProvider drsProvider,
       List<String> requestedFields,
       UriComponents uriComponents,
@@ -155,12 +90,12 @@ public record MetadataService(
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;
 
-    if (Fields.shouldRequestMetadata(requestedFields)) {
+    if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
         authorizations =
             authService.buildAuthorizations(
                 drsProvider, uriComponents, bearerToken, forceAccessUrl);
-        drsResponse = fetchDrsObject(drsProvider, uriComponents, drsUri, bearerToken);
+        drsResponse = fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken);
       } catch (Exception e) {
         auditLogger.logEvent(
             auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
@@ -178,13 +113,12 @@ public record MetadataService(
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
-      var bondApi = bondApiFactory.getApi(bearerToken);
-      drsMetadataBuilder.bondSaKey(
-          bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().getUriValue()));
+      var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
+      drsMetadataBuilder.bondSaKey(saKey);
     }
 
     if (drsResponse != null) {
-      drsMetadataBuilder.fileName(getDrsFileName(drsResponse));
+      getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
       drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
 
       if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
@@ -196,7 +130,7 @@ public record MetadataService(
           log.info("Requesting URL for {}", uriComponents.toUriString());
 
           var accessUrl =
-              getAccessUrl(
+              fetchDrsObjectAccessUrl(
                   drsProvider,
                   uriComponents,
                   accessId,
@@ -221,7 +155,7 @@ public record MetadataService(
     return drsMetadataBuilder.build();
   }
 
-  private DrsObject fetchDrsObject(
+  private DrsObject fetchObjectInfo(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String drsUri,
@@ -243,7 +177,7 @@ public record MetadataService(
     return drsApi.getObject(objectId, null);
   }
 
-  private AccessURL getAccessUrl(
+  private AccessURL fetchDrsObjectAccessUrl(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String accessId,
@@ -319,19 +253,15 @@ public record MetadataService(
    *
    * <p>It is possible the name may need to be retrieved from the signed url.
    */
-  private String getDrsFileName(DrsObject drsResponse) {
+  private Optional<String> getDrsFileName(DrsObject drsResponse) {
 
     if (!isEmpty(drsResponse.getName())) {
-      return drsResponse.getName();
+      return Optional.of(drsResponse.getName());
     }
 
-    var accessURL = drsResponse.getAccessMethods().get(0).getAccessUrl();
-
-    if (accessURL != null) {
-      var path = URI.create(accessURL.getUrl()).getPath();
-      return path == null ? null : path.replaceAll("^.*[\\\\/]", "");
-    }
-    return null;
+    return Optional.ofNullable(drsResponse.getAccessMethods().get(0).getAccessUrl())
+        .map(url -> URI.create(url.getUrl()).getPath())
+        .map(path -> path.replaceAll("^.*[\\\\/]", ""));
   }
 
   private String getLocalizationPath(DrsProvider drsProvider, DrsObject drsResponse) {

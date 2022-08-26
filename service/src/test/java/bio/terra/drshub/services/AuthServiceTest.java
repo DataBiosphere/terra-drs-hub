@@ -27,7 +27,7 @@ import org.springframework.web.client.RestClientException;
 public class AuthServiceTest extends BaseTest {
 
   @Autowired private AuthService authService;
-  @Autowired private MetadataService metadataService;
+  @Autowired private DrsProviderService drsProviderService;
   @MockBean private DrsApiFactory drsApiFactory;
   @MockBean private DrsApi drsApi;
   @MockBean private BondApiFactory bondApiFactory;
@@ -47,7 +47,7 @@ public class AuthServiceTest extends BaseTest {
     var cidProviderHost = getProviderHosts("passport");
     var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
 
-    var resolvedUri = metadataService.getUriComponents(testUri);
+    var resolvedUri = drsProviderService.getUriComponents(testUri);
 
     when(drsApiFactory.getApiFromUriComponents(resolvedUri, cidProviderHost.drsProvider()))
         .thenReturn(drsApi);
@@ -88,7 +88,7 @@ public class AuthServiceTest extends BaseTest {
     var cidProviderHost = getProviderHosts("passport");
     var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
 
-    var resolvedUri = metadataService.getUriComponents(testUri);
+    var resolvedUri = drsProviderService.getUriComponents(testUri);
 
     when(drsApiFactory.getApiFromUriComponents(any(), any())).thenReturn(drsApi);
     when(drsApi.optionsObject(any())).thenReturn(expectedAuthorizations);
@@ -119,7 +119,7 @@ public class AuthServiceTest extends BaseTest {
     // TDR should result in using the current request bearer token instead of the fence token.
     var bearerProviderHost = getProviderHosts("passportBearerFallback");
     testUri = String.format("drs://%s/12345", bearerProviderHost.drsUriHost());
-    resolvedUri = metadataService.getUriComponents(testUri);
+    resolvedUri = drsProviderService.getUriComponents(testUri);
 
     authorizations =
         authService.buildAuthorizations(
@@ -141,7 +141,7 @@ public class AuthServiceTest extends BaseTest {
     var cidProviderHost = getProviderHosts("fenceTokenOnly");
     var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
 
-    var resolvedUri = metadataService.getUriComponents(testUri);
+    var resolvedUri = drsProviderService.getUriComponents(testUri);
 
     when(drsApiFactory.getApiFromUriComponents(resolvedUri, cidProviderHost.drsProvider()))
         .thenReturn(drsApi);
@@ -167,7 +167,7 @@ public class AuthServiceTest extends BaseTest {
     var cidProviderHost = getProviderHosts("fenceTokenOnly");
     var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
 
-    var resolvedUri = metadataService.getUriComponents(testUri);
+    var resolvedUri = drsProviderService.getUriComponents(testUri);
 
     when(drsApiFactory.getApiFromUriComponents(resolvedUri, cidProviderHost.drsProvider()))
         .thenReturn(drsApi);

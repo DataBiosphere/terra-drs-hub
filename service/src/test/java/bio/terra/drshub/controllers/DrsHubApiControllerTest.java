@@ -1,6 +1,5 @@
 package bio.terra.drshub.controllers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -22,7 +21,6 @@ import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
-import bio.terra.drshub.services.MetadataService;
 import bio.terra.externalcreds.api.OidcApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
@@ -66,8 +64,6 @@ public class DrsHubApiControllerTest extends BaseTest {
   public static final String TDR_TEST_HOST = "jade.datarepo-dev.broadinstitute.org";
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private MetadataService metadataService;
-
   @MockBean BondApiFactory bondApiFactory;
   @MockBean DrsApiFactory drsApiFactory;
   @MockBean ExternalCredsApiFactory externalCredsApiFactory;
@@ -193,8 +189,6 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Test
   void testDrsProviderDoesNotSupportGoogle() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
-    var drsObject = drsObjectWithRandomId("s3").name("foobar");
-    //    mockDrsApi(cidProviderHost.drsUriHost(), drsObject);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
@@ -565,25 +559,6 @@ public class DrsHubApiControllerTest extends BaseTest {
             TEST_ACCESS_TOKEN, cidProviderHost.drsUriHost(), drsObject.getId(), requestedFields)
         .andExpect(status().isOk())
         .andExpect(content().json(objectMapper.writeValueAsString(expectedMap), true));
-  }
-
-  @Test
-  void testResolvesdnsHostsAndProviders() {
-    for (var providerName : config.getDrsProviders().keySet()) {
-      var cidProviderHost = getProviderHosts(providerName);
-
-      var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
-      var testDnsUri = String.format("drs://%s/12345", cidProviderHost.dnsHost());
-
-      var resolvedUri = metadataService.getUriComponents(testUri);
-      var resolvedDnsUri = metadataService.getUriComponents(testDnsUri);
-
-      assertEquals(cidProviderHost.dnsHost(), resolvedUri.getHost());
-      assertEquals(cidProviderHost.dnsHost(), resolvedDnsUri.getHost());
-
-      var resolvedProvider = metadataService.determineDrsProvider(resolvedDnsUri);
-      assertEquals(cidProviderHost.drsProvider(), resolvedProvider);
-    }
   }
 
   @Test

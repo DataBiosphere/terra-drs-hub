@@ -1,5 +1,6 @@
 package bio.terra.drshub.services;
 
+import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
@@ -25,6 +26,11 @@ public record AuthService(
     BondApiFactory bondApiFactory,
     DrsApiFactory drsApiFactory,
     ExternalCredsApiFactory externalCredsApiFactory) {
+
+  public SaKeyObject fetchUserServiceAccount(DrsProvider drsProvider, BearerToken bearerToken) {
+    var bondApi = bondApiFactory.getApi(bearerToken);
+    return bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().getUriValue());
+  }
 
   public List<DrsHubAuthorization> buildAuthorizations(
       DrsProvider drsProvider,
@@ -101,7 +107,7 @@ public record AuthService(
                               case fence_token -> getFenceAccessToken(
                                   components.toUriString(),
                                   accessType,
-                                  false,
+                                  true,
                                   drsProvider,
                                   forceAccessUrl,
                                   bearerToken);

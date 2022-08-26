@@ -6,7 +6,7 @@ import bio.terra.drshub.generated.api.DrsHubApi;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
-import bio.terra.drshub.services.MetadataService;
+import bio.terra.drshub.services.DrsResolutionService;
 import java.util.ArrayList;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
@@ -19,15 +19,15 @@ import org.springframework.stereotype.Controller;
 public class DrsHubApiController implements DrsHubApi {
 
   private final HttpServletRequest request;
-  private final MetadataService metadataService;
+  private final DrsResolutionService drsResolutionService;
   private final BearerTokenFactory bearerTokenFactory;
 
   public DrsHubApiController(
       HttpServletRequest request,
-      MetadataService metadataService,
+      DrsResolutionService drsResolutionService,
       BearerTokenFactory bearerTokenFactory) {
     this.request = request;
-    this.metadataService = metadataService;
+    this.drsResolutionService = drsResolutionService;
     this.bearerTokenFactory = bearerTokenFactory;
   }
 
@@ -43,7 +43,7 @@ public class DrsHubApiController implements DrsHubApi {
     log.info("Received URL '{}' from agent '{}' on IP '{}'", body.getUrl(), userAgent, ip);
 
     var resourceMetadata =
-        metadataService.fetchResourceMetadata(
+        drsResolutionService.resolveDrsObject(
             body.getUrl(), body.getFields(), bearerToken, forceAccessUrl, ip);
 
     return ResponseEntity.ok(resourceMetadata);
