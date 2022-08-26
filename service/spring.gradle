@@ -8,6 +8,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
 	implementation 'org.apache.httpcomponents:httpclient'
+	implementation 'org.apache.commons:commons-collections4:4.4'
 
 	// allows mocking final classes
 	testImplementation 'org.mockito:mockito-inline'

@@ -102,13 +102,13 @@ class AuthServiceTest extends BaseTest {
         authService.buildAuthorizations(
             cidProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken), true);
 
-    Set<Optional<Object>> secrets =
+    Set<Optional<List<String>>> secrets =
         authorizations.stream()
             .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS))
             .collect(Collectors.toSet());
 
-    Set<Optional<Object>> expected =
-        Set.of(Optional.of(List.of(passport)), Optional.of(fencetoken), Optional.empty());
+    Set<Optional<List<String>>> expected =
+        Set.of(Optional.of(List.of(passport)), Optional.of(List.of(fencetoken)), Optional.empty());
 
     // This time, it should have the fence token, not the bearer token.
     assertEquals(expected, secrets);
@@ -130,9 +130,13 @@ class AuthServiceTest extends BaseTest {
             .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS))
             .collect(Collectors.toSet());
 
-    expected = Set.of(Optional.of(List.of(passport)), Optional.of(bearerToken), Optional.empty());
+    expected =
+        Set.of(Optional.of(List.of(passport)), Optional.of(List.of(bearerToken)), Optional.empty());
 
     assertEquals(expected, secrets);
+
+    // Make sure ECM wasn't called a second time due to the cache
+    verify(oidcApi).getProviderPassport(any());
   }
 
   @Test

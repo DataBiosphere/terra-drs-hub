@@ -16,11 +16,11 @@ import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
+import io.github.ga4gh.drs.model.Authorizations;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -86,9 +86,14 @@ public record DrsResolutionService(
             .clientIP(Optional.ofNullable(ip));
 
     final DrsObject drsResponse;
+    final List<DrsHubAuthorization> authorizations;
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
-        drsResponse = fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken);
+        authorizations =
+            authService.buildAuthorizations(
+                drsProvider, uriComponents, bearerToken, forceAccessUrl);
+        drsResponse =
+            fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken, authorizations);
       } catch (Exception e) {
         auditLogger.logEvent(
             auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
@@ -96,6 +101,7 @@ public record DrsResolutionService(
       }
     } else {
       drsResponse = null;
+      authorizations = List.of();
     }
 
     var drsMetadataBuilder = new DrsMetadata.Builder();
@@ -119,7 +125,7 @@ public record DrsResolutionService(
           requestedFields,
           uriComponents,
           auditEventBuilder,
-          bearerToken,
+          authorizations,
           forceAccessUrl);
     }
 
@@ -137,7 +143,7 @@ public record DrsResolutionService(
       List<String> requestedFields,
       UriComponents uriComponents,
       AuditLogEvent.Builder auditEventBuilder,
-      BearerToken bearerToken,
+      List<DrsHubAuthorization> authorizations,
       boolean forceAccessUrl) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
@@ -148,9 +154,6 @@ public record DrsResolutionService(
       try {
         var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
         auditEventBuilder.authType(providerAccessMethod.getAuth());
-        var authorizations =
-            authService.buildAuthorizations(
-                drsProvider, uriComponents, bearerToken, forceAccessUrl);
 
         log.info("Requesting URL for {}", uriComponents.toUriString());
 
@@ -179,7 +182,8 @@ public record DrsResolutionService(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String drsUri,
-      BearerToken bearerToken) {
+      BearerToken bearerToken,
+      List<DrsHubAuthorization> authorizations) {
     var sendMetadataAuth = drsProvider.isMetadataAuth();
 
     var objectId = getObjectId(uriComponents);
@@ -192,6 +196,11 @@ public record DrsResolutionService(
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     if (sendMetadataAuth) {
       drsApi.setBearerToken(bearerToken.getToken());
+      if (authorizations.stream()
+          .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
+        Optional<List<String>> passports = authService.fetchPassports(bearerToken);
+        return drsApi.postObject(Map.of("passports", passports.orElse(List.of(""))), objectId);
+      }
     }
 
     return drsApi.getObject(objectId, null);
@@ -209,7 +218,8 @@ public record DrsResolutionService(
     var objectId = getObjectId(uriComponents);
 
     for (var authorization : drsHubAuthorizations) {
-      Optional<Object> auth = authorization.getAuthForAccessMethodType().apply(accessMethodType);
+      Optional<List<String>> auth =
+          authorization.getAuthForAccessMethodType().apply(accessMethodType);
       var accessUrl =
           switch (authorization.drsAuthType()) {
             case NONE -> drsApi.getAccessURL(objectId, accessId);
@@ -217,7 +227,7 @@ public record DrsResolutionService(
                 "DRSHub does not support basic username/password authentication at this time.");
             case BEARERAUTH -> {
               drsApi.setBearerToken(
-                  auth.map(Objects::toString)
+                  auth.map(l -> l.get(0))
                       .orElseThrow(
                           () ->
                               new BadRequestException(

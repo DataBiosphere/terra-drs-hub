@@ -9,10 +9,14 @@ import bio.terra.drshub.models.DrsHubAuthorization;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.map.PassiveExpiringMap;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -21,10 +25,27 @@ import org.springframework.web.util.UriComponents;
 
 @Service
 @Slf4j
-public record AuthService(
-    BondApiFactory bondApiFactory,
-    DrsApiFactory drsApiFactory,
-    ExternalCredsApiFactory externalCredsApiFactory) {
+public class AuthService {
+
+  private final BondApiFactory bondApiFactory;
+  private final DrsApiFactory drsApiFactory;
+  private final ExternalCredsApiFactory externalCredsApiFactory;
+
+  // To avoid absolutely hammering the ECM API during large batch analyses,
+  // cache the passport for a given bearer token for just a little bit.
+  // This also keeps DRSHub from calling ECM twice for the same request
+  // if the object info endpoint needs passport auth as well as the object access url endpoint.
+  private final Map<String, Optional<List<String>>> passportCache =
+      Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
+
+  public AuthService(
+      BondApiFactory bondApiFactory,
+      DrsApiFactory drsApiFactory,
+      ExternalCredsApiFactory externalCredsApiFactory) {
+    this.bondApiFactory = bondApiFactory;
+    this.drsApiFactory = drsApiFactory;
+    this.externalCredsApiFactory = externalCredsApiFactory;
+  }
 
   /**
    * Get the SA key for a user from Bond
@@ -94,7 +115,7 @@ public record AuthService(
                     drsProvider,
                     forceAccessUrl,
                     bearerToken);
-                case current_request -> Optional.ofNullable(bearerToken.getToken());
+                case current_request -> Optional.ofNullable(bearerToken.getToken()).map(List::of);
                   // The passport case is weird. The provider needs a bearer auth,
                   // but configs say this provider should be using a passport.
                   // Check to see if the fallback auth is current_request or fence_token
@@ -111,7 +132,8 @@ public record AuthService(
                                   drsProvider,
                                   forceAccessUrl,
                                   bearerToken);
-                              case current_request -> Optional.ofNullable(bearerToken.getToken());
+                              case current_request -> Optional.ofNullable(bearerToken.getToken())
+                                  .map(List::of);
                               default -> throw new DrsHubException(
                                   "Auth mismatch. DRS Provider requests bearer auth, but DRSHub config does not specify what bearer auth to use");
                             });
@@ -165,7 +187,7 @@ public record AuthService(
     return switch (authType) {
       case current_request -> new DrsHubAuthorization(
           Authorizations.SupportedTypesEnum.BEARERAUTH,
-          accessType -> Optional.ofNullable(bearerToken.getToken()));
+          accessType -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
 
       case fence_token -> new DrsHubAuthorization(
           Authorizations.SupportedTypesEnum.BEARERAUTH,
@@ -201,7 +223,7 @@ public record AuthService(
     }
   }
 
-  private Optional<Object> getFenceAccessToken(
+  private Optional<List<String>> getFenceAccessToken(
       String drsUri,
       AccessMethod.TypeEnum accessMethodType,
       boolean useFallbackAuth,
@@ -221,29 +243,38 @@ public record AuthService(
       var response =
           bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());
 
-      return Optional.ofNullable(response.getToken());
+      return Optional.ofNullable(response.getToken()).map(List::of);
     } else {
       return Optional.empty();
     }
   }
 
-  private Optional<Object> maybeFetchPassports(
+  private Optional<List<String>> maybeFetchPassports(
       DrsProvider drsProvider, BearerToken bearerToken, AccessMethod.TypeEnum accessMethodType) {
     if (drsProvider.shouldFetchPassports(accessMethodType)) {
-      var ecmApi = externalCredsApiFactory.getApi(bearerToken.getToken());
-
-      try {
-        // For now, we are only getting a RAS passport. In the future it may also fetch from other
-        // providers.
-        return Optional.of(List.of(ecmApi.getProviderPassport("ras")));
-      } catch (HttpStatusCodeException e) {
-        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-          log.info("User does not have a passport.");
-        } else {
-          throw e;
-        }
-      }
+      return fetchPassports(bearerToken);
     }
     return Optional.empty();
+  }
+
+  public Optional<List<String>> fetchPassports(BearerToken bearerToken) {
+    return passportCache.computeIfAbsent(
+        bearerToken.getToken(),
+        token -> {
+          var ecmApi = externalCredsApiFactory.getApi(bearerToken.getToken());
+          try {
+            // For now, we are only getting a RAS passport. In the future it may also fetch from
+            // other
+            // providers.
+            return Optional.of(List.of(ecmApi.getProviderPassport("ras")));
+          } catch (HttpStatusCodeException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+              log.info("User does not have a passport.");
+              return Optional.empty();
+            } else {
+              throw e;
+            }
+          }
+        });
   }
 }
