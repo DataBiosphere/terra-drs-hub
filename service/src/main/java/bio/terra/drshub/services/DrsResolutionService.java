@@ -70,8 +70,6 @@ public record DrsResolutionService(
     return buildResponseObject(requestedFields, metadata, provider);
   }
 
-  // Fetch the DRS Object
-  // First, get the object info. If its not
   private DrsMetadata fetchObject(
       DrsProvider drsProvider,
       List<String> requestedFields,

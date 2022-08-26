@@ -27,52 +27,50 @@ public record AuthService(
     DrsApiFactory drsApiFactory,
     ExternalCredsApiFactory externalCredsApiFactory) {
 
+  /**
+   * Get the SA key for a user from Bond
+   *
+   * @param drsProvider Drs provider to provide the fence to get SA key for
+   * @param bearerToken bearer token of the user
+   * @return The SA key
+   */
   public SaKeyObject fetchUserServiceAccount(DrsProvider drsProvider, BearerToken bearerToken) {
     var bondApi = bondApiFactory.getApi(bearerToken);
     return bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().getUriValue());
   }
 
+  /**
+   * Build the authorizations that will enable the token/passport getting at runtime.
+   * DrsHubAuthorizations provide lazily-evaluated tokens based on access type.
+   *
+   * @param drsProvider Drs provider being reached out to
+   * @param components URI Components of the drs object
+   * @param bearerToken bearer token of the current user
+   * @param forceAccessUrl is the access url retrieval being forced
+   * @return A list of DrsHubAuthorizations that can be used to get a token/passport based on object
+   *     info.
+   */
   public List<DrsHubAuthorization> buildAuthorizations(
       DrsProvider drsProvider,
       UriComponents components,
       BearerToken bearerToken,
       Boolean forceAccessUrl) {
-    var auths = fetchDrsAuthorizations(drsProvider, components);
+    return fetchDrsAuthorizations(drsProvider, components)
+        .map(auths -> getDrsAuths(auths, drsProvider, components, bearerToken, forceAccessUrl))
+        .orElse(getAccessMethodConfigAuths(drsProvider, components, bearerToken, forceAccessUrl));
+  }
 
-    if (auths.isPresent()) {
-      var realAuths = auths.get();
-      return realAuths.getSupportedTypes().stream()
-          .map(
-              authType ->
-                  mapDrsAuthType(authType, drsProvider, components, bearerToken, forceAccessUrl))
-          .collect(Collectors.toList());
-    } else {
-      return drsProvider.getAccessMethodConfigs().stream()
-          .flatMap(
-              accessMethodConfig -> {
-                DrsHubAuthorization primaryAuth =
-                    mapAccessMethodConfigAuthType(
-                        accessMethodConfig.getAuth(),
-                        drsProvider,
-                        components,
-                        bearerToken,
-                        forceAccessUrl,
-                        false);
-                if (accessMethodConfig.getFallbackAuth().isPresent()) {
-                  DrsHubAuthorization secondaryAuth =
-                      mapAccessMethodConfigAuthType(
-                          accessMethodConfig.getFallbackAuth().get(),
-                          drsProvider,
-                          components,
-                          bearerToken,
-                          forceAccessUrl,
-                          true);
-                  return Stream.of(primaryAuth, secondaryAuth);
-                }
-                return Stream.of(primaryAuth);
-              })
-          .collect(Collectors.toList());
-    }
+  private List<DrsHubAuthorization> getDrsAuths(
+      Authorizations auths,
+      DrsProvider drsProvider,
+      UriComponents components,
+      BearerToken bearerToken,
+      Boolean forceAccessUrl) {
+    return auths.getSupportedTypes().stream()
+        .map(
+            authType ->
+                mapDrsAuthType(authType, drsProvider, components, bearerToken, forceAccessUrl))
+        .collect(Collectors.toList());
   }
 
   private DrsHubAuthorization mapDrsAuthType(
@@ -98,6 +96,9 @@ public record AuthService(
                     forceAccessUrl,
                     bearerToken);
                 case current_request -> Optional.ofNullable(bearerToken.getToken());
+                  // The passport case is weird. The provider needs a bearer auth,
+                  // but configs say this provider should be using a passport.
+                  // Check to see if the fallback auth is current_request or fence_token
                 case passport -> drsProvider
                     .getAccessMethodByType(accessType)
                     .getFallbackAuth()
@@ -121,6 +122,38 @@ public record AuthService(
           (AccessMethod.TypeEnum accessType) ->
               maybeFetchPassports(drsProvider, bearerToken, accessType));
     };
+  }
+
+  private List<DrsHubAuthorization> getAccessMethodConfigAuths(
+      DrsProvider drsProvider,
+      UriComponents components,
+      BearerToken bearerToken,
+      Boolean forceAccessUrl) {
+    return drsProvider.getAccessMethodConfigs().stream()
+        .flatMap(
+            accessMethodConfig -> {
+              DrsHubAuthorization primaryAuth =
+                  mapAccessMethodConfigAuthType(
+                      accessMethodConfig.getAuth(),
+                      drsProvider,
+                      components,
+                      bearerToken,
+                      forceAccessUrl,
+                      false);
+              if (accessMethodConfig.getFallbackAuth().isPresent()) {
+                DrsHubAuthorization secondaryAuth =
+                    mapAccessMethodConfigAuthType(
+                        accessMethodConfig.getFallbackAuth().get(),
+                        drsProvider,
+                        components,
+                        bearerToken,
+                        forceAccessUrl,
+                        true);
+                return Stream.of(primaryAuth, secondaryAuth);
+              }
+              return Stream.of(primaryAuth);
+            })
+        .collect(Collectors.toList());
   }
 
   private DrsHubAuthorization mapAccessMethodConfigAuthType(

@@ -124,9 +124,6 @@ spring:
 
   main.banner-mode: off
 
-#  profiles.include:
-#    - ${DEPLOY_ENV:dev}
-
   web:
     resources:
       cache:
