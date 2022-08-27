@@ -16,10 +16,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
   private static final Pattern compactIdRegex =
-      Pattern.compile("(?:dos|drs)://(?<compactId>dg\\.[0-9a-z-]+).*", Pattern.CASE_INSENSITIVE);
+      Pattern.compile("(?:dos|drs)://(?<compactId>dg\\.[0-9a-z-]+)", Pattern.CASE_INSENSITIVE);
 
   private static final Pattern hostNameRegex =
-      Pattern.compile("(?:dos|drs)://(?<hostname>[^?/]+\\.[^?/]+).*", Pattern.CASE_INSENSITIVE);
+      Pattern.compile("(?:dos|drs)://(?<hostname>[^?/]+\\.[^?/]+)", Pattern.CASE_INSENSITIVE);
 
   /**
    * DRS schemes are allowed as of <a
@@ -45,7 +45,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     final String strippedPath;
     var hostNameMatch = hostNameRegex.matcher(drsUri);
 
-    if (compactIdMatch.matches()) {
+    if (compactIdMatch.find(0)) {
       var matchedGroup = compactIdMatch.group("compactId");
       var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedGroup));
       if (host.isPresent()) {
@@ -57,7 +57,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
                 "Could not find matching host for compact id [%s].",
                 compactIdMatch.group("compactId")));
       }
-    } else if (hostNameMatch.matches()) {
+    } else if (hostNameMatch.find(0)) {
       dnsHost = hostNameMatch.group("hostname");
       strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(dnsHost + "/", "");
     } else {
