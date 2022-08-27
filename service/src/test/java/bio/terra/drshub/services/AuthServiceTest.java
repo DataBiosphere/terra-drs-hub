@@ -100,7 +100,7 @@ class AuthServiceTest extends BaseTest {
 
     List<DrsHubAuthorization> authorizations =
         authService.buildAuthorizations(
-            cidProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken), true);
+            cidProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken));
 
     Set<Optional<List<String>>> secrets =
         authorizations.stream()
@@ -123,7 +123,7 @@ class AuthServiceTest extends BaseTest {
 
     authorizations =
         authService.buildAuthorizations(
-            bearerProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken), true);
+            bearerProviderHost.drsProvider(), resolvedUri, new BearerToken(bearerToken));
 
     secrets =
         authorizations.stream()
@@ -153,7 +153,7 @@ class AuthServiceTest extends BaseTest {
 
     List<DrsHubAuthorization> authorizations =
         authService.buildAuthorizations(
-            cidProviderHost.drsProvider(), resolvedUri, new BearerToken("foobar"), false);
+            cidProviderHost.drsProvider(), resolvedUri, new BearerToken("foobar"));
 
     // Should only return fence_token authorizations
     assertPresent(
@@ -179,7 +179,7 @@ class AuthServiceTest extends BaseTest {
 
     List<DrsHubAuthorization> authorizations =
         authService.buildAuthorizations(
-            cidProviderHost.drsProvider(), resolvedUri, new BearerToken("foobar"), false);
+            cidProviderHost.drsProvider(), resolvedUri, new BearerToken("foobar"));
 
     // Should not return fence_token authorizations
     assertEmpty(

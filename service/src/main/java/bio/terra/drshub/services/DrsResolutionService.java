@@ -89,9 +89,7 @@ public record DrsResolutionService(
     final List<DrsHubAuthorization> authorizations;
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
-        authorizations =
-            authService.buildAuthorizations(
-                drsProvider, uriComponents, bearerToken, forceAccessUrl);
+        authorizations = authService.buildAuthorizations(drsProvider, uriComponents, bearerToken);
         drsResponse =
             fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken, authorizations);
       } catch (Exception e) {

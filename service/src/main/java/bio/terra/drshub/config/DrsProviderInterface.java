@@ -119,14 +119,6 @@ public interface DrsProviderInterface {
         && Fields.overlap(requestedFields, Fields.BOND_SA_FIELDS);
   }
 
-  default boolean shouldFetchPassports(AccessMethod.TypeEnum accessMethodType) {
-    return getAccessMethodConfigs().stream()
-        .anyMatch(
-            m ->
-                m.getType().getReturnedEquivalent() == accessMethodType
-                    && m.getAuth() == AccessUrlAuthEnum.passport);
-  }
-
   /**
    * Fail this request if Drshub was unable to get an access/signed URL and the access method is
    * truthy but its type is not GCS. Drshub clients currently can't deal with cloud paths other than

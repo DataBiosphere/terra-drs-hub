@@ -66,30 +66,23 @@ public class AuthService {
    * @param drsProvider Drs provider being reached out to
    * @param components URI Components of the drs object
    * @param bearerToken bearer token of the current user
-   * @param forceAccessUrl is the access url retrieval being forced
    * @return A list of DrsHubAuthorizations that can be used to get a token/passport based on object
    *     info.
    */
   public List<DrsHubAuthorization> buildAuthorizations(
-      DrsProvider drsProvider,
-      UriComponents components,
-      BearerToken bearerToken,
-      Boolean forceAccessUrl) {
+      DrsProvider drsProvider, UriComponents components, BearerToken bearerToken) {
     return fetchDrsAuthorizations(drsProvider, components)
-        .map(auths -> getDrsAuths(auths, drsProvider, components, bearerToken, forceAccessUrl))
-        .orElse(getAccessMethodConfigAuths(drsProvider, components, bearerToken, forceAccessUrl));
+        .map(auths -> getDrsAuths(auths, drsProvider, components, bearerToken))
+        .orElse(getAccessMethodConfigAuths(drsProvider, components, bearerToken));
   }
 
   private List<DrsHubAuthorization> getDrsAuths(
       Authorizations auths,
       DrsProvider drsProvider,
       UriComponents components,
-      BearerToken bearerToken,
-      Boolean forceAccessUrl) {
+      BearerToken bearerToken) {
     return auths.getSupportedTypes().stream()
-        .map(
-            authType ->
-                mapDrsAuthType(authType, drsProvider, components, bearerToken, forceAccessUrl))
+        .map(authType -> mapDrsAuthType(authType, drsProvider, components, bearerToken))
         .toList();
   }
 
@@ -97,8 +90,7 @@ public class AuthService {
       Authorizations.SupportedTypesEnum authType,
       DrsProvider drsProvider,
       UriComponents components,
-      BearerToken bearerToken,
-      Boolean forceAccessUrl) {
+      BearerToken bearerToken) {
     return switch (authType) {
       case NONE -> new DrsHubAuthorization(
           authType, (AccessMethod.TypeEnum accessType) -> Optional.empty());
@@ -109,12 +101,7 @@ public class AuthService {
           (AccessMethod.TypeEnum accessType) ->
               switch (drsProvider.getAccessMethodByType(accessType).getAuth()) {
                 case fence_token -> getFenceAccessToken(
-                    components.toUriString(),
-                    accessType,
-                    false,
-                    drsProvider,
-                    forceAccessUrl,
-                    bearerToken);
+                    components.toUriString(), drsProvider, bearerToken);
                 case current_request -> Optional.ofNullable(bearerToken.getToken()).map(List::of);
                   // The passport case is weird. The provider needs a bearer auth,
                   // but configs say this provider should be using a passport.
@@ -126,12 +113,7 @@ public class AuthService {
                         auth ->
                             switch (auth) {
                               case fence_token -> getFenceAccessToken(
-                                  components.toUriString(),
-                                  accessType,
-                                  true,
-                                  drsProvider,
-                                  forceAccessUrl,
-                                  bearerToken);
+                                  components.toUriString(), drsProvider, bearerToken);
                               case current_request -> Optional.ofNullable(bearerToken.getToken())
                                   .map(List::of);
                               default -> throw new DrsHubException(
@@ -139,37 +121,25 @@ public class AuthService {
                             });
               });
       case PASSPORTAUTH -> new DrsHubAuthorization(
-          authType,
-          (AccessMethod.TypeEnum accessType) ->
-              maybeFetchPassports(drsProvider, bearerToken, accessType));
+          authType, (AccessMethod.TypeEnum accessType) -> fetchPassports(bearerToken));
     };
   }
 
   private List<DrsHubAuthorization> getAccessMethodConfigAuths(
-      DrsProvider drsProvider,
-      UriComponents components,
-      BearerToken bearerToken,
-      Boolean forceAccessUrl) {
+      DrsProvider drsProvider, UriComponents components, BearerToken bearerToken) {
     return drsProvider.getAccessMethodConfigs().stream()
         .flatMap(
             accessMethodConfig -> {
               DrsHubAuthorization primaryAuth =
                   mapAccessMethodConfigAuthType(
-                      accessMethodConfig.getAuth(),
-                      drsProvider,
-                      components,
-                      bearerToken,
-                      forceAccessUrl,
-                      false);
+                      accessMethodConfig.getAuth(), drsProvider, components, bearerToken);
               if (accessMethodConfig.getFallbackAuth().isPresent()) {
                 DrsHubAuthorization secondaryAuth =
                     mapAccessMethodConfigAuthType(
                         accessMethodConfig.getFallbackAuth().get(),
                         drsProvider,
                         components,
-                        bearerToken,
-                        forceAccessUrl,
-                        true);
+                        bearerToken);
                 return Stream.of(primaryAuth, secondaryAuth);
               }
               return Stream.of(primaryAuth);
@@ -181,28 +151,17 @@ public class AuthService {
       AccessUrlAuthEnum authType,
       DrsProvider drsProvider,
       UriComponents components,
-      BearerToken bearerToken,
-      Boolean forceAccessUrl,
-      Boolean useFallbackAuth) {
+      BearerToken bearerToken) {
     return switch (authType) {
       case current_request -> new DrsHubAuthorization(
           Authorizations.SupportedTypesEnum.BEARERAUTH,
           accessType -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
-
       case fence_token -> new DrsHubAuthorization(
           Authorizations.SupportedTypesEnum.BEARERAUTH,
-          accessType ->
-              getFenceAccessToken(
-                  components.toUriString(),
-                  accessType,
-                  useFallbackAuth,
-                  drsProvider,
-                  forceAccessUrl,
-                  bearerToken));
-
+          accessType -> getFenceAccessToken(components.toUriString(), drsProvider, bearerToken));
       case passport -> new DrsHubAuthorization(
           Authorizations.SupportedTypesEnum.PASSPORTAUTH,
-          accessType -> maybeFetchPassports(drsProvider, bearerToken, accessType));
+          accessType -> fetchPassports(bearerToken));
     };
   }
 
@@ -224,37 +183,18 @@ public class AuthService {
   }
 
   private Optional<List<String>> getFenceAccessToken(
-      String drsUri,
-      AccessMethod.TypeEnum accessMethodType,
-      boolean useFallbackAuth,
-      DrsProvider drsProvider,
-      boolean forceAccessUrl,
-      BearerToken bearerToken) {
-    if (drsProvider.shouldFetchFenceAccessToken(
-        accessMethodType, useFallbackAuth, forceAccessUrl)) {
+      String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
+    log.info(
+        "Requesting Bond access token for '{}' from '{}'",
+        drsUri,
+        drsProvider.getBondProvider().orElseThrow());
 
-      log.info(
-          "Requesting Bond access token for '{}' from '{}'",
-          drsUri,
-          drsProvider.getBondProvider().orElseThrow());
+    var bondApi = bondApiFactory.getApi(bearerToken);
 
-      var bondApi = bondApiFactory.getApi(bearerToken);
+    var response =
+        bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());
 
-      var response =
-          bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());
-
-      return Optional.ofNullable(response.getToken()).map(List::of);
-    } else {
-      return Optional.empty();
-    }
-  }
-
-  private Optional<List<String>> maybeFetchPassports(
-      DrsProvider drsProvider, BearerToken bearerToken, AccessMethod.TypeEnum accessMethodType) {
-    if (drsProvider.shouldFetchPassports(accessMethodType)) {
-      return fetchPassports(bearerToken);
-    }
-    return Optional.empty();
+    return Optional.ofNullable(response.getToken()).map(List::of);
   }
 
   public Optional<List<String>> fetchPassports(BearerToken bearerToken) {
