@@ -14,7 +14,8 @@ drshub:
     "dg.f82a1a": gen3staging.kidsfirstdrc.org
     "dg.test0": ctds-test-env.planx-pla.net
     "dg.fenceonly": local.fence-token-only.test
-    "dg.passportbearer": local.passport-bearer-fallback.test
+    "dg.passportrequest": local.passport-request-fallback.test
+    "dg.passporfence": local.passport-fence-fallback.test
 
   drsProviders:
     anvil:
@@ -95,17 +96,28 @@ drshub:
       accessMethodConfigs:
         - type: gs
           auth: fence_token
-          fetchAccessUrl: false
+          fetchAccessUrl: true
 
-    passportBearerFallback:
+    passportRequestFallback:
       name: Passport With Bearer Fallback
-      hostRegex: '.*\.passport-bearer-fallback\.test'
+      hostRegex: '.*\.passport-request-fallback\.test'
       metadataAuth: false
       access-method-configs:
         - type: gs
           auth: passport
           fetchAccessUrl: false
           fallbackAuth: current_request
+          
+    passportFenceFallback:
+      name: Passport With Bearer Fallback
+      hostRegex: '.*\.passport-fence-fallback\.test'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      access-method-configs:
+        - type: gs
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
 
 server:
   compression:

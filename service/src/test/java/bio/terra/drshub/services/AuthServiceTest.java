@@ -117,7 +117,7 @@ class AuthServiceTest extends BaseTest {
     verify(oidcApi).getProviderPassport(any());
 
     // TDR should result in using the current request bearer token instead of the fence token.
-    var bearerProviderHost = getProviderHosts("passportBearerFallback");
+    var bearerProviderHost = getProviderHosts("passportRequestFallback");
     testUri = String.format("drs://%s/12345", bearerProviderHost.drsUriHost());
     resolvedUri = drsProviderService.getUriComponents(testUri);
 
