@@ -150,11 +150,7 @@ public record DrsResolutionService(
     if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
       var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
       try {
-        var providerAccessMethod = drsProvider.getAccessMethodByType(accessMethodType);
-        auditEventBuilder.authType(providerAccessMethod.getAuth());
-
         log.info("Requesting URL for {}", uriComponents.toUriString());
-
         var accessUrl =
             fetchDrsObjectAccessUrl(
                 drsProvider,
@@ -193,6 +189,8 @@ public record DrsResolutionService(
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     if (sendMetadataAuth) {
+      // Currently, no provider needs a fence_token for metadata auth.
+      // If that changes, this will need to get updated.
       drsApi.setBearerToken(bearerToken.getToken());
       if (authorizations.stream()
           .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {

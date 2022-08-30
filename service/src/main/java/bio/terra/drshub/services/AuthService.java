@@ -76,6 +76,8 @@ public class AuthService {
         .orElse(getAccessMethodConfigAuths(drsProvider, components, bearerToken));
   }
 
+  // Translate the Authorizations response from a Drs Provider to the DrsHubAuthorizations
+  // used in the rest of the codebase
   private List<DrsHubAuthorization> getDrsAuths(
       Authorizations auths,
       DrsProvider drsProvider,
@@ -86,6 +88,9 @@ public class AuthService {
         .toList();
   }
 
+  // For a given Authorization type returned by the Drs Provider,
+  // build the DrsHubAuthorization that maps that auth type to the function that lazily gets the
+  // bearer/fence token or passport.
   private DrsHubAuthorization mapDrsAuthType(
       Authorizations.SupportedTypesEnum authType,
       DrsProvider drsProvider,
@@ -125,6 +130,8 @@ public class AuthService {
     };
   }
 
+  // Called if there was no Authorizations response from the Drs Provider.
+  // Translate what DRSHub stores in its config to the DrsHubAuthorizations used later in the code.
   private List<DrsHubAuthorization> getAccessMethodConfigAuths(
       DrsProvider drsProvider, UriComponents components, BearerToken bearerToken) {
     return drsProvider.getAccessMethodConfigs().stream()
@@ -147,6 +154,7 @@ public class AuthService {
         .toList();
   }
 
+  // Map a GA4GH Authorization type to the types DRSHub keeps in its config.
   private DrsHubAuthorization mapAccessMethodConfigAuthType(
       AccessUrlAuthEnum authType,
       DrsProvider drsProvider,
@@ -165,6 +173,14 @@ public class AuthService {
     };
   }
 
+  /**
+   * Reach out to the Drs Provider's options endpoint for the object to get Authorizations required.
+   *
+   * @param drsProvider Drs Provider to reach out to
+   * @param uriComponents DRS URI of the object to be resolved.
+   * @return If the Drs Provider returns an Authorizations, return that in an Optional. Else, return
+   *     the empty Optional.
+   */
   @VisibleForTesting
   Optional<Authorizations> fetchDrsAuthorizations(
       DrsProvider drsProvider, UriComponents uriComponents) {
@@ -182,6 +198,7 @@ public class AuthService {
     }
   }
 
+  // Reach out to Bond and get the fence token for the user.
   private Optional<List<String>> getFenceAccessToken(
       String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
     log.info(
@@ -197,6 +214,12 @@ public class AuthService {
     return Optional.ofNullable(response.getToken()).map(List::of);
   }
 
+  /**
+   * Reach out to ECM and get the RAS Passport for the current user
+   *
+   * @param bearerToken token for the current user
+   * @return An Optional list of passports tied to the user.
+   */
   public Optional<List<String>> fetchPassports(BearerToken bearerToken) {
     return passportCache.computeIfAbsent(
         bearerToken.getToken(),
