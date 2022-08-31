@@ -1,4 +1,4 @@
-deploy_env: ${DEPLOY_ENV:dev} # since there's a default, define this once
+deploy_env: dev
 
 drshub:
   bondUrl: https://broad-bond-${deploy_env}.appspot.com
@@ -146,15 +146,5 @@ spring:
 
 terra.common:
   tracing:
-    stackdriverExportEnabled: ${CLOUD_TRACE_ENABLED:false}
-    samplingRate: ${SAMPLING_PROBABILITY:0}
-
----
-spring.config.activate.on-profile: prod
-drshub:
-  compactIdHosts:
-    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
-    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
-    "dg.anv0": gen3.theanvil.io
-    "dg.4dfc": nci-crdc.datacommons.io
-    "dg.f82a1a": data.kidsfirstdrc.org
+    stackdriverExportEnabled: false
+    samplingRate: 0
