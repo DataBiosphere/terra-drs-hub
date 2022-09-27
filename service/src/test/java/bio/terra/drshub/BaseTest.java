@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = DrsHubApplication.class)
-@ActiveProfiles("human-readable-logging")
+@ActiveProfiles({"test", "human-readable-logging"})
 public abstract class BaseTest {
 
   @Autowired protected DrsHubConfig config;

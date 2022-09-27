@@ -1,0 +1,151 @@
+# This is a test properties file, but needs prod links to test parsing of host urls.
+deploy_env: dev
+
+drshub:
+  bondUrl: https://broad-bond-${deploy_env}.appspot.com
+  samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
+  externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
+
+  compactIdHosts:
+    # it is important for case-insensitive matching that the keys here are all lower case
+    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.anv0": staging.theanvil.io
+    "dg.4dfc": nci-crdc-staging.datacommons.io
+    "dg.f82a1a": gen3staging.kidsfirstdrc.org
+    "dg.test0": ctds-test-env.planx-pla.net
+    "dg.fenceonly": local.fence-token-only.test
+    "dg.passportrequest": local.passport-request-fallback.test
+    "dg.passporfence": local.passport-fence-fallback.test
+
+  drsProviders:
+    anvil:
+      name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
+      hostRegex: '.*\.theanvil\.io'
+      metadataAuth: false
+      bondProvider: anvil
+      accessMethodConfigs:
+        - type: gs
+          auth: fence_token
+          fetchAccessUrl: false
+    bioDataCatalyst:
+      name: BioData Catalyst (BDC)
+      hostRegex: '.*\.biodatacatalyst\.nhlbi\.nih\.gov|wb-mock-drs-dev\.storage\.googleapis\.com'
+      metadataAuth: false
+      bondProvider: fence
+      accessMethodConfigs:
+        - type: gs
+          auth: fence_token
+          fetchAccessUrl: true
+    crdc:
+      name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
+      hostRegex: '.*\.datacommons\.io'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      accessMethodConfigs:
+        - type: gs
+          auth: fence_token
+          fetchAccessUrl: true
+        - type: s3
+          auth: fence_token
+          fetchAccessUrl: true
+    kidsFirst:
+      name: Gabriella Miller Kids First DRC
+      hostRegex: '.*\.kidsfirstdrc\.org'
+      metadataAuth: false
+      bondProvider: kids_first
+      accessMethodConfigs:
+        - type: s3
+          auth: fence_token
+          fetchAccessUrl: true
+    passport:
+      name: Passport Test Provider
+      hostRegex: 'ctds-test-env\.planx-pla\.net'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      accessMethodConfigs:
+        - type: gs
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
+        - type: s3
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
+      mTlsConfig:
+        keyPath: rendered/ras-mtls-client.key
+        certPath: rendered/ras-mtls-client.crt
+
+    terraDataRepo:
+      name: Terra Data Repo (TDR)
+      hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
+      metadataAuth: true
+      useAliasesForLocalizationPath: true
+      accessMethodConfigs:
+        - type: gs
+          auth: current_request
+          fetchAccessUrl: false
+        - type: https
+          auth: current_request
+          fetchAccessUrl: true # Used for Azure
+
+    fenceTokenOnly:
+      name: Fence Token Only Provider
+      hostRegex: '.*\.fence-token-only\.test'
+      bondProvider: dcf_fence
+      metadataAuth: false
+      accessMethodConfigs:
+        - type: gs
+          auth: fence_token
+          fetchAccessUrl: true
+
+    passportRequestFallback:
+      name: Passport With Bearer Fallback
+      hostRegex: '.*\.passport-request-fallback\.test'
+      metadataAuth: false
+      access-method-configs:
+        - type: gs
+          auth: passport
+          fetchAccessUrl: false
+          fallbackAuth: current_request
+          
+    passportFenceFallback:
+      name: Passport With Bearer Fallback
+      hostRegex: '.*\.passport-fence-fallback\.test'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      access-method-configs:
+        - type: gs
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
+
+server:
+  compression:
+    enabled: true
+    mime-types: text/css,application/javascript
+  port: 8080
+
+spring:
+  application:
+    name: drshub
+    version: ${drshub.version.gitHash:unknown}
+
+  config.import: classpath:rendered/version.properties
+
+  jackson.serialization.indent_output: true
+
+  main.banner-mode: off
+
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 0
+          must-revalidate: true
+        use-last-modified: false
+
+terra.common:
+  tracing:
+    stackdriverExportEnabled: false
+    samplingRate: 0
