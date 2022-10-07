@@ -54,23 +54,6 @@ drshub:
         - type: s3
           auth: fence_token
           fetchAccessUrl: true
-    passport:
-      name: Passport Test Provider
-      hostRegex: 'ctds-test-env\.planx-pla\.net'
-      metadataAuth: false
-      bondProvider: dcf_fence
-      accessMethodConfigs:
-        - type: gs
-          auth: passport
-          fetchAccessUrl: true
-          fallbackAuth: fence_token
-        - type: s3
-          auth: passport
-          fetchAccessUrl: true
-          fallbackAuth: fence_token
-      mTlsConfig:
-        keyPath: rendered/ras-mtls-client.key
-        certPath: rendered/ras-mtls-client.crt
 
     terraDataRepo:
       name: Terra Data Repo (TDR)
@@ -127,3 +110,25 @@ drshub:
     "dg.anv0": gen3.theanvil.io
     "dg.4dfc": nci-crdc.datacommons.io
     "dg.f82a1a": data.kidsfirstdrc.org
+---
+spring.config.activate.on-profile: '!prod'
+drshub:
+  drsProviders:
+    passport:
+      name: Passport Test Provider
+      hostRegex: 'ctds-test-env\.planx-pla\.net'
+      metadataAuth: false
+      bondProvider: dcf_fence
+      accessMethodConfigs:
+        - type: gs
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
+        - type: s3
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: fence_token
+      mTlsConfig:
+        keyPath: rendered/ras-mtls-client.key
+        certPath: rendered/ras-mtls-client.crt
+
