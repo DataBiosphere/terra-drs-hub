@@ -64,13 +64,13 @@ class DrsProviderInterfaceTest extends BaseTest {
     var passportProviderHost = getProviderHosts("passportRequestFallback");
     var passportTestUri = String.format("drs://%s/12345", passportProviderHost.drsUriHost());
     var passportUriComponent = drsProviderService.getUriComponents(passportTestUri);
-    DrsProvider passportDrsPorvider = drsProviderService.determineDrsProvider(passportUriComponent);
+    DrsProvider passportDrsProvider = drsProviderService.determineDrsProvider(passportUriComponent);
 
     assertFalse(
-        passportDrsPorvider.shouldFetchAccessUrl(
+        passportDrsProvider.shouldFetchAccessUrl(
             AccessMethod.TypeEnum.GS, Fields.ACCESS_ID_FIELDS, false));
     assertFalse(
-        passportDrsPorvider.shouldFetchAccessUrl(
+        passportDrsProvider.shouldFetchAccessUrl(
             AccessMethod.TypeEnum.S3, Fields.ACCESS_ID_FIELDS, false));
 
     var fenceProviderHost = getProviderHosts("fenceTokenOnly");

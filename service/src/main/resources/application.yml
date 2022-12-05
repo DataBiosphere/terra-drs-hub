@@ -63,7 +63,7 @@ drshub:
       accessMethodConfigs:
         - type: gs
           auth: current_request
-          fetchAccessUrl: false
+          fetchAccessUrl: true
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure
