@@ -16,7 +16,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
   private static final Pattern compactIdRegex =
-      Pattern.compile("(?:dos|drs)://(?<compactId>dg\\.[0-9a-z-]+)", Pattern.CASE_INSENSITIVE);
+      Pattern.compile(
+          "(?:dos|drs)://(?<compactId>(dg|drs)\\.[0-9a-z-]+)", Pattern.CASE_INSENSITIVE);
 
   private static final Pattern hostNameRegex =
       Pattern.compile("(?:dos|drs)://(?<hostname>[^?/]+\\.[^?/]+)", Pattern.CASE_INSENSITIVE);
@@ -33,7 +34,8 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
    * <p>Note: GA4GH Compact Identifier based URIs are incompatible with W3C/IETF URIs and the
    * various standard libraries that parse them because they use colons as a delimiter. However,
    * there are some Compact Identifier based URIs that use slashes as a delimiter. This code assumes
-   * that if the host part of the URI is of the form dg.[0-9a-z-]+ then it is a Compact Identifier.
+   * that if the host part of the URI is of the form dg.[0-9a-z-]+ or drs.[0-9a-z-]+ then it is a
+   * Compact Identifier.
    *
    * <p>If you update *any* of the below be sure to link to the supporting docs and update the
    * comments above!
