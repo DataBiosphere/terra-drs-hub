@@ -10,7 +10,7 @@ drshub:
     "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
     "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
     "dg.anv0": staging.theanvil.io
-    "drs.anv0": data.staging.envs-terra.bio
+    "drs.anv0": jade.datarepo-dev.broadinstitute.org
     "dg.4dfc": nci-crdc-staging.datacommons.io
     "dg.f82a1a": gen3staging.kidsfirstdrc.org
     "dg.test0": ctds-test-env.planx-pla.net
