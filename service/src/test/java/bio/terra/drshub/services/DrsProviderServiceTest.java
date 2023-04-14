@@ -34,10 +34,15 @@ class DrsProviderServiceTest extends BaseTest {
     for (var entry : config.getCompactIdHosts().entrySet()) {
       var compactId = entry.getKey();
       var hostName = entry.getValue();
-      var testCompactUri = String.format("drs://%s/12345", compactId);
-      var expectedUri = String.format("drs//%s/12345", hostName);
-      var resolvedUri = drsProviderService.getUriComponents(testCompactUri);
-      assertEquals(expectedUri, resolvedUri.toString());
+      var testCompactUriDrs = String.format("drs://%s/12345", compactId);
+      var expectedUriDrs = String.format("drs://%s/12345", hostName);
+      var resolvedUriDrs = drsProviderService.getUriComponents(testCompactUriDrs);
+      assertEquals(expectedUriDrs, resolvedUriDrs.toString());
+
+      var testCompactUriDos = String.format("dos://%s/12345", compactId);
+      var expectedUriDos = String.format("dos://%s/12345", hostName);
+      var resolvedUriDos = drsProviderService.getUriComponents(testCompactUriDos);
+      assertEquals(expectedUriDos, resolvedUriDos.toString());
     }
   }
 
