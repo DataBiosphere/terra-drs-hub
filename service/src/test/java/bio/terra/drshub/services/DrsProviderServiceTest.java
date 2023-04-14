@@ -15,7 +15,7 @@ class DrsProviderServiceTest extends BaseTest {
     for (var providerName : config.getDrsProviders().keySet()) {
       var cidProviderHost = getProviderHosts(providerName);
 
-      var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
+      var testUri = String.format("drs://%s:12345", cidProviderHost.drsUriHost());
       var testDnsUri = String.format("drs://%s/12345", cidProviderHost.dnsHost());
 
       var resolvedUri = drsProviderService.getUriComponents(testUri);
@@ -34,15 +34,21 @@ class DrsProviderServiceTest extends BaseTest {
     for (var entry : config.getCompactIdHosts().entrySet()) {
       var compactId = entry.getKey();
       var hostName = entry.getValue();
-      var testCompactUriDrs = String.format("drs://%s/12345", compactId);
+      var testCompactUriDrs = String.format("drs://%s:12345", compactId);
       var expectedUriDrs = String.format("drs://%s/12345", hostName);
       var resolvedUriDrs = drsProviderService.getUriComponents(testCompactUriDrs);
       assertEquals(expectedUriDrs, resolvedUriDrs.toString());
+    }
+  }
 
-      var testCompactUriDos = String.format("dos://%s/12345", compactId);
-      var expectedUriDos = String.format("dos://%s/12345", hostName);
-      var resolvedUriDos = drsProviderService.getUriComponents(testCompactUriDos);
-      assertEquals(expectedUriDos, resolvedUriDos.toString());
+  @Test
+  void testHostnameIdResolution() {
+    for (var entry : config.getCompactIdHosts().entrySet()) {
+      var hostName = entry.getValue();
+      var testCompactUriDrs = String.format("drs://%s/12345", hostName);
+      var expectedUriDrs = String.format("drs://%s/12345", hostName);
+      var resolvedUriDrs = drsProviderService.getUriComponents(testCompactUriDrs);
+      assertEquals(expectedUriDrs, resolvedUriDrs.toString());
     }
   }
 

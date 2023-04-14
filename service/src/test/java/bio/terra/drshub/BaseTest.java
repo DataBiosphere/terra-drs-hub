@@ -1,5 +1,6 @@
 package bio.terra.drshub;
 
+import static bio.terra.drshub.controllers.DrsHubApiControllerTest.COMPACT_ID_TEST_HOST;
 import static bio.terra.drshub.controllers.DrsHubApiControllerTest.TDR_TEST_HOST;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,7 +22,7 @@ public abstract class BaseTest {
   protected ProviderHosts getProviderHosts(String provider) {
     var drsProvider = config.getDrsProviders().get(provider);
     if (Objects.equals(provider, "terraDataRepo")) {
-      return new ProviderHosts(TDR_TEST_HOST, TDR_TEST_HOST, drsProvider);
+      return new ProviderHosts(COMPACT_ID_TEST_HOST, TDR_TEST_HOST, drsProvider);
     }
 
     var drsHostRegex = Pattern.compile(drsProvider.getHostRegex());

@@ -19,7 +19,7 @@ class DrsProviderInterfaceTest extends BaseTest {
   @Test
   void testGetAccessMethodByType() {
     var passportProviderHost = getProviderHosts("passportRequestFallback");
-    var testUri = String.format("drs://%s/12345", passportProviderHost.drsUriHost());
+    var testUri = String.format("drs://%s:12345", passportProviderHost.drsUriHost());
     var uriComponents = drsProviderService.getUriComponents(testUri);
     DrsProvider drsProvider = drsProviderService.determineDrsProvider(uriComponents);
 
@@ -30,7 +30,7 @@ class DrsProviderInterfaceTest extends BaseTest {
   @Test
   void testShouldFetchFenceAccessToken() {
     var passportProviderHost = getProviderHosts("passportRequestFallback");
-    var passportTestUri = String.format("drs://%s/12345", passportProviderHost.drsUriHost());
+    var passportTestUri = String.format("drs://%s:12345", passportProviderHost.drsUriHost());
     var passportUriComponent = drsProviderService.getUriComponents(passportTestUri);
     DrsProvider passportDrsPorvider = drsProviderService.determineDrsProvider(passportUriComponent);
 
@@ -38,7 +38,7 @@ class DrsProviderInterfaceTest extends BaseTest {
         passportDrsPorvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.GS, false, false));
 
     var fenceProviderHost = getProviderHosts("fenceTokenOnly");
-    var fenceTestUri = String.format("drs://%s/12345", fenceProviderHost.drsUriHost());
+    var fenceTestUri = String.format("drs://%s:12345", fenceProviderHost.drsUriHost());
     var fenceUriComponent = drsProviderService.getUriComponents(fenceTestUri);
     DrsProvider fenceDrsProvider = drsProviderService.determineDrsProvider(fenceUriComponent);
 
@@ -49,7 +49,7 @@ class DrsProviderInterfaceTest extends BaseTest {
         fenceDrsProvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.S3, false, false));
 
     var fallbackProviderHost = getProviderHosts("passportFenceFallback");
-    var fallbackTestUri = String.format("drs://%s/12345", fallbackProviderHost.drsUriHost());
+    var fallbackTestUri = String.format("drs://%s:12345", fallbackProviderHost.drsUriHost());
     var fallbackUriComponent = drsProviderService.getUriComponents(fallbackTestUri);
     DrsProvider fallbackDrsProvider = drsProviderService.determineDrsProvider(fallbackUriComponent);
 
@@ -62,7 +62,7 @@ class DrsProviderInterfaceTest extends BaseTest {
   @Test
   void testShouldFetchAccessUrl() {
     var passportProviderHost = getProviderHosts("passportRequestFallback");
-    var passportTestUri = String.format("drs://%s/12345", passportProviderHost.drsUriHost());
+    var passportTestUri = String.format("drs://%s:12345", passportProviderHost.drsUriHost());
     var passportUriComponent = drsProviderService.getUriComponents(passportTestUri);
     DrsProvider passportDrsProvider = drsProviderService.determineDrsProvider(passportUriComponent);
 
@@ -74,7 +74,7 @@ class DrsProviderInterfaceTest extends BaseTest {
             AccessMethod.TypeEnum.S3, Fields.ACCESS_ID_FIELDS, false));
 
     var fenceProviderHost = getProviderHosts("fenceTokenOnly");
-    var fenceTestUri = String.format("drs://%s/12345", fenceProviderHost.drsUriHost());
+    var fenceTestUri = String.format("drs://%s:12345", fenceProviderHost.drsUriHost());
     var fenceUriComponent = drsProviderService.getUriComponents(fenceTestUri);
     DrsProvider fenceDrsProvider = drsProviderService.determineDrsProvider(fenceUriComponent);
 

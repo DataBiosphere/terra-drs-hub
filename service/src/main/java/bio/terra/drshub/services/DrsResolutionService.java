@@ -58,7 +58,7 @@ public record DrsResolutionService(
     var provider = drsProviderService.determineDrsProvider(uriComponents);
 
     log.info(
-        "Drs URI '{}' will use provider {}, requested fields {}",
+        "Drs URI {} will use provider {}, requested fields {}",
         drsUri,
         provider.getName(),
         String.join(", ", requestedFields));
@@ -182,7 +182,7 @@ public record DrsResolutionService(
 
     var objectId = getObjectId(uriComponents);
     log.info(
-        "Requesting DRS metadata for '{}' with auth required '{}' from host '{}'",
+        "Requesting DRS metadata for {} with auth required {} from host {}",
         drsUri,
         sendMetadataAuth,
         uriComponents.getHost());

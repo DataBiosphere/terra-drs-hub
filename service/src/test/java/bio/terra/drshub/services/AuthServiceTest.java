@@ -45,7 +45,7 @@ class AuthServiceTest extends BaseTest {
                     Authorizations.SupportedTypesEnum.BEARERAUTH));
 
     var cidProviderHost = getProviderHosts("passport");
-    var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
+    var testUri = String.format("drs://%s:12345", cidProviderHost.drsUriHost());
 
     var resolvedUri = drsProviderService.getUriComponents(testUri);
 
@@ -86,7 +86,7 @@ class AuthServiceTest extends BaseTest {
     var bearerToken = "bearer_token";
 
     var cidProviderHost = getProviderHosts("passport");
-    var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
+    var testUri = String.format("drs://%s:12345", cidProviderHost.drsUriHost());
 
     var resolvedUri = drsProviderService.getUriComponents(testUri);
 
@@ -118,7 +118,7 @@ class AuthServiceTest extends BaseTest {
 
     // TDR should result in using the current request bearer token instead of the fence token.
     var bearerProviderHost = getProviderHosts("passportRequestFallback");
-    testUri = String.format("drs://%s/12345", bearerProviderHost.drsUriHost());
+    testUri = String.format("drs://%s:12345", bearerProviderHost.drsUriHost());
     resolvedUri = drsProviderService.getUriComponents(testUri);
 
     authorizations =
@@ -143,7 +143,7 @@ class AuthServiceTest extends BaseTest {
   void testNoOptionsResponseReliesOnConfigInstead() {
 
     var cidProviderHost = getProviderHosts("fenceTokenOnly");
-    var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
+    var testUri = String.format("drs://%s:12345", cidProviderHost.drsUriHost());
 
     var resolvedUri = drsProviderService.getUriComponents(testUri);
 
@@ -169,7 +169,7 @@ class AuthServiceTest extends BaseTest {
             .supportedTypes(List.of(Authorizations.SupportedTypesEnum.PASSPORTAUTH));
 
     var cidProviderHost = getProviderHosts("fenceTokenOnly");
-    var testUri = String.format("drs://%s/12345", cidProviderHost.drsUriHost());
+    var testUri = String.format("drs://%s:12345", cidProviderHost.drsUriHost());
 
     var resolvedUri = drsProviderService.getUriComponents(testUri);
 

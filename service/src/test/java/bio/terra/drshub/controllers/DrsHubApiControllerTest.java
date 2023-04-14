@@ -61,6 +61,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   public static final String TEST_BOND_SA_TOKEN = "I am a bond SA token";
   public static final AccessURL TEST_ACCESS_URL = new AccessURL().url("I am a signed access url");
   public static final String TEST_PASSPORT = "I am a passport";
+  public static final String COMPACT_ID_TEST_HOST = "drs.anv0";
   public static final String TDR_TEST_HOST = "jade.datarepo-dev.broadinstitute.org";
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
@@ -140,7 +141,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
-                String.format("drs://%s/%s", cidProviderHost.drsUriHost(), drsObject.getId()),
+                String.format("drs://%s:%s", cidProviderHost.drsUriHost(), drsObject.getId()),
                 "fields",
                 List.of(Fields.CONTENT_TYPE),
                 "foo",
@@ -339,7 +340,7 @@ public class DrsHubApiControllerTest extends BaseTest {
                           Map.of(
                               "url",
                               String.format(
-                                  "drs://%s/%s", cidProviderHost.drsUriHost(), drsObject.getId()),
+                                  "drs://%s:%s", cidProviderHost.drsUriHost(), drsObject.getId()),
                               "fields",
                               List.of(Fields.ACCESS_URL)))))
           .andExpect(status().isOk())
@@ -698,7 +699,12 @@ public class DrsHubApiControllerTest extends BaseTest {
     var mockDrsApi = mock(DrsApi.class);
 
     when(drsApiFactory.getApiFromUriComponents(
-            eq(UriComponentsBuilder.newInstance().host(drsHost).path(drsObject.getId()).build()),
+            eq(
+                UriComponentsBuilder.newInstance()
+                    .scheme("drs")
+                    .host(drsHost)
+                    .path(drsObject.getId())
+                    .build()),
             any()))
         .thenReturn(mockDrsApi);
     when(mockDrsApi.getObject(drsObject.getId(), null)).thenReturn(drsObject);
