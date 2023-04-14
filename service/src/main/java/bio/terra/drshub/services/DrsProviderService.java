@@ -59,14 +59,16 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     var hostNameMatch = hostNameRegex.matcher(drsUri);
     var schemeMatch = schemeRegex.matcher(drsUri);
 
+    var drsUriWithoutSceme = schemeMatch.replaceFirst("");
+
+    // TODO: If ID is compact we need to url encode any slashes
     if (compactIdMatch.find(0)) {
       // This is a compact id with a colon separator
       var matchedPrefixGroup = compactIdMatch.group("compactIdPrefix");
       var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedPrefixGroup));
       if (host.isPresent()) {
         hostString = host.get();
-        strippedPath =
-            drsUri.replaceAll("(?:dos|drs)://", "").replace(matchedPrefixGroup + ":", "");
+        strippedPath = drsUriWithoutSceme.replace(matchedPrefixGroup + ":", "");
         log.info(String.format("Matched a compact ID and stripped path: %s", strippedPath));
       } else {
         throw new BadRequestException(
@@ -77,7 +79,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     } else if (hostNameMatch.find(0)) {
       // This is a hostname with a slash separator
       hostString = hostNameMatch.group("hostname");
-      strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(hostString + "/", "");
+      strippedPath = drsUriWithoutSceme.replace(hostString + "/", "");
       log.info(String.format("Matched a hostname ID and stripped path: %s", strippedPath));
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
