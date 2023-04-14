@@ -15,7 +15,7 @@ class DrsProviderServiceTest extends BaseTest {
     for (var providerName : config.getDrsProviders().keySet()) {
       var cidProviderHost = getProviderHosts(providerName);
 
-      var testUri = String.format("drs://%s:12345", cidProviderHost.drsUriHost());
+      var testUri = String.format("drs://%s:12345", cidProviderHost.compactUriPrefix());
       var testDnsUri = String.format("drs://%s/12345/4567", cidProviderHost.dnsHost());
 
       var resolvedUri = drsProviderService.getUriComponents(testUri);

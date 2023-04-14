@@ -41,5 +41,6 @@ public abstract class BaseTest {
     assertTrue(optional.isPresent(), "expected non-empty optional");
   }
 
-  protected record ProviderHosts(String drsUriHost, String dnsHost, DrsProvider drsProvider) {}
+  protected record ProviderHosts(
+      String compactUriPrefix, String dnsHost, DrsProvider drsProvider) {}
 }
