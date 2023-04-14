@@ -53,6 +53,8 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
       if (host.isPresent()) {
         dnsHost = host.get();
         strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(matchedGroup + "/", "");
+        System.out.println(
+            "stripped path: " + strippedPath + "dns host: " + dnsHost + "host: " + host);
       } else {
         throw new BadRequestException(
             String.format(
@@ -62,6 +64,8 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     } else if (hostNameMatch.find(0)) {
       dnsHost = hostNameMatch.group("hostname");
       strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(dnsHost + "/", "");
+      System.out.println("stripped path: " + strippedPath);
+
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
     }
@@ -70,6 +74,12 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     if (strippedUri.getQuery() != null) {
       throw new BadRequestException("DRSHub does not support query params in DRS URIs");
     }
+    var builtUri =
+        UriComponentsBuilder.newInstance()
+            .host(dnsHost)
+            .path(URI.create(strippedPath).getPath())
+            .build();
+    System.out.println("built URI: " + builtUri);
 
     return UriComponentsBuilder.newInstance()
         .host(dnsHost)

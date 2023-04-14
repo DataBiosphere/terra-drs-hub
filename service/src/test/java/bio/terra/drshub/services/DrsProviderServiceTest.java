@@ -37,7 +37,19 @@ class DrsProviderServiceTest extends BaseTest {
       var testCompactUri = String.format("drs://%s/12345", compactId);
       var expectedUri = String.format("//%s/12345", hostName);
       var resolvedUri = drsProviderService.getUriComponents(testCompactUri);
+      System.out.println("expected:" + expectedUri + "resolved: " + resolvedUri);
       assertEquals(expectedUri, resolvedUri.toString());
     }
+  }
+
+  @Test
+  void testAnvilCib() {
+    var expectedUrl =
+        "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
+    var compactUrl =
+        "drs://drs.anv0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
+    var compactUrl2 =
+        "drs://dg.anv0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d;";
+    assertEquals(expectedUrl, drsProviderService.getUriComponents(compactUrl2));
   }
 }
