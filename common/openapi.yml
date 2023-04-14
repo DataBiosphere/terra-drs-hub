@@ -87,6 +87,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorReport'
+    SystemStatusResponse:
+      description: System status check failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorReport'
 
   schemas:
     ResourceMetadata:

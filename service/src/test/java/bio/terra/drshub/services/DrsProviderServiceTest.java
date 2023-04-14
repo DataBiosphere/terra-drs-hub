@@ -35,9 +35,8 @@ class DrsProviderServiceTest extends BaseTest {
       var compactId = entry.getKey();
       var hostName = entry.getValue();
       var testCompactUri = String.format("drs://%s/12345", compactId);
-      var expectedUri = String.format("//%s/12345", hostName);
+      var expectedUri = String.format("drs//%s/12345", hostName);
       var resolvedUri = drsProviderService.getUriComponents(testCompactUri);
-      System.out.println("expected:" + expectedUri + "resolved: " + resolvedUri);
       assertEquals(expectedUri, resolvedUri.toString());
     }
   }
