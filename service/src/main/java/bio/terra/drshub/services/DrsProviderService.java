@@ -22,6 +22,9 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   private static final Pattern hostNameRegex =
       Pattern.compile("(?:dos|drs)://(?<hostname>[^?/]+\\.[^?/]+)", Pattern.CASE_INSENSITIVE);
 
+  private static final Pattern schemeRegex =
+      Pattern.compile("(?<scheme>dos|drs)://", Pattern.CASE_INSENSITIVE);
+
   /**
    * DRS schemes are allowed as of <a
    * href="https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.2.0/docs/">DRS
@@ -46,15 +49,19 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     final String dnsHost;
     final String strippedPath;
     var hostNameMatch = hostNameRegex.matcher(drsUri);
+    var schemeMatch = schemeRegex.matcher(drsUri);
 
     if (compactIdMatch.find(0)) {
       var matchedGroup = compactIdMatch.group("compactId");
       var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedGroup));
       if (host.isPresent()) {
         dnsHost = host.get();
-        strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(matchedGroup + "/", "");
-        System.out.println(
-            "stripped path: " + strippedPath + "dns host: " + dnsHost + "host: " + host);
+        strippedPath =
+            drsUri
+                .replaceAll("(?:dos|drs)://", "")
+                .replace(matchedGroup + ":", "")
+                .replace(matchedGroup + "/", "");
+        log.info("stripped path: " + strippedPath + "dns host: " + dnsHost + "host: " + host);
       } else {
         throw new BadRequestException(
             String.format(
@@ -63,8 +70,12 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
       }
     } else if (hostNameMatch.find(0)) {
       dnsHost = hostNameMatch.group("hostname");
-      strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(dnsHost + "/", "");
-      System.out.println("stripped path: " + strippedPath);
+      strippedPath =
+          drsUri
+              .replaceAll("(?:dos|drs)://", "")
+              .replace(dnsHost + ":", "")
+              .replace(dnsHost + "/", "");
+      log.info("stripped path: " + strippedPath);
 
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
@@ -74,17 +85,19 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     if (strippedUri.getQuery() != null) {
       throw new BadRequestException("DRSHub does not support query params in DRS URIs");
     }
+
+    if (!schemeMatch.find(0)) {
+      throw new BadRequestException("DRSHub does not support DRS URIs without a scheme");
+    }
     var builtUri =
         UriComponentsBuilder.newInstance()
+            .scheme(schemeMatch.group("scheme"))
             .host(dnsHost)
             .path(URI.create(strippedPath).getPath())
             .build();
-    System.out.println("built URI: " + builtUri);
+    log.info("built URI: " + builtUri);
 
-    return UriComponentsBuilder.newInstance()
-        .host(dnsHost)
-        .path(URI.create(strippedPath).getPath())
-        .build();
+    return builtUri;
   }
 
   public DrsProvider determineDrsProvider(UriComponents uriComponents) {
