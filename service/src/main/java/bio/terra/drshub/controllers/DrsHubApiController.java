@@ -40,7 +40,7 @@ public class DrsHubApiController implements DrsHubApi {
     var forceAccessUrl = Objects.equals(request.getHeader("drshub-force-access-url"), "true");
     var ip = request.getHeader("X-Forwarded-For");
 
-    log.info("Received URL '{}' from agent '{}' on IP '{}'", body.getUrl(), userAgent, ip);
+    log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
 
     var resourceMetadata =
         drsResolutionService.resolveDrsObject(

@@ -52,16 +52,13 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     var schemeMatch = schemeRegex.matcher(drsUri);
 
     if (compactIdMatch.find(0)) {
+      // This is a compact id with a colon separator
       var matchedGroup = compactIdMatch.group("compactId");
       var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedGroup));
       if (host.isPresent()) {
         dnsHost = host.get();
-        strippedPath =
-            drsUri
-                .replaceAll("(?:dos|drs)://", "")
-                .replace(matchedGroup + ":", "")
-                .replace(matchedGroup + "/", "");
-        log.info("stripped path: " + strippedPath + "dns host: " + dnsHost + "host: " + host);
+        strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(matchedGroup + ":", "");
+        log.info(String.format("Matched a compact ID and stripped path: %s", strippedPath));
       } else {
         throw new BadRequestException(
             String.format(
@@ -69,14 +66,10 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
                 compactIdMatch.group("compactId")));
       }
     } else if (hostNameMatch.find(0)) {
+      // This is a hostname with a slash separator
       dnsHost = hostNameMatch.group("hostname");
-      strippedPath =
-          drsUri
-              .replaceAll("(?:dos|drs)://", "")
-              .replace(dnsHost + ":", "")
-              .replace(dnsHost + "/", "");
-      log.info("stripped path: " + strippedPath);
-
+      strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(dnsHost + "/", "");
+      log.info(String.format("Matched a hostname ID and stripped path: %s", strippedPath));
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
     }

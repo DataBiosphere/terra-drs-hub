@@ -639,7 +639,7 @@ public class DrsHubApiControllerTest extends BaseTest {
       String accessToken, String host, String objectId, List<String> fields) throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", String.format("drs://%s/%s", host, objectId), "fields", fields));
+            Map.of("url", String.format("drs://%s:%s", host, objectId), "fields", fields));
 
     return postDrsHubRequestRaw(accessToken, requestBody);
   }
