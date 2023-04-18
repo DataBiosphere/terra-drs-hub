@@ -21,7 +21,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   @VisibleForTesting
   static final Pattern compactIdRegex =
       Pattern.compile(
-          "(?<scheme>dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):.*",
+          "(?<scheme>dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):(?<path>.*)",
           Pattern.CASE_INSENSITIVE);
 
   static final String HOST_NAME_GROUP = "hostname";
@@ -29,13 +29,8 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   @VisibleForTesting
   static final Pattern hostNameRegex =
       Pattern.compile(
-          "(?<scheme>dos|drs)://(?<hostname>[^?/:]+\\.[^?/:]+)/.*", Pattern.CASE_INSENSITIVE);
-
-  static final String SCHEME_GROUP = "scheme";
-
-  @VisibleForTesting
-  static final Pattern schemeRegex =
-      Pattern.compile("(?<scheme>dos|drs)://", Pattern.CASE_INSENSITIVE);
+          "(?<scheme>dos|drs)://(?<hostname>[^?/:]+\\.[^?/:]+)/(?<path>.*)",
+          Pattern.CASE_INSENSITIVE);
 
   /**
    * DRS schemes are allowed as of <a
@@ -68,12 +63,11 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
     var compactIdMatch = compactIdRegex.matcher(drsUri);
     var hostNameMatch = hostNameRegex.matcher(drsUri);
-    var schemeMatch = schemeRegex.matcher(drsUri);
 
     if (compactIdMatch.find(0)) {
-      uriComponents = getCompactIdUriComponents(compactIdMatch, schemeMatch);
+      uriComponents = getCompactIdUriComponents(compactIdMatch);
     } else if (hostNameMatch.find(0)) {
-      uriComponents = getHostnameUriComponents(hostNameMatch, schemeMatch);
+      uriComponents = getHostnameUriComponents(hostNameMatch);
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
     }
@@ -93,9 +87,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   }
 
   // TODO ID-565: If ID is compact we need to url encode any slashes
-  private UriComponents getCompactIdUriComponents(Matcher compactIdMatch, Matcher schemeMatch) {
-
-    var drsUriWithoutScheme = schemeMatch.replaceFirst("");
+  private UriComponents getCompactIdUriComponents(Matcher compactIdMatch) {
 
     var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP);
     var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedPrefixGroup));
@@ -107,23 +99,22 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     }
 
     var hostString = host.get();
-    var strippedPath = drsUriWithoutScheme.replace(matchedPrefixGroup + ":", "");
+    var strippedPath = compactIdMatch.group("path");
     log.info(String.format("Matched a compact ID and stripped path: %s", strippedPath));
     return UriComponentsBuilder.newInstance()
-        .scheme(compactIdMatch.group(SCHEME_GROUP))
+        .scheme(compactIdMatch.group("scheme"))
         .host(hostString)
         .path(strippedPath)
         .build();
   }
 
-  private UriComponents getHostnameUriComponents(Matcher hostNameMatch, Matcher schemeMatch) {
-    var drsUriWithoutScheme = schemeMatch.replaceFirst("");
+  private UriComponents getHostnameUriComponents(Matcher hostNameMatch) {
 
     var hostString = hostNameMatch.group(HOST_NAME_GROUP);
-    var strippedPath = drsUriWithoutScheme.replace(hostString + "/", "");
+    var strippedPath = hostNameMatch.group("path");
     log.info(String.format("Matched a hostname ID and stripped path: %s", strippedPath));
     return UriComponentsBuilder.newInstance()
-        .scheme(hostNameMatch.group(SCHEME_GROUP))
+        .scheme(hostNameMatch.group("scheme"))
         .host(hostString)
         .path(strippedPath)
         .build();

@@ -123,14 +123,4 @@ class DrsProviderServiceTest extends BaseTest {
         String.format(
             "Input url: %s did not match regex: %s", url, DrsProviderService.compactIdRegex));
   }
-
-  @Test
-  void testSchemeRegexMatch() {
-    var url =
-        "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
-    var urlWithoutScheme = DrsProviderService.schemeRegex.matcher(url).replaceFirst("");
-    assertEquals(
-        "jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d",
-        urlWithoutScheme);
-  }
 }
