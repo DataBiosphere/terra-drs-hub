@@ -17,15 +17,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
   static final String COMPACT_ID_PREFIX_GROUP = "compactIdPrefix";
+  static final String HOST_NAME_GROUP = "hostname";
+  static final String PATH_GROUP = "path";
+  static final String SCHEME_GROUP = "scheme";
 
   @VisibleForTesting
   static final Pattern compactIdRegex =
       Pattern.compile(
           "(?<scheme>dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):(?<path>.*)",
           Pattern.CASE_INSENSITIVE);
-
-  static final String HOST_NAME_GROUP = "hostname";
-
   @VisibleForTesting
   static final Pattern hostNameRegex =
       Pattern.compile(
@@ -99,10 +99,10 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
     }
 
     var hostString = host.get();
-    var strippedPath = compactIdMatch.group("path");
+    var strippedPath = compactIdMatch.group(PATH_GROUP);
     log.info(String.format("Matched a compact ID and stripped path: %s", strippedPath));
     return UriComponentsBuilder.newInstance()
-        .scheme(compactIdMatch.group("scheme"))
+        .scheme(compactIdMatch.group(SCHEME_GROUP))
         .host(hostString)
         .path(strippedPath)
         .build();
@@ -111,10 +111,10 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   private UriComponents getHostnameUriComponents(Matcher hostNameMatch) {
 
     var hostString = hostNameMatch.group(HOST_NAME_GROUP);
-    var strippedPath = hostNameMatch.group("path");
+    var strippedPath = hostNameMatch.group(PATH_GROUP);
     log.info(String.format("Matched a hostname ID and stripped path: %s", strippedPath));
     return UriComponentsBuilder.newInstance()
-        .scheme(hostNameMatch.group("scheme"))
+        .scheme(hostNameMatch.group(SCHEME_GROUP))
         .host(hostString)
         .path(strippedPath)
         .build();
