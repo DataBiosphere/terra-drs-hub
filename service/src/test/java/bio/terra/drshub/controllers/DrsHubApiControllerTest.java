@@ -643,10 +643,12 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   private ResultActions postDrsHubRequest(
-      String accessToken, String compactIdPrefix, String objectId, List<String> fields) throws Exception {
+      String accessToken, String compactIdPrefix, String objectId, List<String> fields)
+      throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", String.format("drs://%s:%s", compactIdPrefix, objectId), "fields", fields));
+            Map.of(
+                "url", String.format("drs://%s:%s", compactIdPrefix, objectId), "fields", fields));
 
     return postDrsHubRequestRaw(accessToken, requestBody);
   }

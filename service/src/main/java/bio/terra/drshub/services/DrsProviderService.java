@@ -3,6 +3,7 @@ package bio.terra.drshub.services;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
+import com.google.common.annotations.VisibleForTesting;
 import java.net.URI;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -15,14 +16,17 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
-  private static final Pattern compactIdRegex =
+  @VisibleForTesting
+  static final Pattern compactIdRegex =
       Pattern.compile(
           "(?:dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):.*", Pattern.CASE_INSENSITIVE);
 
-  private static final Pattern hostNameRegex =
-      Pattern.compile("(?:dos|drs)://(?<hostname>[^?/]+\\.[^?/]+)/.*", Pattern.CASE_INSENSITIVE);
+  @VisibleForTesting
+  static final Pattern hostNameRegex =
+      Pattern.compile("(?:dos|drs)://(?<hostname>[^?/:]+\\.[^?/:]+)/.*", Pattern.CASE_INSENSITIVE);
 
-  private static final Pattern schemeRegex =
+  @VisibleForTesting
+  static final Pattern schemeRegex =
       Pattern.compile("(?<scheme>dos|drs)://", Pattern.CASE_INSENSITIVE);
 
   /**
@@ -61,7 +65,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
     var drsUriWithoutSceme = schemeMatch.replaceFirst("");
 
-    // TODO: If ID is compact we need to url encode any slashes
+    // TODO ID-565: If ID is compact we need to url encode any slashes
     if (compactIdMatch.find(0)) {
       // This is a compact id with a colon separator
       var matchedPrefixGroup = compactIdMatch.group("compactIdPrefix");

@@ -1,9 +1,13 @@
 package bio.terra.drshub.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import bio.terra.drshub.BaseTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class DrsProviderServiceTest extends BaseTest {
@@ -66,5 +70,67 @@ class DrsProviderServiceTest extends BaseTest {
     assertEquals(oldExpectedUrl, drsProviderService.getUriComponents(oldCompactUrl).toUriString());
 
     assertEquals(newExpectedUrl, drsProviderService.getUriComponents(newCompactUrl).toUriString());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "drs://drs.anv0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d",
+        "drs://dg.nd1k3:123456"
+      })
+  void testCompactIdentifierRegexMatch(String url) {
+    assertTrue(
+        url.matches(DrsProviderService.compactIdRegex.toString()),
+        String.format(
+            "Input url: %s did not match regex: %s", url, DrsProviderService.compactIdRegex));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "drs://drs.anv0/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d",
+        "drs://abc.nd1k3:123456"
+      })
+  void testCompactIdentifierRegexNoMatch(String url) {
+    assertFalse(
+        url.matches(DrsProviderService.compactIdRegex.toString()),
+        String.format(
+            "Input url: %s did not match regex: %s", url, DrsProviderService.compactIdRegex));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d",
+        "drs://www.google.com/1234/456/2315asd"
+      })
+  void testHostnameIdentifierRegexMatch(String url) {
+    assertTrue(
+        url.matches(DrsProviderService.hostNameRegex.toString()),
+        String.format(
+            "Input url: %s did not match regex: %s", url, DrsProviderService.compactIdRegex));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "drs://jade.datarepo-dev.broadinstitute.org:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d",
+        "drs://drs.anv0:1234/456/2315asd"
+      })
+  void testHostnameIdentifierRegexNoMatch(String url) {
+    assertFalse(
+        url.matches(DrsProviderService.hostNameRegex.toString()),
+        String.format(
+            "Input url: %s did not match regex: %s", url, DrsProviderService.compactIdRegex));
+  }
+
+  @Test
+  void testSchemeRegexMatch() {
+    var url =
+        "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
+    var urlWithoutScheme = DrsProviderService.schemeRegex.matcher(url).replaceFirst("");
+    assertEquals(
+        "jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d",
+        urlWithoutScheme);
   }
 }
