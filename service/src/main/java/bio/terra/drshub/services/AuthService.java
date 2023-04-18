@@ -12,7 +12,6 @@ import io.github.ga4gh.drs.model.Authorizations;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -185,11 +184,18 @@ public class AuthService {
   @VisibleForTesting
   Optional<Authorizations> fetchDrsAuthorizations(
       DrsProvider drsProvider, UriComponents uriComponents) {
-    var drsApi =
-        Optional.ofNullable(drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider));
+    var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    if (drsApi == null) {
+      throw new DrsHubException(
+          String.format(
+              "Failed to initialize DrsApi for provider %s and uri components %s. "
+                  + "You may have passed in a malformed DRS url, or we do not support this provider.",
+              drsProvider.getName(), uriComponents.toUriString()));
+    }
+
     var objectId = uriComponents.getPath();
     try {
-      return Optional.ofNullable(drsApi.orElseThrow().optionsObject(objectId));
+      return Optional.ofNullable(drsApi.optionsObject(objectId));
     } catch (RestClientException ex) {
       log.warn(
           "Failed to get authorizations for {} from OPTIONS endpoint for DRS Provider {}. "
@@ -197,12 +203,6 @@ public class AuthService {
           objectId,
           drsProvider.getName());
       return Optional.empty();
-    } catch (NoSuchElementException ex) {
-      throw new DrsHubException(
-          String.format(
-              "Failed to initialize DrsApi for provider %s and uri components %s. "
-                  + "You may have passed in a malformed DRS url, or we do not support this provider.",
-              drsProvider.getName(), uriComponents.toUriString()));
     }
   }
 
