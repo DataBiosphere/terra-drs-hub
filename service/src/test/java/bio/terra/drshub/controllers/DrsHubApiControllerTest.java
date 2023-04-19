@@ -61,6 +61,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   public static final String TEST_BOND_SA_TOKEN = "I am a bond SA token";
   public static final AccessURL TEST_ACCESS_URL = new AccessURL().url("I am a signed access url");
   public static final String TEST_PASSPORT = "I am a passport";
+  public static final String COMPACT_ID_TEST_HOST = "drs.anv0";
   public static final String TDR_TEST_HOST = "jade.datarepo-dev.broadinstitute.org";
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
@@ -81,7 +82,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -110,7 +111,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -140,7 +141,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
-                String.format("drs://%s/%s", cidProviderHost.drsUriHost(), drsObject.getId()),
+                String.format("drs://%s:%s", cidProviderHost.compactUriPrefix(), drsObject.getId()),
                 "fields",
                 List.of(Fields.CONTENT_TYPE),
                 "foo",
@@ -192,7 +193,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             UUID.randomUUID().toString(),
             List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
         .andExpect(status().isOk())
@@ -209,7 +210,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             UUID.randomUUID().toString(),
             List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
         .andExpect(status().isOk())
@@ -237,7 +238,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
@@ -267,7 +268,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isUnauthorized());
@@ -288,7 +289,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isNotFound());
@@ -339,7 +340,8 @@ public class DrsHubApiControllerTest extends BaseTest {
                           Map.of(
                               "url",
                               String.format(
-                                  "drs://%s/%s", cidProviderHost.drsUriHost(), drsObject.getId()),
+                                  "drs://%s:%s",
+                                  cidProviderHost.compactUriPrefix(), drsObject.getId()),
                               "fields",
                               List.of(Fields.ACCESS_URL)))))
           .andExpect(status().isOk())
@@ -368,7 +370,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.FILE_NAME))
         .andExpect(status().isOk())
@@ -394,7 +396,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.FILE_NAME))
         .andExpect(status().isOk())
@@ -408,7 +410,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost(), "fields", List.of("")));
+            Map.of("url", cidProviderHost.compactUriPrefix(), "fields", List.of("")));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -418,7 +420,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost(), "fields", "not a list"));
+            Map.of("url", cidProviderHost.compactUriPrefix(), "fields", "not a list"));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -430,7 +432,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         objectMapper.writeValueAsString(
             Map.of(
                 "url",
-                cidProviderHost.drsUriHost(),
+                cidProviderHost.compactUriPrefix(),
                 "fields",
                 List.of("fake field", "fake field 2")));
 
@@ -442,7 +444,8 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost(), "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of(
+                "url", cidProviderHost.compactUriPrefix(), "fields", List.of(Fields.CONTENT_TYPE)));
 
     mvc.perform(
             post("/api/v4/drs/resolve")
@@ -465,7 +468,8 @@ public class DrsHubApiControllerTest extends BaseTest {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", cidProviderHost.drsUriHost(), "fields", List.of(Fields.CONTENT_TYPE)));
+            Map.of(
+                "url", cidProviderHost.compactUriPrefix(), "fields", List.of(Fields.CONTENT_TYPE)));
 
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isBadRequest());
   }
@@ -514,7 +518,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().isInternalServerError());
@@ -534,7 +538,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
-            cidProviderHost.drsUriHost(),
+            cidProviderHost.compactUriPrefix(),
             drsObject.getId(),
             List.of(Fields.ACCESS_URL))
         .andExpect(status().is(HttpStatus.NOT_IMPLEMENTED.value()));
@@ -556,7 +560,10 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockDrsApi(cidProviderHost.dnsHost(), drsObject);
 
     postDrsHubRequest(
-            TEST_ACCESS_TOKEN, cidProviderHost.drsUriHost(), drsObject.getId(), requestedFields)
+            TEST_ACCESS_TOKEN,
+            cidProviderHost.compactUriPrefix(),
+            drsObject.getId(),
+            requestedFields)
         .andExpect(status().isOk())
         .andExpect(content().json(objectMapper.writeValueAsString(expectedMap), true));
   }
@@ -636,10 +643,12 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   private ResultActions postDrsHubRequest(
-      String accessToken, String host, String objectId, List<String> fields) throws Exception {
+      String accessToken, String compactIdPrefix, String objectId, List<String> fields)
+      throws Exception {
     var requestBody =
         objectMapper.writeValueAsString(
-            Map.of("url", String.format("drs://%s/%s", host, objectId), "fields", fields));
+            Map.of(
+                "url", String.format("drs://%s:%s", compactIdPrefix, objectId), "fields", fields));
 
     return postDrsHubRequestRaw(accessToken, requestBody);
   }
@@ -698,7 +707,12 @@ public class DrsHubApiControllerTest extends BaseTest {
     var mockDrsApi = mock(DrsApi.class);
 
     when(drsApiFactory.getApiFromUriComponents(
-            eq(UriComponentsBuilder.newInstance().host(drsHost).path(drsObject.getId()).build()),
+            eq(
+                UriComponentsBuilder.newInstance()
+                    .scheme("drs")
+                    .host(drsHost)
+                    .path(drsObject.getId())
+                    .build()),
             any()))
         .thenReturn(mockDrsApi);
     when(mockDrsApi.getObject(drsObject.getId(), null)).thenReturn(drsObject);

@@ -185,6 +185,14 @@ public class AuthService {
   Optional<Authorizations> fetchDrsAuthorizations(
       DrsProvider drsProvider, UriComponents uriComponents) {
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    if (drsApi == null) {
+      throw new DrsHubException(
+          String.format(
+              "Failed to initialize DrsApi for provider %s and uri components %s. "
+                  + "You may have passed in a malformed DRS url, or we do not support this provider.",
+              drsProvider.getName(), uriComponents.toUriString()));
+    }
+
     var objectId = uriComponents.getPath();
     try {
       return Optional.ofNullable(drsApi.optionsObject(objectId));

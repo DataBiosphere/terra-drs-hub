@@ -3,8 +3,9 @@ package bio.terra.drshub.services;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
-import java.net.URI;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,12 +16,21 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public record DrsProviderService(DrsHubConfig drsHubConfig) {
 
-  private static final Pattern compactIdRegex =
-      Pattern.compile(
-          "(?:dos|drs)://(?<compactId>(dg|drs)\\.[0-9a-z-]+)", Pattern.CASE_INSENSITIVE);
+  static final String COMPACT_ID_PREFIX_GROUP = "compactIdPrefix";
+  static final String HOST_NAME_GROUP = "hostname";
+  static final String PATH_GROUP = "path";
+  static final String SCHEME_GROUP = "scheme";
 
-  private static final Pattern hostNameRegex =
-      Pattern.compile("(?:dos|drs)://(?<hostname>[^?/]+\\.[^?/]+)", Pattern.CASE_INSENSITIVE);
+  @VisibleForTesting
+  static final Pattern compactIdRegex =
+      Pattern.compile(
+          "(?<scheme>dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):(?<path>.*)",
+          Pattern.CASE_INSENSITIVE);
+  @VisibleForTesting
+  static final Pattern hostNameRegex =
+      Pattern.compile(
+          "(?<scheme>dos|drs)://(?<hostname>[^?/:]+\\.[^?/:]+)/(?<path>.*)",
+          Pattern.CASE_INSENSITIVE);
 
   /**
    * DRS schemes are allowed as of <a
@@ -37,43 +47,76 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
    * that if the host part of the URI is of the form dg.[0-9a-z-]+ or drs.[0-9a-z-]+ then it is a
    * Compact Identifier.
    *
+   * <p>Hostname ID: drs://hostname/id
+   *
+   * <p>https://drs.example.org/ga4gh/drs/v1/objects/314159
+   *
+   * <p>Compact ID: drs://prefix:accession
+   *
+   * <p>drs://dg.anv0:f51fc329-b09e-4e16-b1a9-2f60ebc428ab
+   *
    * <p>If you update *any* of the below be sure to link to the supporting docs and update the
    * comments above!
    */
   public UriComponents getUriComponents(String drsUri) {
+    UriComponents uriComponents;
 
     var compactIdMatch = compactIdRegex.matcher(drsUri);
-    final String dnsHost;
-    final String strippedPath;
     var hostNameMatch = hostNameRegex.matcher(drsUri);
 
     if (compactIdMatch.find(0)) {
-      var matchedGroup = compactIdMatch.group("compactId");
-      var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedGroup));
-      if (host.isPresent()) {
-        dnsHost = host.get();
-        strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(matchedGroup + "/", "");
-      } else {
-        throw new BadRequestException(
-            String.format(
-                "Could not find matching host for compact id [%s].",
-                compactIdMatch.group("compactId")));
-      }
+      uriComponents = getCompactIdUriComponents(compactIdMatch);
     } else if (hostNameMatch.find(0)) {
-      dnsHost = hostNameMatch.group("hostname");
-      strippedPath = drsUri.replaceAll("(?:dos|drs)://", "").replace(dnsHost + "/", "");
+      uriComponents = getHostnameUriComponents(hostNameMatch);
     } else {
       throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
     }
 
-    URI strippedUri = URI.create(strippedPath);
-    if (strippedUri.getQuery() != null) {
+    // Validate url
+    if (uriComponents.getScheme() == null) {
+      throw new BadRequestException("DRSHub does not support DRS URIs without a scheme");
+    }
+
+    if (uriComponents.getQuery() != null) {
       throw new BadRequestException("DRSHub does not support query params in DRS URIs");
     }
 
+    log.info("built URI: " + uriComponents);
+
+    return uriComponents;
+  }
+
+  // TODO ID-565: If ID is compact we need to url encode any slashes
+  private UriComponents getCompactIdUriComponents(Matcher compactIdMatch) {
+
+    var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP);
+    var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedPrefixGroup));
+    if (host.isEmpty()) {
+      throw new BadRequestException(
+          String.format(
+              "Could not find matching host for compact id [%s].",
+              compactIdMatch.group(COMPACT_ID_PREFIX_GROUP)));
+    }
+
+    var hostString = host.get();
+    var strippedPath = compactIdMatch.group(PATH_GROUP);
+    log.info(String.format("Matched a compact ID and stripped path: %s", strippedPath));
     return UriComponentsBuilder.newInstance()
-        .host(dnsHost)
-        .path(URI.create(strippedPath).getPath())
+        .scheme(compactIdMatch.group(SCHEME_GROUP))
+        .host(hostString)
+        .path(strippedPath)
+        .build();
+  }
+
+  private UriComponents getHostnameUriComponents(Matcher hostNameMatch) {
+
+    var hostString = hostNameMatch.group(HOST_NAME_GROUP);
+    var strippedPath = hostNameMatch.group(PATH_GROUP);
+    log.info(String.format("Matched a hostname ID and stripped path: %s", strippedPath));
+    return UriComponentsBuilder.newInstance()
+        .scheme(hostNameMatch.group(SCHEME_GROUP))
+        .host(hostString)
+        .path(strippedPath)
         .build();
   }
 
