@@ -57,19 +57,32 @@ class DrsProviderServiceTest extends BaseTest {
   }
 
   @Test
+  void testHostnameMatchingIsCaseInsensitive() {
+    var expectedUrl =
+        "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
+
+    var compactUrl =
+        "DRS://DRS.AnV0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
+
+    assertEquals(expectedUrl, drsProviderService.getUriComponents(compactUrl).toUriString());
+  }
+
+  @Test
   void testCompactIdentifierGetUriComponents() {
-    var oldExpectedUrl =
+    var oldCidExpectedUrl =
         "drs://staging.theanvil.io/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
-    var newExpectedUrl =
+    var newCidExpectedUrl =
         "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
 
     var newCompactUrl =
         "drs://drs.anv0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
     var oldCompactUrl =
         "drs://dg.anv0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
-    assertEquals(oldExpectedUrl, drsProviderService.getUriComponents(oldCompactUrl).toUriString());
+    assertEquals(
+        oldCidExpectedUrl, drsProviderService.getUriComponents(oldCompactUrl).toUriString());
 
-    assertEquals(newExpectedUrl, drsProviderService.getUriComponents(newCompactUrl).toUriString());
+    assertEquals(
+        newCidExpectedUrl, drsProviderService.getUriComponents(newCompactUrl).toUriString());
   }
 
   @ParameterizedTest

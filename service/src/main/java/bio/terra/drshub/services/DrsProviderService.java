@@ -61,15 +61,17 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   public UriComponents getUriComponents(String drsUri) {
     UriComponents uriComponents;
 
-    var compactIdMatch = compactIdRegex.matcher(drsUri);
-    var hostNameMatch = hostNameRegex.matcher(drsUri);
+    // explicitly lowercase the string because the built-in case-insensitive regex matching is unreliable
+    var drsUriLowerCase = drsUri.toLowerCase();
+    var compactIdMatch = compactIdRegex.matcher(drsUriLowerCase);
+    var hostNameMatch = hostNameRegex.matcher(drsUriLowerCase);
 
     if (compactIdMatch.find(0)) {
       uriComponents = getCompactIdUriComponents(compactIdMatch);
     } else if (hostNameMatch.find(0)) {
       uriComponents = getHostnameUriComponents(hostNameMatch);
     } else {
-      throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
+      throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUriLowerCase));
     }
 
     // Validate url
