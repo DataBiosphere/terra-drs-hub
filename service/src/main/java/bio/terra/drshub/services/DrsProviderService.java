@@ -61,7 +61,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   public UriComponents getUriComponents(String drsUri) {
     UriComponents uriComponents;
 
-    // explicitly lowercase the string because the built-in case-insensitive regex matching is unreliable
+    // explicitly lowercase the uri because the case-insensitive regex flag is not working correctly
     var drsUriLowerCase = drsUri.toLowerCase();
     var compactIdMatch = compactIdRegex.matcher(drsUriLowerCase);
     var hostNameMatch = hostNameRegex.matcher(drsUriLowerCase);
