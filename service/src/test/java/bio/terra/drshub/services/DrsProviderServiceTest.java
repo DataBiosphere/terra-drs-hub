@@ -62,7 +62,7 @@ class DrsProviderServiceTest extends BaseTest {
         "drs://jade.datarepo-dev.broadinstitute.org/v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
 
     var compactUrl =
-        "DRS://DRS.AnV0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
+        "drs://drs.ANV0:v1_e2151834-13cd-4156-9ea2-168a1b7abf60_0761203d-d2a1-448e-8f71-9f81d80ddd9d";
 
     assertEquals(expectedUrl, drsProviderService.getUriComponents(compactUrl).toUriString());
   }

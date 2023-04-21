@@ -26,6 +26,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
       Pattern.compile(
           "(?<scheme>dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):(?<path>.*)",
           Pattern.CASE_INSENSITIVE);
+
   @VisibleForTesting
   static final Pattern hostNameRegex =
       Pattern.compile(
@@ -61,17 +62,15 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   public UriComponents getUriComponents(String drsUri) {
     UriComponents uriComponents;
 
-    // explicitly lowercase the uri because the case-insensitive regex flag is not working correctly
-    var drsUriLowerCase = drsUri.toLowerCase();
-    var compactIdMatch = compactIdRegex.matcher(drsUriLowerCase);
-    var hostNameMatch = hostNameRegex.matcher(drsUriLowerCase);
+    var compactIdMatch = compactIdRegex.matcher(drsUri);
+    var hostNameMatch = hostNameRegex.matcher(drsUri);
 
     if (compactIdMatch.find(0)) {
       uriComponents = getCompactIdUriComponents(compactIdMatch);
     } else if (hostNameMatch.find(0)) {
       uriComponents = getHostnameUriComponents(hostNameMatch);
     } else {
-      throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUriLowerCase));
+      throw new BadRequestException(String.format("[%s] is not a valid DRS URI.", drsUri));
     }
 
     // Validate url
@@ -91,7 +90,8 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   // TODO ID-565: If ID is compact we need to url encode any slashes
   private UriComponents getCompactIdUriComponents(Matcher compactIdMatch) {
 
-    var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP);
+    // lowercase the compact ID because the case-insensitive regex flag is not working correctly
+    var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP).toLowerCase();
     var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedPrefixGroup));
     if (host.isEmpty()) {
       throw new BadRequestException(
