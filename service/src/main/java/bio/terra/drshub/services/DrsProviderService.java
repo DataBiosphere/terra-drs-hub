@@ -26,6 +26,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
       Pattern.compile(
           "(?<scheme>dos|drs)://(?<compactIdPrefix>(dg|drs)\\.[0-9a-z-]+):(?<path>.*)",
           Pattern.CASE_INSENSITIVE);
+
   @VisibleForTesting
   static final Pattern hostNameRegex =
       Pattern.compile(
@@ -89,7 +90,8 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   // TODO ID-565: If ID is compact we need to url encode any slashes
   private UriComponents getCompactIdUriComponents(Matcher compactIdMatch) {
 
-    var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP);
+    // lowercase the compact ID to match the accepted IDs stored in the config
+    var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP).toLowerCase();
     var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedPrefixGroup));
     if (host.isEmpty()) {
       throw new BadRequestException(
