@@ -90,7 +90,7 @@ public record DrsProviderService(DrsHubConfig drsHubConfig) {
   // TODO ID-565: If ID is compact we need to url encode any slashes
   private UriComponents getCompactIdUriComponents(Matcher compactIdMatch) {
 
-    // lowercase the compact ID because the case-insensitive regex flag is not working correctly
+    // lowercase the compact ID to match the accepted IDs stored in the config
     var matchedPrefixGroup = compactIdMatch.group(COMPACT_ID_PREFIX_GROUP).toLowerCase();
     var host = Optional.ofNullable(drsHubConfig.getCompactIdHosts().get(matchedPrefixGroup));
     if (host.isEmpty()) {
