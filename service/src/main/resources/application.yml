@@ -132,7 +132,7 @@ drshub:
     "dg.4dfc": nci-crdc-staging.datacommons.io
     "dg.f82a1a": gen3staging.kidsfirstdrc.org
 ---
-# prod configs
+# prod
 spring.config.activate.on-profile: prod
 drshub:
   compactIdHosts:
