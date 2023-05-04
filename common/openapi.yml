@@ -111,22 +111,53 @@ components:
           format: date-time
         bucket:
           type: string
+          nullable: true
         name:
           type: string
+          nullable: true
         gsUri:
           type: string
+          nullable: true
         googleServiceAccount:
-          type: object
+            $ref: '#/components/schemas/SaKeyObject'
         fileName:
           type: string
+          nullable: true
         accessUrl:
-          type: object
+          $ref: '#/components/schemas/AccessUrl'
         hashes:
           type: object
+          description: Hashing algorithm name (lowercase) to hex encoded hash.
+          additionalProperties:
+            type: string
         localizationPath:
           type: string
+          nullable: true
         bondProvider:
           type: string
+          nullable: true
+
+
+    SaKeyObject:
+      required: [ data ]
+      type: object
+      nullable: true
+      properties:
+        data:
+          description: The actual SA key.
+          type: object
+          additionalProperties: true
+
+    AccessUrl:
+      type: object
+      nullable: true
+      properties:
+        url:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
 
     RequestObject:
       type: object
