@@ -1,0 +1,222 @@
+{
+  "consumer": {
+    "name": "cromwell-consumer"
+  },
+  "interactions": [
+    {
+      "description": "Request for drshub api status",
+      "providerStates": [
+        {
+          "name": "Drshub is ok"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/status"
+      },
+      "response": {
+        "headers": {
+          "Content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "Request to resolve drs url",
+      "providerStates": [
+        {
+          "name": "resolve Drs url",
+          "params": {
+            "state": "example"
+          }
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v4/drs/resolve"
+      },
+      "response": {
+        "body": {
+          "accessUrl": {
+            "headers": {
+              "Header": "Example"
+            },
+            "url": "https://example.com/my-file.bam"
+          },
+          "bondProvider": "bond-provider",
+          "bucket": "fc-secure-1234567890",
+          "contentType": "application/octet-stream",
+          "fileName": "my-file.bam",
+          "googleServiceAccount": {
+            "data": {
+              "tokenUri": "https://oauth2.googleapis.com/token"
+            }
+          },
+          "gsUri": "gs://fc-secure-1234567890/my-file.bam",
+          "hashes": {
+            "md5": "a2317edbd2eb6cf6b0ee49cb81e3a556",
+            "sha1": "223d91aad564676ac4c54b313f68c912a1cb992e"
+          },
+          "localizationPath": "/path/inputs/my-file.bam",
+          "name": "my-file.bam",
+          "size": 123,
+          "timeCreated": "2021-03-04T20:00:00.000Z",
+          "timeUpdated": "2021-03-04T20:00:00.000Z"
+        },
+        "headers": {
+          "Content-type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.accessUrl.headers.Header": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.accessUrl.url": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.bondProvider": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.bucket": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.contentType": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.fileName": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.googleServiceAccount.data": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "values"
+                }
+              ]
+            },
+            "$.googleServiceAccount.data.*": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.gsUri": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.hashes.md5": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.hashes.sha1": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.localizationPath": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.size": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "number"
+                }
+              ]
+            },
+            "$.timeCreated": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.timeUpdated": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.5.1"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "drshub-provider"
+  }
+}
