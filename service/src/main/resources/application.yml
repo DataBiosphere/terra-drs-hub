@@ -101,9 +101,6 @@ terra.common:
     stackdriverExportEnabled: ${CLOUD_TRACE_ENABLED:false}
     samplingRate: ${SAMPLING_PROBABILITY:0}
 
-sentry:
-  dsn: https://ef39cf8085d74e319eb111a43177920b@o54426.ingest.sentry.io/4505121705820160
-
 ---
 spring.config.activate.on-profile: prod
 drshub:
