@@ -5,15 +5,6 @@ drshub:
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
-  compactIdHosts:
-    # it is important for case-insensitive matching that the keys here are all lower case
-    # these are the CIBs we want in all environments, env specific ones are below
-    "dg.anv0": staging.theanvil.io
-    "drs.anv0": jade.datarepo-dev.broadinstitute.org
-    "dg.4dfc": nci-crdc-staging.datacommons.io
-    "dg.f82a1a": gen3staging.kidsfirstdrc.org
-    "dg.test0": ctds-test-env.planx-pla.net
-
   drsProviders:
     anvil:
       name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
@@ -129,6 +120,7 @@ drshub:
     "dg.anv0": staging.theanvil.io # this is the old anvil CIB, the new one (drs.anv0) is set explicitly for each env
     "dg.4dfc": nci-crdc-staging.datacommons.io
     "dg.f82a1a": gen3staging.kidsfirstdrc.org
+    "dg.test0": ctds-test-env.planx-pla.net
 ---
 # prod
 spring.config.activate.on-profile: prod
