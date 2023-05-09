@@ -23,7 +23,7 @@ paths:
   /api/v4/gcs/getSignedUrl:
     post:
       summary: Get a signed URL for a GCS Object, signed the caller's fence service account
-      tags: [ drsHub ]
+      tags: [ gcs ]
       operationId: getSignedUrl
       requestBody:
         content:

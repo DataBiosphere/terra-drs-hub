@@ -10,6 +10,7 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import java.net.URL;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public record SignedUrlService(
             .dRSUrl(dataObjectUri)
             .providerName(drsProvider.getName())
             .auditLogEventType(AuditLogEventType.GetSignedUrl)
-            .clientIP(ip)
+            .clientIP(Optional.ofNullable(ip))
             .build();
     auditLogger.logEvent(logEvent);
 
