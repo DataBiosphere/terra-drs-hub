@@ -7,7 +7,7 @@ drshub:
 
   compactIdHosts:
     # it is important for case-insensitive matching that the keys here are all lower case
-    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    # these are the CIBs we want in all environments, env specific ones are below
     "dg.anv0": staging.theanvil.io
     "drs.anv0": jade.datarepo-dev.broadinstitute.org
     "dg.4dfc": nci-crdc-staging.datacommons.io
