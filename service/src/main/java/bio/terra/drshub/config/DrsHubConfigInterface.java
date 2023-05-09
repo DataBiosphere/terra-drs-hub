@@ -1,5 +1,6 @@
 package bio.terra.drshub.config;
 
+import java.time.Duration;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
@@ -17,6 +18,8 @@ public interface DrsHubConfigInterface {
   Map<String, String> getCompactIdHosts();
 
   Map<String, DrsProvider> getDrsProviders();
+
+  Duration getSignedUrlDuration();
 
   // Nullable to make the generated class play nicely with spring: spring likes to call the getter
   // before the setter and without Nullable the immutables generated code errors because the field

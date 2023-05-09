@@ -132,4 +132,6 @@ drshub:
       mTlsConfig:
         keyPath: rendered/ras-mtls-client.key
         certPath: rendered/ras-mtls-client.crt
+  signedUrlDuration: 1h
+
 

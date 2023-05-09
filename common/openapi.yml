@@ -20,6 +20,27 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /api/v4/gcs/getSignedUrl:
+    post:
+      summary: Get a signed URL for a GCS Object, signed the caller's fence service account
+      tags: [ drsHub ]
+      operationId: getSignedUrl
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetSignedUrlRequest'
+      responses:
+        '200':
+          description: A signed url to access to object in GCS
+          content:
+            application/json:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /status:
     get:
@@ -137,7 +158,6 @@ components:
           type: string
           nullable: true
 
-
     SaKeyObject:
       required: [ data ]
       type: object
@@ -169,6 +189,24 @@ components:
           type: array
           items:
             type: string
+
+    GetSignedUrlRequest:
+      type: object
+      required:
+        - bucket
+        - object
+        - dataObjectUri
+        - googleProject
+      properties:
+        bucket:
+          type: string
+        object:
+          type: string
+        dataObjectUri:
+          type: string
+        googleProject:
+          type: string
+
 
     ErrorReport:
       type: object

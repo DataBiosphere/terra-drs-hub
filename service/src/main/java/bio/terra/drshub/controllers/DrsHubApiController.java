@@ -3,10 +3,12 @@ package bio.terra.drshub.controllers;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerTokenFactory;
 import bio.terra.drshub.generated.api.DrsHubApi;
+import bio.terra.drshub.generated.model.GetSignedUrlRequest;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsResolutionService;
+import bio.terra.drshub.services.SignedUrlService;
 import java.util.ArrayList;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
@@ -21,14 +23,17 @@ public class DrsHubApiController implements DrsHubApi {
   private final HttpServletRequest request;
   private final DrsResolutionService drsResolutionService;
   private final BearerTokenFactory bearerTokenFactory;
+  private final SignedUrlService signedUrlService;
 
   public DrsHubApiController(
       HttpServletRequest request,
       DrsResolutionService drsResolutionService,
-      BearerTokenFactory bearerTokenFactory) {
+      BearerTokenFactory bearerTokenFactory,
+      SignedUrlService signedUrlService) {
     this.request = request;
     this.drsResolutionService = drsResolutionService;
     this.bearerTokenFactory = bearerTokenFactory;
+    this.signedUrlService = signedUrlService;
   }
 
   @Override
@@ -47,6 +52,21 @@ public class DrsHubApiController implements DrsHubApi {
             body.getUrl(), body.getFields(), bearerToken, forceAccessUrl, ip);
 
     return ResponseEntity.ok(resourceMetadata);
+  }
+
+  @Override
+  public ResponseEntity<String> getSignedUrl(GetSignedUrlRequest body) {
+    var bearerToken = bearerTokenFactory.from(request);
+    var ip = request.getHeader("X-Forwarded-For");
+    var signedUrl =
+        signedUrlService.getSignedUrl(
+            body.getBucket(),
+            body.getObject(),
+            body.getDataObjectUri(),
+            body.getGoogleProject(),
+            bearerToken,
+            ip);
+    return ResponseEntity.ok(signedUrl.toString());
   }
 
   private void validateRequest(RequestObject body) {
