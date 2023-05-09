@@ -592,6 +592,13 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().isBadRequest());
   }
 
+  @Test
+  void testSignsUrls() throws Exception {
+    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    getSignedUrlRequest(
+        TEST_ACCESS_TOKEN, "my-bucket", "my-folder/by-object", drsUri, "google-project");
+  }
+
   /**
    * Test utility function that extracts the right fields from a drs object into a Map that can be
    * added to and json-ified to compare to test results.
@@ -657,6 +664,37 @@ public class DrsHubApiControllerTest extends BaseTest {
       throws Exception {
     return mvc.perform(
         post("/api/v4/drs/resolve")
+            .header("authorization", "bearer " + accessToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(requestBody));
+  }
+
+  private ResultActions getSignedUrlRequest(
+      String accessToken,
+      String bucketName,
+      String objectName,
+      String drsObjectUri,
+      String googleProject)
+      throws Exception {
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of(
+                "bucket",
+                bucketName,
+                "object",
+                objectName,
+                "dataObjectUri",
+                drsObjectUri,
+                "googleProject",
+                googleProject));
+
+    return getSignedUrlRequestRaw(accessToken, requestBody);
+  }
+
+  private ResultActions getSignedUrlRequestRaw(String accessToken, String requestBody)
+      throws Exception {
+    return mvc.perform(
+        post("/api/v4/gcs/getSignedUrl")
             .header("authorization", "bearer " + accessToken)
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
