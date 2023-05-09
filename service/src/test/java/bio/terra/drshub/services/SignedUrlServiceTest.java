@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
-import bio.terra.drshub.util.TestUtils;
+import bio.terra.drshub.util.SignedUrlTestUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ public class SignedUrlServiceTest extends BaseTest {
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
 
-    TestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
 
     var signedUrl =
         signedUrlService.getSignedUrl(

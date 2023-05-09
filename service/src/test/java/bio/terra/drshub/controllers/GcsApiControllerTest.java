@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.GoogleStorageService;
-import bio.terra.drshub.util.TestUtils;
+import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.util.Map;
@@ -36,7 +36,7 @@ public class GcsApiControllerTest extends BaseTest {
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
 
-    TestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
 
     var response =
         getSignedUrlRequest(TEST_ACCESS_TOKEN, bucketName, objectName, drsUri, googleProject);

@@ -7,7 +7,6 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +19,7 @@ public record GoogleStorageService(ObjectMapper objectMapper) {
         new ByteArrayInputStream(
             objectMapper.writeValueAsString(saKey.getData()).getBytes(StandardCharsets.UTF_8))) {
       creds = ServiceAccountCredentials.fromStream(saKeyInputStream);
-    } catch (IOException ex) {
+    } catch (Exception ex) {
       throw new DrsHubException("Could not parse credentials from Bond");
     }
     return StorageOptions.newBuilder()
