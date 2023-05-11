@@ -5,16 +5,6 @@ drshub:
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
-  compactIdHosts:
-    # it is important for case-insensitive matching that the keys here are all lower case
-    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
-    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
-    "dg.anv0": staging.theanvil.io
-    "drs.anv0": jade.datarepo-dev.broadinstitute.org
-    "dg.4dfc": nci-crdc-staging.datacommons.io
-    "dg.f82a1a": gen3staging.kidsfirstdrc.org
-    "dg.test0": ctds-test-env.planx-pla.net
-
   drsProviders:
     anvil:
       name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
@@ -102,16 +92,9 @@ terra.common:
     samplingRate: ${SAMPLING_PROBABILITY:0}
 
 ---
-spring.config.activate.on-profile: prod
-drshub:
-  compactIdHosts:
-    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov
-    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
-    "dg.anv0": gen3.theanvil.io
-    "drs.anv0": data.terra.bio
-    "dg.4dfc": nci-crdc.datacommons.io
-    "dg.f82a1a": data.kidsfirstdrc.org
----
+# not-prod
+# we want this test passport provider in all non-prod envs
+# TDR is the only host that has specific values for each lower env
 spring.config.activate.on-profile: '!prod'
 drshub:
   drsProviders:
@@ -133,5 +116,37 @@ drshub:
         keyPath: rendered/ras-mtls-client.key
         certPath: rendered/ras-mtls-client.crt
   signedUrlDuration: 1h
-
-
+  compactIdHosts:
+    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.anv0": staging.theanvil.io # this is the old anvil CIB, the new one (drs.anv0) is set explicitly for each env
+    "dg.4dfc": nci-crdc-staging.datacommons.io
+    "dg.f82a1a": gen3staging.kidsfirstdrc.org
+    "dg.test0": ctds-test-env.planx-pla.net
+---
+# prod
+spring.config.activate.on-profile: prod
+drshub:
+  compactIdHosts:
+    "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst
+    "dg.anv0": gen3.theanvil.io # old anvil
+    "drs.anv0": data.terra.bio # new anvil (hosted on TDR)
+    "dg.4dfc": nci-crdc.datacommons.io # cancer research data commons
+    "dg.f82a1a": data.kidsfirstdrc.org # kidsfirst
+---
+# dev
+spring.config.activate.on-profile: dev
+drshub:
+  compactIdHosts:
+    "drs.anv0": jade.datarepo-dev.broadinstitute.org
+---
+# staging
+spring.config.activate.on-profile: staging
+drshub:
+  compactIdHosts:
+    "drs.anv0": data.staging.envs-terra.bio
+---
+# alpha
+spring.config.activate.on-profile: alpha
+drshub:
+  compactIdHosts:
+    "drs.anv0": data.alpha.envs-terra.bio
