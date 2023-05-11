@@ -22,7 +22,11 @@ paths:
           $ref: '#/components/responses/ServerError'
   /api/v4/gcs/getSignedUrl:
     post:
-      summary: Get a signed URL for a GCS Object, signed the caller's fence service account
+      summary: Get a signed URL for a GCS Object, signed the caller's fence service account. 
+        The signed URL is active for 1 hour.
+        The bucket and object in the request body are optional, but providing them allows DRSHub to bypass the 
+        DRS object resolution and to just sign the URL using the fence account associated with the DRS Provider
+        in the dataObjectUri.
       tags: [ gcs ]
       operationId: getSignedUrl
       requestBody:
@@ -193,8 +197,6 @@ components:
     GetSignedUrlRequest:
       type: object
       required:
-        - bucket
-        - object
         - dataObjectUri
         - googleProject
       properties:

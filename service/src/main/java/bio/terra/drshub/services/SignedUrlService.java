@@ -6,6 +6,7 @@ import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
+import bio.terra.drshub.models.Fields;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -22,6 +23,7 @@ public record SignedUrlService(
     AuthService authService,
     DrsProviderService drsProviderService,
     GoogleStorageService googleStorageService,
+    DrsResolutionService drsResolutionService,
     AuditLogger auditLogger) {
 
   public URL getSignedUrl(
@@ -36,7 +38,14 @@ public record SignedUrlService(
     var drsProvider = drsProviderService.determineDrsProvider(components);
     SaKeyObject saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
     Storage storage = googleStorageService.getAuthedStorage(saKey, googleProject);
-    BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(bucket, objectName)).build();
+
+    final BlobInfo blobInfo;
+    if (bucket == null || objectName == null) {
+      blobInfo = BlobInfo.newBuilder(getBlobIdFromDrsUri(dataObjectUri, bearerToken, ip)).build();
+    } else {
+      blobInfo = BlobInfo.newBuilder(BlobId.of(bucket, objectName)).build();
+    }
+
     var duration = drsHubConfig.getSignedUrlDuration();
 
     var logEvent =
@@ -50,5 +59,13 @@ public record SignedUrlService(
 
     return storage.signUrl(
         blobInfo, duration.toMinutes(), TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
+  }
+
+  private BlobId getBlobIdFromDrsUri(String dataObjectUri, BearerToken bearerToken, String ip) {
+    var object =
+        drsResolutionService.resolveDrsObject(
+            dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip);
+    var gsUri = object.getGsUri();
+    return BlobId.fromGsUtilUri(gsUri);
   }
 }

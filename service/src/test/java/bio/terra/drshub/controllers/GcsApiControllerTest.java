@@ -1,14 +1,20 @@
 package bio.terra.drshub.controllers;
 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
+import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.AuthService;
+import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.services.GoogleStorageService;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +31,7 @@ public class GcsApiControllerTest extends BaseTest {
 
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
+  @MockBean DrsResolutionService drsResolutionService;
   @MockBean AuthService authService;
   @MockBean GoogleStorageService googleStorageService;
 
@@ -43,6 +50,29 @@ public class GcsApiControllerTest extends BaseTest {
     response.andExpect(content().string(url.toString()));
   }
 
+  @Test
+  void testSignsUrlsDrsUriOnly() throws Exception {
+    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var bucketName = "my-test-bucket";
+    var objectName = "my-test-folder/my-test-object.txt";
+    var googleProject = "test-google-project";
+    var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
+
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    SignedUrlTestUtils.setupDrsResolutionServiceMocks(
+        drsResolutionService, drsUri, bucketName, objectName);
+
+    var response = getSignedUrlRequest(TEST_ACCESS_TOKEN, null, null, drsUri, googleProject);
+    response.andExpect(content().string(url.toString()));
+    verify(drsResolutionService)
+        .resolveDrsObject(
+            eq(drsUri),
+            eq(Fields.CORE_FIELDS),
+            eq(new BearerToken(TEST_ACCESS_TOKEN)),
+            eq(true),
+            eq(null));
+  }
+
   private ResultActions getSignedUrlRequest(
       String accessToken,
       String bucketName,
@@ -50,18 +80,11 @@ public class GcsApiControllerTest extends BaseTest {
       String drsObjectUri,
       String googleProject)
       throws Exception {
-    var requestBody =
-        objectMapper.writeValueAsString(
-            Map.of(
-                "bucket",
-                bucketName,
-                "object",
-                objectName,
-                "dataObjectUri",
-                drsObjectUri,
-                "googleProject",
-                googleProject));
-
+    var body = new HashMap<>(Map.of("dataObjectUri", drsObjectUri, "googleProject", googleProject));
+    if (bucketName != null && objectName != null) {
+      body.putAll(Map.of("bucket", bucketName, "object", objectName));
+    }
+    var requestBody = objectMapper.writeValueAsString(body);
     return getSignedUrlRequestRaw(accessToken, requestBody);
   }
 

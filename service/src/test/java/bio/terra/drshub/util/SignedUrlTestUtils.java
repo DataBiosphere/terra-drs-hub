@@ -2,13 +2,17 @@ package bio.terra.drshub.util;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.services.AuthService;
+import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.services.GoogleStorageService;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.BlobInfo;
@@ -27,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey;
@@ -55,6 +60,20 @@ public class SignedUrlTestUtils {
             any(TimeUnit.class),
             any(Storage.SignUrlOption.class)))
         .thenReturn(url);
+  }
+
+  public static void setupDrsResolutionServiceMocks(
+      DrsResolutionService drsResolutionService,
+      String drsUri,
+      String bucketName,
+      String objectName) {
+    doReturn(
+            AnnotatedResourceMetadata.builder()
+                .build()
+                .gsUri("gs://" + bucketName + "/" + objectName))
+        .when(drsResolutionService)
+        .resolveDrsObject(
+            eq(drsUri), any(List.class), any(BearerToken.class), eq(true), nullable(String.class));
   }
 
   public static String generateSaKeyObjectString()
