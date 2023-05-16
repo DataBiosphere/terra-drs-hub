@@ -116,11 +116,11 @@ drshub:
         keyPath: rendered/ras-mtls-client.key
         certPath: rendered/ras-mtls-client.crt
   compactIdHosts:
-    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov
+    "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst staging
     "dg.anv0": staging.theanvil.io # this is the old anvil CIB, the new one (drs.anv0) is set explicitly for each env
-    "dg.4dfc": nci-crdc-staging.datacommons.io
-    "dg.f82a1a": gen3staging.kidsfirstdrc.org
-    "dg.test0": ctds-test-env.planx-pla.net
+    "dg.4dfc": nci-crdc-staging.datacommons.io # cancer research data commons
+    "dg.f82a1a": gen3staging.kidsfirstdrc.org # kidsfirst
+    "dg.test0": ctds-test-env.planx-pla.net # passport test
 ---
 # prod
 spring.config.activate.on-profile: prod
