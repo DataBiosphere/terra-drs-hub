@@ -94,13 +94,16 @@ public interface DrsProviderInterface {
       AccessMethod.TypeEnum accessMethodType,
       List<String> requestedFields,
       boolean forceAccessUrl) {
-    return Fields.overlap(requestedFields, Fields.ACCESS_ID_FIELDS)
-        && (forceAccessUrl
-            || getAccessMethodConfigs().stream()
-                .anyMatch(
-                    m ->
-                        m.getType().getReturnedEquivalent() == accessMethodType
-                            && m.isFetchAccessUrl()));
+    var fieldsOverlap = Fields.overlap(requestedFields, Fields.ACCESS_URL_FIELDS);
+    var accessMethodConfigs = getAccessMethodConfigs();
+    var accessMethodTypeMatches =
+        accessMethodConfigs.stream()
+            .anyMatch(
+                m ->
+                    m.getType().getReturnedEquivalent() == accessMethodType
+                        && m.isFetchAccessUrl());
+
+    return fieldsOverlap && (accessMethodTypeMatches || forceAccessUrl);
   }
 
   /**

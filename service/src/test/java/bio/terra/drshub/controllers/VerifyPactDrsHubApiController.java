@@ -1,41 +1,65 @@
 package bio.terra.drshub.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
-import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
+import au.com.dius.pact.provider.junitsupport.loader.PactFolder;
 import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
 import au.com.dius.pact.provider.spring.junit5.PactVerificationSpringProvider;
+import bio.terra.bond.model.SaKeyObject;
+import bio.terra.common.iam.BearerTokenFactory;
+import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.config.ProviderAccessMethodConfig;
+import bio.terra.drshub.logging.AuditLogger;
+import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
+import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.BondProviderEnum;
+import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.services.AuthService;
+import bio.terra.drshub.services.DrsApiFactory;
+import bio.terra.drshub.services.DrsProviderService;
 import bio.terra.drshub.services.DrsResolutionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
-import io.github.ga4gh.drs.model.Authorizations;
+import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
+import java.sql.Date;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import java.util.List;
-import java.util.Optional;
 
 @WebMvcTest
-@ContextConfiguration(classes = {DrsHubApiController.class})
-@Provider("drshub")
-@PactBroker()
+@ContextConfiguration(classes = {DrsHubApiController.class, PublicApiController.class})
+@Provider("drshub-provider")
+// @PactBroker()
+@PactFolder("pacts")
 class VerifyPactsDrsHubApiController {
 
+  @MockBean private DrsHubConfig drsHubConfig;
+  @MockBean private BearerTokenFactory tokenFactory;
   @MockBean private AuthService authService;
-  @MockBean private DrsResolutionService drsResolutionService;
+  @MockBean private DrsApi drsApi;
+  @MockBean private DrsApiFactory drsApiFactory;
+  @MockBean private AuditLogger auditLogger;
+  @SpyBean private DrsResolutionService drsResolutionService;
+  @SpyBean private DrsProviderService drsProviderService;
+
   @Autowired private ObjectMapper objectMapper;
 
   // This mockMVC is what we use to test API requests and responses:
@@ -57,20 +81,65 @@ class VerifyPactsDrsHubApiController {
   }
 
   @State({"Drshub is ok"})
-  public void checkStatusEndpoint() throws Exception {
-
-    when(authService.buildAuthorizations(any(), any(), any())).thenReturn(List.of(new DrsHubAuthorization(
-        SupportedTypesEnum.BEARERAUTH, this::getAuthForAccessMethodType)));
-
-    when(drsResolutionService.resolveDrsObject(any(), any(), any(), any(), any()))
-        .thenReturn(new bio.terra.drshub.models.ResourceMetadata());
-
-  }
+  public void checkStatusEndpoint() throws Exception {}
 
   @State({"resolve Drs url"})
   public void resolveDrsUrl() throws Exception {
+    when(authService.buildAuthorizations(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new DrsHubAuthorization(
+                    SupportedTypesEnum.PASSPORTAUTH, this::getAuthForAccessMethodType)));
 
+    when(authService.fetchUserServiceAccount(any(), any()))
+        .thenReturn(new SaKeyObject().data("test 123"));
+
+    when(drsApi.getObject(any(), any())).thenReturn(null);
+
+    var drsProvider = DrsProvider.create();
+    drsProvider.setHostRegex(".*\\.theanvil\\.io");
+    drsProvider.setMetadataAuth(false);
+    drsProvider.setBondProvider(BondProviderEnum.anvil);
+    drsProvider.setUseAliasesForLocalizationPath(true);
+
+    var accessMethodConfig = ProviderAccessMethodConfig.create();
+    accessMethodConfig.setAuth(AccessUrlAuthEnum.passport);
+    accessMethodConfig.setType(AccessMethodConfigTypeEnum.gs);
+    accessMethodConfig.setFetchAccessUrl(true);
+
+    var accessMethodConfigs = new ArrayList<ProviderAccessMethodConfig>();
+    accessMethodConfigs.add(accessMethodConfig);
+    drsProvider.setAccessMethodConfigs(accessMethodConfigs);
+    drsProvider.setName("anvil");
+
+    when(drsHubConfig.getDrsProviders()).thenReturn(Map.of("anvil", drsProvider));
+
+    when(drsApiFactory.getApiFromUriComponents(any(), any())).thenReturn(drsApi);
+    var drsObject =
+        new io.github.ga4gh.drs.model.DrsObject()
+            .id("1234567890")
+            .checksums(
+                List.of(new io.github.ga4gh.drs.model.Checksum().checksum("123").type("md5")))
+            .createdTime(Date.from(Instant.now()))
+            .description("test")
+            .aliases(
+                List.of(
+                    "drs://test.theanvil.io/1234567890", "drs://test.theanvil.io/1234567890/test"))
+            .mimeType("application/json")
+            .name("test")
+            .size(123L)
+            .updatedTime(Date.from(Instant.now()))
+            .accessMethods(
+                List.of(new AccessMethod().accessId("1234567890").type(AccessMethod.TypeEnum.GS)))
+            .version("1.0");
+
+    when(drsApi.getObject(any(), any())).thenReturn(drsObject);
+
+    var accessUrl =
+        new AccessURL()
+            .url("gs://test-bucket-123/1234567890")
+            .headers(List.of("header", "test 123"));
+
+    when(drsApi.postAccessURL(any(), any(), any())).thenReturn(accessUrl);
   }
-
-
 }

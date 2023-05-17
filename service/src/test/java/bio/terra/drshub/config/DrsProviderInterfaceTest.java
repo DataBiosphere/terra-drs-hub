@@ -68,10 +68,10 @@ class DrsProviderInterfaceTest extends BaseTest {
 
     assertFalse(
         passportDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.GS, Fields.ACCESS_ID_FIELDS, false));
+            AccessMethod.TypeEnum.GS, Fields.ACCESS_URL_FIELDS, false));
     assertFalse(
         passportDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.S3, Fields.ACCESS_ID_FIELDS, false));
+            AccessMethod.TypeEnum.S3, Fields.ACCESS_URL_FIELDS, false));
 
     var fenceProviderHost = getProviderHosts("fenceTokenOnly");
     var fenceTestUri = String.format("drs://%s:12345", fenceProviderHost.compactUriPrefix());
@@ -80,7 +80,7 @@ class DrsProviderInterfaceTest extends BaseTest {
 
     assertTrue(
         fenceDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.GS, Fields.ACCESS_ID_FIELDS, false));
+            AccessMethod.TypeEnum.GS, Fields.ACCESS_URL_FIELDS, false));
   }
 
   @Test
