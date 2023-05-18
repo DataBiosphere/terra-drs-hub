@@ -115,6 +115,19 @@ jobs:
       - name: Test with coverage
         run: ./gradlew --build-cache jacocoTestReport --scan
 
+      - name: Configure pact
+        env:
+          PACTBROKER_APPLICATION_YAML_B64: ${{ secrets.PACTBROKER_APPLICATION_YAML_B64 }}
+        run: |
+          mkdir -p ./service/src/test/resources
+          echo $PACTBROKER_APPLICATION_YAML_B64 | base64 --decode >> ./service/src/test/resources/application.yml
+
+      - name: Verify pacts
+        run: |
+          export PACT_PROVIDER_COMMIT=$(git rev-parse HEAD)
+          export PACT_PROVIDER_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          ./gradlew --build-cache verifyPacts
+
       - name: Codecov
         uses: codecov/codecov-action@v3
         with:

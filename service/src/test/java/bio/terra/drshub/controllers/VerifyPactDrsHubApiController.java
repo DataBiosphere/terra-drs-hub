@@ -9,7 +9,6 @@ import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactFolder;
 import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
 import au.com.dius.pact.provider.spring.junit5.PactVerificationSpringProvider;
-import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerTokenFactory;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
@@ -29,6 +28,7 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +65,8 @@ class VerifyPactsDrsHubApiController {
   // This mockMVC is what we use to test API requests and responses:
   @Autowired private MockMvc mockMvc;
 
+  SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
   @TestTemplate
   @ExtendWith(PactVerificationSpringProvider.class)
   void pactVerificationTestTemplate(PactVerificationContext context) {
@@ -84,15 +86,14 @@ class VerifyPactsDrsHubApiController {
   public void checkStatusEndpoint() throws Exception {}
 
   @State({"resolve Drs url"})
-  public void resolveDrsUrl() throws Exception {
+  public void resolveDrsUrl(Map<String, String> providerStateParams) throws Exception {
     when(authService.buildAuthorizations(any(), any(), any()))
         .thenReturn(
             List.of(
                 new DrsHubAuthorization(
                     SupportedTypesEnum.PASSPORTAUTH, this::getAuthForAccessMethodType)));
 
-    when(authService.fetchUserServiceAccount(any(), any()))
-        .thenReturn(new SaKeyObject().data("test 123"));
+    when(authService.fetchUserServiceAccount(any(), any())).thenReturn(null);
 
     when(drsApi.getObject(any(), any())).thenReturn(null);
 
@@ -110,7 +111,7 @@ class VerifyPactsDrsHubApiController {
     var accessMethodConfigs = new ArrayList<ProviderAccessMethodConfig>();
     accessMethodConfigs.add(accessMethodConfig);
     drsProvider.setAccessMethodConfigs(accessMethodConfigs);
-    drsProvider.setName("anvil");
+    drsProvider.setName(providerStateParams.get("bondProvider"));
 
     when(drsHubConfig.getDrsProviders()).thenReturn(Map.of("anvil", drsProvider));
 
@@ -119,26 +120,29 @@ class VerifyPactsDrsHubApiController {
         new io.github.ga4gh.drs.model.DrsObject()
             .id("1234567890")
             .checksums(
-                List.of(new io.github.ga4gh.drs.model.Checksum().checksum("123").type("md5")))
+                List.of(
+                    new io.github.ga4gh.drs.model.Checksum()
+                        .checksum(providerStateParams.get("fileHash"))
+                        .type("md5")))
             .createdTime(Date.from(Instant.now()))
             .description("test")
-            .aliases(
-                List.of(
-                    "drs://test.theanvil.io/1234567890", "drs://test.theanvil.io/1234567890/test"))
             .mimeType("application/json")
-            .name("test")
-            .size(123L)
-            .updatedTime(Date.from(Instant.now()))
+            .size(Long.parseLong(providerStateParams.get("fileSize")))
+            .updatedTime(dateFormat.parse(providerStateParams.get("timeCreated")))
+            .createdTime(dateFormat.parse(providerStateParams.get("timeCreated")))
             .accessMethods(
-                List.of(new AccessMethod().accessId("1234567890").type(AccessMethod.TypeEnum.GS)))
+                List.of(
+                    new AccessMethod()
+                        .accessId(providerStateParams.get("fileId"))
+                        .type(AccessMethod.TypeEnum.GS)))
             .version("1.0");
 
     when(drsApi.getObject(any(), any())).thenReturn(drsObject);
 
     var accessUrl =
         new AccessURL()
-            .url("gs://test-bucket-123/1234567890")
-            .headers(List.of("header", "test 123"));
+            .url(providerStateParams.get("accessUrl"))
+            .headers(List.of("Header", "Example"));
 
     when(drsApi.postAccessURL(any(), any(), any())).thenReturn(accessUrl);
   }
