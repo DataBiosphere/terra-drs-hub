@@ -123,10 +123,12 @@ jobs:
           echo $PACTBROKER_APPLICATION_YAML_B64 | base64 --decode >> ./service/src/test/resources/application.yml
 
       - name: Verify pacts
+        env:
+          PACT_BROKER_URL: https://pact-broker.dsp-eng-tools.broadinstitute.org
         run: |
           export PACT_PROVIDER_COMMIT=$(git rev-parse HEAD)
           export PACT_PROVIDER_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          ./gradlew --build-cache verifyPacts
+          ./gradlew --build-cache verifyPacts --args='--pactbroker.host=$PACT_BROKER_URL`
 
       - name: Codecov
         uses: codecov/codecov-action@v3
