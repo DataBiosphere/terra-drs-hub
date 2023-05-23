@@ -4,7 +4,6 @@ import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Builder;
 import lombok.Getter;
 

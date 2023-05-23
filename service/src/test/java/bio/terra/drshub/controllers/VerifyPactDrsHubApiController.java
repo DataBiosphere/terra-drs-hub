@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
-import au.com.dius.pact.provider.junitsupport.loader.PactFolder;
+import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
 import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
 import au.com.dius.pact.provider.spring.junit5.PactVerificationSpringProvider;
 import bio.terra.common.iam.BearerTokenFactory;
@@ -47,8 +47,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest
 @ContextConfiguration(classes = {DrsHubApiController.class, PublicApiController.class})
 @Provider("drshub-provider")
-// @PactBroker()
-@PactFolder("pacts")
+@PactBroker()
 class VerifyPactsDrsHubApiController {
 
   @MockBean private DrsHubConfig drsHubConfig;
