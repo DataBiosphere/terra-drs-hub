@@ -120,7 +120,7 @@ jobs:
           PACTBROKER_APPLICATION_YAML_B64: ${{ secrets.PACTBROKER_APPLICATION_YAML_B64 }}
         run: |
           mkdir -p ./service/src/test/resources
-          echo $PACTBROKER_APPLICATION_YAML_B64 | base64 --decode >> ./service/src/test/resources/application-test.yml
+          echo $PACTBROKER_APPLICATION_YAML_B64 | base64 --decode >> ./service/src/test/resources/application.yml
 
       - name: Verify pacts
         env:
