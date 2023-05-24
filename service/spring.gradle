@@ -13,7 +13,7 @@ dependencies {
 	implementation 'org.apache.commons:commons-collections4:4.4'
 
 	// allows mocking final classes
-	testImplementation 'org.mockito:mockito-inline:4.8.0'
+	testImplementation 'org.mockito:mockito-inline:5.2.0'
 }
 
 test { useJUnitPlatform() }

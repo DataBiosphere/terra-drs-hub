@@ -115,6 +115,7 @@ drshub:
       mTlsConfig:
         keyPath: rendered/ras-mtls-client.key
         certPath: rendered/ras-mtls-client.crt
+  signedUrlDuration: 1h
   compactIdHosts:
     "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst staging
     "dg.anv0": staging.theanvil.io # this is the old anvil CIB, the new one (drs.anv0) is set explicitly for each env
@@ -149,6 +150,3 @@ spring.config.activate.on-profile: alpha
 drshub:
   compactIdHosts:
     "drs.anv0": data.alpha.envs-terra.bio
-
-
-
