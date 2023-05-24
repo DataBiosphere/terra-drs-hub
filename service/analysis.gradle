@@ -37,7 +37,4 @@ task runMinnieKenny(type: Exec) {
 
 test {
 	dependsOn runMinnieKenny
-	filter {
-		excludeTestsMatching "*VerifyPacts*"
-	}
 }
