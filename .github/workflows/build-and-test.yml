@@ -128,7 +128,9 @@ jobs:
         run: |
           export PACT_PROVIDER_COMMIT=$(git rev-parse HEAD)
           export PACT_PROVIDER_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          ./gradlew --build-cache verifyPacts --args='--pactbroker.host=$PACT_BROKER_URL`
+          export PACT_BROKER_USERNAME=${{ secrets.PACT_BROKER_USERNAME }}
+          export PACT_BROKER_PASSWORD=${{ secrets.PACT_BROKER_PASSWORD }}
+          ./gradlew --build-cache verifyPacts -Dpactbroker.host=$PACT_BROKER_URL -Dpactbroker.auth.username=$PACT_BROKER_USERNAME -Dpactbroker.auth.password=$PACT_BROKER_PASSWORD
 
       - name: Codecov
         uses: codecov/codecov-action@v3
