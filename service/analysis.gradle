@@ -12,6 +12,9 @@ jacocoTestReport {
 			fileTree(dir: it, exclude: ['bio/terra/drshub/generated/**'])
 		}))
 	}
+	filter {
+		excludeTestsMatching "*VerifyPacts*"
+	}
 }
 
 spotbugs {
