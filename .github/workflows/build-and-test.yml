@@ -120,11 +120,15 @@ jobs:
           PACTBROKER_APPLICATION_YAML_B64: ${{ secrets.PACTBROKER_APPLICATION_YAML_B64 }}
         run: |
           mkdir -p ./service/src/test/resources
-          echo $PACTBROKER_APPLICATION_YAML_B64 | base64 --decode >> ./service/src/test/resources/application.yml
+          echo $PACTBROKER_APPLICATION_YAML_B64 | base64 --decode >> ./service/src/test/resources/application-test.yml
 
       - name: Verify pacts
         env:
           PACT_BROKER_URL: https://pact-broker.dsp-eng-tools.broadinstitute.org
+          PACT_PROVIDER_COMMIT: (git rev-parse HEAD)
+          PACT_PROVIDER_BRANCH: $(git rev-parse --abbrev-ref HEAD)
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
         run: |
           ./gradlew --build-cache verifyPacts
 

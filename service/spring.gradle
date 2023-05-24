@@ -16,7 +16,12 @@ dependencies {
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
 }
 
-test {useJUnitPlatform()}
+test {
+	useJUnitPlatform()
+	filter {
+		excludeTestsMatching "*VerifyPacts*"
+	}
+}
 
 task bootRunDev {
 	bootRun.configure { systemProperty 'spring.profiles.active', 'human-readable-logging' }

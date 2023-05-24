@@ -12,9 +12,6 @@ jacocoTestReport {
 			fileTree(dir: it, exclude: ['bio/terra/drshub/generated/**'])
 		}))
 	}
-	filter {
-		excludeTestsMatching "*VerifyPacts*"
-	}
 }
 
 spotbugs {
@@ -40,4 +37,7 @@ task runMinnieKenny(type: Exec) {
 
 test {
 	dependsOn runMinnieKenny
+	filter {
+		excludeTestsMatching "*VerifyPacts*"
+	}
 }
