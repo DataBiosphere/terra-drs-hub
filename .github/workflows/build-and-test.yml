@@ -130,7 +130,7 @@ jobs:
           PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
           PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
         run: |
-          ./gradlew --build-cache verifyPacts
+          ./gradlew --build-cache verifyPacts --debug
 
       - name: Codecov
         uses: codecov/codecov-action@v3

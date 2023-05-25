@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("Unit")
 public class DrsProviderTest extends BaseTest {
 
   private final ProviderAccessMethodConfig testAccessMethodConfig =

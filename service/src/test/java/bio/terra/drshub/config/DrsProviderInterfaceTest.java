@@ -9,9 +9,11 @@ import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsProviderService;
 import io.github.ga4gh.drs.model.AccessMethod;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Tag("Unit")
 class DrsProviderInterfaceTest extends BaseTest {
 
   @Autowired private DrsProviderService drsProviderService;

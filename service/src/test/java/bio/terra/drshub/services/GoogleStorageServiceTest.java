@@ -8,9 +8,11 @@ import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Tag("Unit")
 public class GoogleStorageServiceTest extends BaseTest {
 
   @Autowired GoogleStorageService googleStorageService;
