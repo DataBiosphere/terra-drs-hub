@@ -124,13 +124,13 @@ jobs:
 
       - name: Verify pacts
         env:
-          PACT_BROKER_URL: https://pact-broker.dsp-eng-tools.broadinstitute.org
+          PACT_BROKER_URL: pact-broker.dsp-eng-tools.broadinstitute.org
           PACT_PROVIDER_COMMIT: (git rev-parse HEAD)
           PACT_PROVIDER_BRANCH: $(git rev-parse --abbrev-ref HEAD)
           PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
           PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
         run: |
-          ./gradlew --build-cache verifyPacts --debug
+          ./gradlew --build-cache verifyPacts
 
       - name: Codecov
         uses: codecov/codecov-action@v3
