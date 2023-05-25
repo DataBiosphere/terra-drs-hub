@@ -43,6 +43,7 @@ test {
 }
 
 task verifyPacts(type: Test) {
+	outputs.upToDateWhen { false } // always run this task even if it's up to date
 	useJUnitPlatform {
 		includeTags 'Pact'
 	}
