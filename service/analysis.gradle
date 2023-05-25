@@ -53,9 +53,5 @@ task verifyPacts(type: Test) {
 	systemProperty 'pactbroker.auth.username', System.getenv('PACT_BROKER_USERNAME')
 	systemProperty 'pactbroker.auth.password', System.getenv('PACT_BROKER_PASSWORD')
 	systemProperty 'pactbroker.scheme', 'https'
-
-	filter {
-		includeTestsMatching "*VerifyPacts*"
-	}
 }
 
