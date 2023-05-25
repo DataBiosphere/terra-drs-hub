@@ -93,7 +93,7 @@ DrsHub uses Gradle as a build tool. Some common Gradle commands you may want to 
 ```shell
 ./gradlew generateSwaggerCode # Generate Swagger code for models and Swagger UI
 ./gradlew bootRun # Run DrsHub locally (Swagger UI at localhost:8080)
-./gradlew test # Run the unit tests
+./gradlew unitTest # Run the unit tests
 ./gradlew jib # Build the DrsHub Docker image
 ```
 

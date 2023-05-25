@@ -38,7 +38,9 @@ import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unit")
 public class SignedUrlTestUtils {
 
   public static void setupSignedUrlMocks(

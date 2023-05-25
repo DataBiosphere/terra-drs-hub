@@ -9,9 +9,11 @@ import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsProviderService;
 import io.github.ga4gh.drs.model.AccessMethod;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Tag("Unit")
 class DrsProviderInterfaceTest extends BaseTest {
 
   @Autowired private DrsProviderService drsProviderService;
@@ -68,10 +70,10 @@ class DrsProviderInterfaceTest extends BaseTest {
 
     assertFalse(
         passportDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.GS, Fields.ACCESS_ID_FIELDS, false));
+            AccessMethod.TypeEnum.GS, Fields.ACCESS_URL_FIELDS, false));
     assertFalse(
         passportDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.S3, Fields.ACCESS_ID_FIELDS, false));
+            AccessMethod.TypeEnum.S3, Fields.ACCESS_URL_FIELDS, false));
 
     var fenceProviderHost = getProviderHosts("fenceTokenOnly");
     var fenceTestUri = String.format("drs://%s:12345", fenceProviderHost.compactUriPrefix());
@@ -80,7 +82,7 @@ class DrsProviderInterfaceTest extends BaseTest {
 
     assertTrue(
         fenceDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.GS, Fields.ACCESS_ID_FIELDS, false));
+            AccessMethod.TypeEnum.GS, Fields.ACCESS_URL_FIELDS, false));
   }
 
   @Test

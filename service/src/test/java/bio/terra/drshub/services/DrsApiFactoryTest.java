@@ -6,10 +6,12 @@ import static org.mockito.Mockito.*;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.MTlsConfig;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@Tag("Unit")
 public class DrsApiFactoryTest extends BaseTest {
 
   @Autowired DrsApiFactory drsApiFactory;

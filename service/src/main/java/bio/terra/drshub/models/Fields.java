@@ -64,7 +64,7 @@ public class Fields {
 
   public static final List<String> BOND_SA_FIELDS = List.of(GOOGLE_SERVICE_ACCOUNT);
 
-  public static final List<String> ACCESS_ID_FIELDS = List.of(ACCESS_URL);
+  public static final List<String> ACCESS_URL_FIELDS = List.of(ACCESS_URL);
 
   public static boolean overlap(List<String> requestedFields, List<String> serviceFields) {
     return serviceFields.stream().anyMatch(requestedFields::contains);
