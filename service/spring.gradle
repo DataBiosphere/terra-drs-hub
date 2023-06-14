@@ -14,6 +14,14 @@ dependencies {
 
 	// allows mocking final classes
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+	// ID-645 Fixes a vulnerability
+	implementation('org.apache.tomcat.embed:tomcat-embed-core') {
+		version{
+			strictly('9.0.76')
+		}
+	}
+
 }
 
 
