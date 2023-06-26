@@ -41,7 +41,9 @@ public record SignedUrlService(
 
     final BlobInfo blobInfo;
     if (bucket == null || objectName == null) {
-      blobInfo = BlobInfo.newBuilder(getBlobIdFromDrsUri(dataObjectUri, bearerToken, ip)).build();
+      blobInfo =
+          BlobInfo.newBuilder(getBlobIdFromDrsUri(dataObjectUri, bearerToken, ip, googleProject))
+              .build();
     } else {
       blobInfo = BlobInfo.newBuilder(BlobId.of(bucket, objectName)).build();
     }
@@ -61,10 +63,11 @@ public record SignedUrlService(
         blobInfo, duration.toMinutes(), TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
   }
 
-  private BlobId getBlobIdFromDrsUri(String dataObjectUri, BearerToken bearerToken, String ip) {
+  private BlobId getBlobIdFromDrsUri(
+      String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
     var object =
         drsResolutionService.resolveDrsObject(
-            dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip);
+            dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip, googleProject);
     var gsUri = object.getGsUri();
     return BlobId.fromGsUtilUri(gsUri);
   }
