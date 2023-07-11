@@ -1,0 +1,17 @@
+{
+  "name": "GetSignedUrlSam",
+  "description": "Get a Signed URL from Sam for a DRS Object in TDR",
+  "serverSpecificationFile": "drshub-local.json",
+  "kubernetes": {},
+  "application": {},
+  "testScripts": [
+    {
+      "name": "GetSignedUrlSam",
+      "numberOfUserJourneyThreadsToRun": 1,
+      "userJourneyThreadPoolSize": 2,
+      "expectedTimeForEach": 10,
+      "expectedTimeForEachUnit": "SECONDS"
+    }
+  ],
+  "testUserFiles": ["scarlett.json"]
+}

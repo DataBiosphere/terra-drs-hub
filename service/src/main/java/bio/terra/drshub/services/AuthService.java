@@ -6,6 +6,7 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
+import bio.terra.sam.model.ProjectSignedUrlForBlobBody;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
@@ -29,6 +30,7 @@ public class AuthService {
 
   private final BondApiFactory bondApiFactory;
   private final DrsApiFactory drsApiFactory;
+  private final SamApiFactory samApiFactory;
   private final ExternalCredsApiFactory externalCredsApiFactory;
 
   // To avoid absolutely hammering the ECM API during large batch analyses,
@@ -41,9 +43,11 @@ public class AuthService {
   public AuthService(
       BondApiFactory bondApiFactory,
       DrsApiFactory drsApiFactory,
+      SamApiFactory samApiFactory,
       ExternalCredsApiFactory externalCredsApiFactory) {
     this.bondApiFactory = bondApiFactory;
     this.drsApiFactory = drsApiFactory;
+    this.samApiFactory = samApiFactory;
     this.externalCredsApiFactory = externalCredsApiFactory;
   }
 
@@ -247,5 +251,16 @@ public class AuthService {
             }
           }
         });
+  }
+
+  public String getSignedUrlForBlob(
+      BearerToken bearerToken, String googleProject, String bucketName, String objectName) {
+    var samApi = samApiFactory.getApi(bearerToken);
+    var requestBody =
+        new ProjectSignedUrlForBlobBody()
+            .bucketName(bucketName)
+            .blobName(objectName)
+            .requesterPays(false);
+    return samApi.signedUrlForBlob(requestBody, googleProject);
   }
 }
