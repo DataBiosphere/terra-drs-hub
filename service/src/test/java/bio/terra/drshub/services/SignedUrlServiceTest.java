@@ -38,6 +38,24 @@ public class SignedUrlServiceTest extends BaseTest {
   }
 
   @Test
+  void testGetSignedUrlFromSam() throws MalformedURLException {
+
+    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var bucketName = "my-test-bucket";
+    var objectName = "my-test-folder/my-test-object.txt";
+    var googleProject = "test-google-project";
+    var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
+
+    SignedUrlTestUtils.setupSignedUrlMocksForSam(
+        authService, googleProject, bucketName, objectName, url);
+
+    var signedUrl =
+        signedUrlService.getSignedUrl(
+            bucketName, objectName, drsUri, googleProject, new BearerToken("12345"), "127.0.0.1");
+    assertEquals(url, signedUrl);
+  }
+
+  @Test
   void testGetSignedUrlDataObjectUriOnly() throws Exception {
 
     var drsUri = "drs://dg.4503:1234/456/2315asd";
