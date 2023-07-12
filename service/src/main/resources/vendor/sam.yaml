@@ -89,3 +89,22 @@ components:
                 type: boolean
                 description: Use the pet service account project as the user project in the request.
                 default: true
+  securitySchemes:
+    authorization:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://accounts.google.com/o/oauth2/auth
+          scopes:
+            openid: open id authorization
+            email: email authorization
+            profile: profile authorization
+    googleAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: GCloud access token
+      description: Use your GCP auth token, i.e. `gcloud auth print-access-token`
+
+security:
+  - authorization: [ openid, email, profile ]
+  - googleAuth: [ ]

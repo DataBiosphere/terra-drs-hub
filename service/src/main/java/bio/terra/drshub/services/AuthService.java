@@ -261,6 +261,6 @@ public class AuthService {
             .bucketName(bucketName)
             .blobName(objectName)
             .requesterPays(false);
-    return samApi.signedUrlForBlob(requestBody, googleProject);
+    return samApi.signedUrlForBlob(requestBody, googleProject).replaceAll("^\"|\"$", "");
   }
 }
