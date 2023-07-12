@@ -1,9 +1,13 @@
 package bio.terra.drshub.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -71,5 +75,28 @@ public class SignedUrlServiceTest extends BaseTest {
         signedUrlService.getSignedUrl(
             null, null, drsUri, googleProject, new BearerToken("12345"), "127.0.0.1");
     assertEquals(url, signedUrl);
+  }
+
+  @Test
+  void testFailsToParseInvalidURLsFromSam() {
+
+    when(authService.getSignedUrlForBlob(
+            any(BearerToken.class), any(String.class), any(String.class), any(String.class)))
+        .thenReturn("not_a_valid_url");
+
+    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var bucketName = "my-test-bucket";
+    var objectName = "my-test-folder/my-test-object.txt";
+    var googleProject = "test-google-project";
+    assertThrows(
+        DrsHubException.class,
+        () ->
+            signedUrlService.getSignedUrl(
+                bucketName,
+                objectName,
+                drsUri,
+                googleProject,
+                new BearerToken("12345"),
+                "127.0.0.1"));
   }
 }
