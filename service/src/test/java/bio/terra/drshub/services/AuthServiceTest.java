@@ -2,6 +2,7 @@ package bio.terra.drshub.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +14,8 @@ import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.externalcreds.api.OidcApi;
+import bio.terra.sam.api.SamApi;
+import bio.terra.sam.model.ProjectSignedUrlForBlobBody;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
 import java.util.List;
@@ -36,6 +39,8 @@ class AuthServiceTest extends BaseTest {
   @MockBean private BondApi bondApi;
   @MockBean private ExternalCredsApiFactory externalCredsApiFactory;
   @MockBean private OidcApi oidcApi;
+  @MockBean private SamApiFactory samApiFactory;
+  @MockBean private SamApi samApi;
 
   @Test
   void testDrsOptionsEndpoint() {
@@ -188,5 +193,26 @@ class AuthServiceTest extends BaseTest {
         authorizations.stream()
             .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
             .findAny());
+  }
+
+  @Test
+  public void testSamSignsGsUrls() {
+    var bucketName = "my-test-bucket";
+    var objectName = "my-test-folder/my-test-object.txt";
+    var googleProject = "test-google-project";
+    var url = "https://storage.cloud.google.com" + "/" + bucketName + "/" + objectName;
+    var bearerToken = new BearerToken("12345");
+
+    when(samApiFactory.getApi(eq(bearerToken))).thenReturn(samApi);
+    var body =
+        new ProjectSignedUrlForBlobBody()
+            .bucketName(bucketName)
+            .blobName(objectName)
+            .requesterPays(false);
+    when(samApi.signedUrlForBlob(eq(body), eq(googleProject))).thenReturn("\"" + url + "\"");
+
+    var signedUrl =
+        authService.getSignedUrlForBlob(bearerToken, googleProject, bucketName, objectName);
+    assertEquals(url, signedUrl);
   }
 }
