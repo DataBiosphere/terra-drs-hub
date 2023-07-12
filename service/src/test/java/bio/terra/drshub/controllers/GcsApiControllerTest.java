@@ -39,7 +39,7 @@ public class GcsApiControllerTest extends BaseTest {
 
   @Test
   void testSignsUrls() throws Exception {
-    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var drsUri = "drs://dg.4503:1234/456/2315asd";
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
     var googleProject = "test-google-project";
@@ -54,7 +54,7 @@ public class GcsApiControllerTest extends BaseTest {
 
   @Test
   void testSignsUrlsDrsUriOnly() throws Exception {
-    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var drsUri = "drs://dg.4503:1234/456/2315asd";
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
     var googleProject = "test-google-project";

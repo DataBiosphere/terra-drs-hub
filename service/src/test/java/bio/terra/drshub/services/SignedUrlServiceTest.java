@@ -23,7 +23,7 @@ public class SignedUrlServiceTest extends BaseTest {
   @Test
   void testGetSignedUrl() throws MalformedURLException {
 
-    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var drsUri = "drs://dg.4503:1234/456/2315asd";
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
     var googleProject = "test-google-project";
@@ -40,7 +40,7 @@ public class SignedUrlServiceTest extends BaseTest {
   @Test
   void testGetSignedUrlDataObjectUriOnly() throws Exception {
 
-    var drsUri = "drs://drs.anv0:1234/456/2315asd";
+    var drsUri = "drs://dg.4503:1234/456/2315asd";
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
     var googleProject = "test-google-project";
