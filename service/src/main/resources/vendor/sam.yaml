@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Sam API
+  description: Service for IAM management in Terra
+  version: "1.0"
+
+servers:
+  - url: /
+    # '/' is a relative path to this host.
+    description: The server hosting this Swagger UI
+  - url: https://sam.dsde-staging.broadinstitute.org/
+    description: Production
+  - url: https://sam.dsde-staging.broadinstitute.org/
+    description: Staging
+  - url: https://sam.dsde-alpha.broadinstitute.org/
+    description: Alpha
+  - url: https://sam.dsde-dev.broadinstitute.org/
+    description: Development
+
+paths:
+  /api/google/v1/user/petServiceAccount/{project}/signedUrlForBlob:
+    post:
+      summary: gets a signed url for a blob using the pet service account for the user in the provided project
+      tags: [ sam ]
+      operationId: signedUrlForBlob
+      parameters:
+        - name: project
+          in: path
+          required: true
+          description: The Google Project to get the Pet Service Account from for URL signing.
+          schema:
+            type: string
+            example: terra-abcd1234
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bucketName
+                - blobName
+              properties:
+                bucketName:
+                  type: string
+                  description: bucket of the blob
+                blobName:
+                  type: string
+                  description: path to the blob in the bucket
+                duration:
+                  type: number
+                  description: Optional validity duration of the link in minutes. Defaults to 1 hour.
+                  default: 60
+                requesterPays:
+                  type: boolean
+                  description: Use the pet service account project as the user project in the request.
+                  default: true
+      responses:
+        200:
+          description: signed URL for the blob, signed by the Pet Service Account key
+          content:
+            application/json:
+              schema:
+                type: string
+
+components:
+  requestBodies:
+    SignedUrlRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - bucketName
+              - blobName
+            properties:
+              bucketName:
+                type: string
+                description: bucket of the blob
+              blobName:
+                type: string
+                description: path to the blob in the bucket
+              duration:
+                type: number
+                description: Optional validity duration of the link in minutes. Defaults to 1 hour.
+                default: 60
+              requesterPays:
+                type: boolean
+                description: Use the pet service account project as the user project in the request.
+                default: true
