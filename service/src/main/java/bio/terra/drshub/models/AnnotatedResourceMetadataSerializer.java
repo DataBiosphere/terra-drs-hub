@@ -9,6 +9,7 @@ import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,12 +58,18 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
         var formatter = DateTimeFormatter.ISO_INSTANT;
 
         if (f.equals(Fields.TIME_CREATED)) {
-          jsonGenerator.writeStringField(
-              Fields.TIME_CREATED, formatter.format(response.getCreatedTime().toInstant()));
+          var maybeDate =
+              Optional.ofNullable(response.getCreatedTime())
+                  .map(Date::toInstant)
+                  .map(formatter::format);
+          jsonGenerator.writeStringField(Fields.TIME_CREATED, maybeDate.orElse(null));
         }
         if (f.equals(Fields.TIME_UPDATED)) {
-          jsonGenerator.writeStringField(
-              Fields.TIME_UPDATED, formatter.format(response.getUpdatedTime().toInstant()));
+          var maybeDate =
+              Optional.ofNullable(response.getUpdatedTime())
+                  .map(Date::toInstant)
+                  .map(formatter::format);
+          jsonGenerator.writeStringField(Fields.TIME_UPDATED, maybeDate.orElse(null));
         }
         if (f.equals(Fields.HASHES)) {
           jsonGenerator.writePOJOField(Fields.HASHES, getHashesMap(response.getChecksums()));
