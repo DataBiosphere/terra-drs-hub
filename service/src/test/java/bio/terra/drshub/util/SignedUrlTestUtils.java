@@ -64,6 +64,18 @@ public class SignedUrlTestUtils {
         .thenReturn(url);
   }
 
+  public static void setupSignedUrlMocksForSam(
+      AuthService authService,
+      String googleProject,
+      String bucketName,
+      String objectName,
+      URL url) {
+
+    when(authService.getSignedUrlForBlob(
+            any(BearerToken.class), eq(googleProject), eq(bucketName), eq(objectName)))
+        .thenReturn(url.toString());
+  }
+
   public static void setupDrsResolutionServiceMocks(
       DrsResolutionService drsResolutionService,
       String drsUri,
