@@ -4,14 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import au.com.dius.pact.consumer.MockServer;
 import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
+import au.com.dius.pact.consumer.dsl.PactDslJsonRootValue;
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
 import au.com.dius.pact.consumer.junit5.PactConsumerTest;
 import au.com.dius.pact.consumer.junit5.PactTestFor;
 import au.com.dius.pact.core.model.PactSpecVersion;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
+import au.com.dius.pact.core.support.json.JsonValue;
+import au.com.dius.pact.core.support.json.JsonValue.StringValue;
 import bio.terra.profile.app.configuration.SamConfiguration;
 import bio.terra.profile.service.iam.SamService;
+import java.util.HashMap;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -19,35 +23,21 @@ import org.junit.jupiter.api.Test;
 @PactConsumerTest
 public class SamServiceTest {
 
-  @Pact(consumer = "bpm-consumer", provider = "sam-provider")
-  public RequestResponsePact statusApiPact(PactDslWithProvider builder) {
+  @Pact(consumer = "drshub-consumer", provider = "sam-provider")
+  public RequestResponsePact signedUrlApiPact(PactDslWithProvider builder) {
+    var projectId = "terra-abcd1234";
+    var signedUrlResponse = new PactDslJsonBody();
+    signedUrlResponse.setBody(new StringValue("gs//mybucket/myobject.txt"));
+    var stateParams = new HashMap<String, String>();
+    stateParams.put("projectId", projectId);
     return builder
-        .given("Sam is ok")
-        .uponReceiving("a status request")
-        .path("/status")
-        .method("GET")
+        .given("A signed URL request", stateParams)
+        .uponReceiving("a request for a signed URL")
+        .pathFromProviderState("/api/google/v1/user/petServiceAccount/${projectId}/signedUrlForBlob", "/api/google/v1/user/petServiceAccount/" + projectId + "/signedUrlForBlob")
+        .method("POST")
         .willRespondWith()
         .status(200)
-        .body(new PactDslJsonBody().booleanValue("ok", true))
-        .toPact();
-  }
-
-  @Pact(consumer = "bpm-consumer", provider = "sam-provider")
-  public RequestResponsePact userStatusPact(PactDslWithProvider builder) {
-    var userResponseShape =
-        new PactDslJsonBody()
-            .stringType("userSubjectId")
-            .stringType("userEmail")
-            .booleanType("enabled");
-    return builder
-        .given("user status info request with access token")
-        .uponReceiving("a request for the user's status")
-        .path("/register/user/v2/self/info")
-        .method("GET")
-        .headers("Authorization", "Bearer accessToken")
-        .willRespondWith()
-        .status(200)
-        .body(userResponseShape)
+        .body(signedUrlResponse)
         .toPact();
   }
 
