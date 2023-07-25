@@ -42,6 +42,15 @@ test {
 	dependsOn runMinnieKenny
 }
 
+tasks.register("pactTests", Test) {
+	useJUnitPlatform {
+		includeTags "pact-test"
+	}
+	testLogging {
+		showStandardStreams = true
+	}
+}
+
 task verifyPacts(type: Test) {
 	outputs.upToDateWhen { false } // always run this task even if it's up to date
 	useJUnitPlatform {

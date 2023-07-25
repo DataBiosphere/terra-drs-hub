@@ -12,8 +12,9 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
-  id 'com.srcclr.gradle' version '3.1.12'
+	id 'com.srcclr.gradle' version '3.1.12'
 	id 'org.sonarqube'
+	id "au.com.dius.pact" version "4.3.19"
 }
 
 repositories {
@@ -75,8 +76,9 @@ dependencies {
 		exclude group: 'com.vaadin.external.google', module: 'android-json'
 	}
 
-	testImplementation("au.com.dius.pact.provider:junit5:4.1.7")
-	testImplementation('au.com.dius.pact.provider:junit5spring:4.1.7')
+	testImplementation 'au.com.dius.pact.consumer:junit5:4.6.1'
+	testImplementation("au.com.dius.pact.provider:junit5:4.6.1")
+	testImplementation("au.com.dius.pact.provider:junit5spring:4.6.1")
 }
 
 sonarqube {
@@ -88,4 +90,3 @@ sonarqube {
 		property "sonar.sources", "src/main/java,src/main/resources/templates"
 	}
 }
-

@@ -1,4 +1,4 @@
-package bio.terra.drshub.controllers;
+package bio.terra.drshub.pact.provider;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -13,6 +13,8 @@ import bio.terra.common.iam.BearerTokenFactory;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.ProviderAccessMethodConfig;
+import bio.terra.drshub.controllers.DrsHubApiController;
+import bio.terra.drshub.controllers.PublicApiController;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
