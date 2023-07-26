@@ -52,6 +52,7 @@ def makeClientCodeClosure(String id) {
 				modelDocs: false, modelTests: false
 		]
 
+		templateDir = file("${projectDir}/src/main/resources/swaggercodegen")
 		additionalProperties = [
 				modelPackage  : "${id}.model",
 				apiPackage    : "${id}.api",
