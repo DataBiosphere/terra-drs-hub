@@ -20,10 +20,15 @@ import {{invokerPackage}}.ApiClient;
 {{#imports}}import {{import}};
 {{/imports}}
 
-{{^fullJavaUtil}}import java.util.ArrayList;
+{{! Begin Terra change }}
+{{^fullJavaUtil}}import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;{{/fullJavaUtil}}
+import java.util.Map;
+import java.util.Optional;{{/fullJavaUtil}}
+{{! End Terra change }}
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -128,7 +133,10 @@ public class {{classname}} {
         // create path and map variables
         final Map<String, Object> uriVariables = new HashMap<String, Object>();
         {{#pathParams}}
-        uriVariables.put("{{baseName}}", {{{paramName}}});
+        {{! Begin Terra change }}
+        // Encode URI variables here since they are not re-encoded when calling the API in apiClient.invokeAPI
+        uriVariables.put("{{baseName}}", Optional.ofNullable({{{paramName}}}).map(u -> URLEncoder.encode(u.toString(), StandardCharsets.UTF_8)).orElse(null));
+        {{! End Terra change }}
         {{/pathParams}}
         {{/hasPathParams}}
         String {{localVariablePrefix}}path = UriComponentsBuilder.fromPath("{{{path}}}"){{#hasPathParams}}.buildAndExpand(uriVariables){{/hasPathParams}}{{^hasPathParams}}.build(){{/hasPathParams}}.toUriString();
@@ -138,7 +146,10 @@ public class {{classname}} {
         final MultiValueMap<String, Object> {{localVariablePrefix}}formParams = new LinkedMultiValueMap<String, Object>();
         {{#hasQueryParams}}
         {{#queryParams}}
-        {{localVariablePrefix}}queryParams.putAll({{localVariablePrefix}}apiClient.parameterToMultiValueMap({{#collectionFormat}}ApiClient.CollectionFormat.valueOf("{{{collectionFormat}}}".toUpperCase()){{/collectionFormat}}{{^collectionFormat}}null{{/collectionFormat}}, "{{baseName}}", {{paramName}}));
+        {{! Begin Terra change }}
+        // Encode query parameters here since they are not re-encoded when calling the API in apiClient.invokeAPI
+        {{localVariablePrefix}}queryParams.putAll({{localVariablePrefix}}apiClient.parameterToMultiValueMap({{#collectionFormat}}ApiClient.CollectionFormat.valueOf("{{{collectionFormat}}}".toUpperCase()){{/collectionFormat}}{{^collectionFormat}}null{{/collectionFormat}}, "{{baseName}}",  Optional.ofNullable({{paramName}}).map(u -> URLEncoder.encode(u.toString(), StandardCharsets.UTF_8)).orElse(null)));
+        {{! End Terra change }}
         {{/queryParams}}
         {{/hasQueryParams}}
         {{#hasHeaderParams}}

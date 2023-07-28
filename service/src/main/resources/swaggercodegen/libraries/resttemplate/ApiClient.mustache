@@ -524,7 +524,11 @@ public class ApiClient {
             builder.queryParams(queryParams);
         }
 
-        final BodyBuilder requestBuilder = RequestEntity.method(method, builder.build().toUri());
+        {{! Begin Terra change }}
+        // Assume that the path is already encoded since we are explicitly encoding url parameters
+        // when we are constructing the url
+        final BodyBuilder requestBuilder = RequestEntity.method(method, builder.build(true).toUri());
+        {{! End Terra change }}
         if(accept != null) {
             requestBuilder.accept(accept.toArray(new MediaType[accept.size()]));
         }
