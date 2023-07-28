@@ -29,6 +29,9 @@ import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.AllOfAccessMethodAccessUrl;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
@@ -594,6 +597,28 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(status().isBadRequest());
   }
 
+  @Test
+  void testHandleSlashInDrsObjectId() throws Exception {
+    var drsHost = TDR_TEST_HOST;
+    var drsObject = drsObjectWithId("foo/bar", "gs");
+    var expectedDrsUri = "drs://" + TDR_TEST_HOST + "/foo%2Fbar";
+    var requestBody = objectMapper.writeValueAsString(Map.of("url", expectedDrsUri));
+
+    mockDrsApi(drsHost, drsObject);
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
+  }
+
+  @Test
+  void testHandleEncodedSlashInDrsObjectId() throws Exception {
+    var drsHost = TDR_TEST_HOST;
+    var drsObject = drsObjectWithId("foo%2Fbar", "gs");
+    var expectedDrsUri = "drs://" + TDR_TEST_HOST + "/foo%2Fbar";
+    var requestBody = objectMapper.writeValueAsString(Map.of("url", expectedDrsUri));
+
+    mockDrsApi(drsHost, drsObject);
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
+  }
+
   /**
    * Test utility function that extracts the right fields from a drs object into a Map that can be
    * added to and json-ified to compare to test results.
@@ -708,12 +733,19 @@ public class DrsHubApiControllerTest extends BaseTest {
   private DrsApi mockDrsApi(String drsHost, DrsObject drsObject) {
     var mockDrsApi = mock(DrsApi.class);
 
+    // ObjectIds are decoded and re-encoded when sent to the Drs server
+    var effectiveObjectId =
+        Optional.ofNullable(drsObject.getId())
+            .map(objectId -> URLDecoder.decode(objectId, StandardCharsets.UTF_8))
+            .map(objectId -> URLEncoder.encode(objectId, StandardCharsets.UTF_8))
+            .orElse(null);
+
     when(drsApiFactory.getApiFromUriComponents(
             eq(
                 UriComponentsBuilder.newInstance()
                     .scheme("drs")
                     .host(drsHost)
-                    .path(drsObject.getId())
+                    .path(effectiveObjectId)
                     .build()),
             any()))
         .thenReturn(mockDrsApi);
@@ -739,8 +771,13 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   private DrsObject drsObjectWithRandomId(String accessMethod) {
+    return drsObjectWithId(UUID.randomUUID().toString(), accessMethod);
+  }
+
+  private DrsObject drsObjectWithId(String objectId, String accessMethod) {
     return new DrsObject()
-        .id(UUID.randomUUID().toString())
+        .id(objectId)
+        .size(new Random().nextLong())
         .accessMethods(
             List.of(
                 new AccessMethod().accessId(accessMethod).type(TypeEnum.fromValue(accessMethod))));
