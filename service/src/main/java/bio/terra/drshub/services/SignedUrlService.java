@@ -2,14 +2,19 @@ package bio.terra.drshub.services;
 
 import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
+import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
+import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.Fields;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import io.github.ga4gh.drs.model.AccessMethod;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +41,43 @@ public record SignedUrlService(
 
     var components = drsProviderService.getUriComponents(dataObjectUri);
     var drsProvider = drsProviderService.determineDrsProvider(components);
+
+    var logEvent =
+        new AuditLogEvent.Builder()
+            .dRSUrl(dataObjectUri)
+            .providerName(drsProvider.getName())
+            .auditLogEventType(AuditLogEventType.GetSignedUrl)
+            .clientIP(Optional.ofNullable(ip))
+            .build();
+    auditLogger.logEvent(logEvent);
+
+    if (drsProvider.getAccessMethodByType(AccessMethod.TypeEnum.GS).getAuth()
+        == AccessUrlAuthEnum.current_request) {
+      return getSignedUrlFromSam(bearerToken, googleProject, bucket, objectName);
+    } else {
+      return getSignedUrlFromDrsProvider(
+          bearerToken, drsProvider, googleProject, bucket, objectName, dataObjectUri, ip);
+    }
+  }
+
+  private URL getSignedUrlFromSam(
+      BearerToken bearerToken, String googleProject, String bucketName, String blobName) {
+    try {
+      return new URL(
+          authService.getSignedUrlForBlob(bearerToken, googleProject, bucketName, blobName));
+    } catch (MalformedURLException ex) {
+      throw new DrsHubException("Could not parse signed URL from Sam", ex);
+    }
+  }
+
+  private URL getSignedUrlFromDrsProvider(
+      BearerToken bearerToken,
+      DrsProvider drsProvider,
+      String googleProject,
+      String bucket,
+      String objectName,
+      String dataObjectUri,
+      String ip) {
     SaKeyObject saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
     Storage storage = googleStorageService.getAuthedStorage(saKey, googleProject);
 
@@ -49,15 +91,6 @@ public record SignedUrlService(
     }
 
     var duration = drsHubConfig.getSignedUrlDuration();
-
-    var logEvent =
-        new AuditLogEvent.Builder()
-            .dRSUrl(dataObjectUri)
-            .providerName(drsProvider.getName())
-            .auditLogEventType(AuditLogEventType.GetSignedUrl)
-            .clientIP(Optional.ofNullable(ip))
-            .build();
-    auditLogger.logEvent(logEvent);
 
     return storage.signUrl(
         blobInfo, duration.toMinutes(), TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
