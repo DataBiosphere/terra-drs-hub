@@ -256,7 +256,7 @@ public record DrsResolutionService(
     return null;
   }
 
-  private String getObjectId(UriComponents uriComponents) {
+  static String getObjectId(UriComponents uriComponents) {
     // TODO: is there a reason we need query params? it breaks getAccessUrl.
     return URLDecoder.decode(
         Optional.ofNullable(uriComponents.getPath()).orElse(""), StandardCharsets.UTF_8);

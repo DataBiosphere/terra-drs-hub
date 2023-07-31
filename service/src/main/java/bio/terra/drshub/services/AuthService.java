@@ -197,7 +197,7 @@ public class AuthService {
               drsProvider.getName(), uriComponents.toUriString()));
     }
 
-    var objectId = uriComponents.getPath();
+    var objectId = DrsResolutionService.getObjectId(uriComponents);
     try {
       return Optional.ofNullable(drsApi.optionsObject(objectId));
     } catch (RestClientException ex) {
