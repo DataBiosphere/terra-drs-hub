@@ -23,10 +23,13 @@ import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
 import bio.terra.externalcreds.api.OidcApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ga4gh.drs.client.ApiClient;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.AllOfAccessMethodAccessUrl;
+import io.github.ga4gh.drs.model.Authorizations;
+import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
 import io.github.ga4gh.drs.model.Checksum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URLDecoder;
@@ -39,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -48,14 +52,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Tag("Unit")
@@ -604,7 +612,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var expectedDrsUri = "drs://" + TDR_TEST_HOST + "/foo%2Fbar";
     var requestBody = objectMapper.writeValueAsString(Map.of("url", expectedDrsUri));
 
-    mockDrsApi(drsHost, drsObject);
+    mockDrsApiRestTemplate(drsHost, drsObject);
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
   }
 
@@ -615,7 +623,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     var expectedDrsUri = "drs://" + TDR_TEST_HOST + "/foo%2Fbar";
     var requestBody = objectMapper.writeValueAsString(Map.of("url", expectedDrsUri));
 
-    mockDrsApi(drsHost, drsObject);
+    mockDrsApiRestTemplate(drsHost, drsObject);
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
   }
 
@@ -738,7 +746,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         Optional.ofNullable(drsObject.getId())
             .map(objectId -> URLDecoder.decode(objectId, StandardCharsets.UTF_8))
             .map(objectId -> URLEncoder.encode(objectId, StandardCharsets.UTF_8))
-            .orElse(null);
+            .orElse("");
 
     when(drsApiFactory.getApiFromUriComponents(
             eq(
@@ -750,6 +758,62 @@ public class DrsHubApiControllerTest extends BaseTest {
             any()))
         .thenReturn(mockDrsApi);
     when(mockDrsApi.getObject(drsObject.getId(), null)).thenReturn(drsObject);
+
+    return mockDrsApi;
+  }
+
+  private DrsApi mockDrsApiRestTemplate(String drsHost, DrsObject drsObject) {
+    var restTemplate = mock(RestTemplate.class);
+    var apiClient = new ApiClient(restTemplate);
+    apiClient.setBasePath(
+        apiClient.getBasePath().replace("{serverURL}", Objects.requireNonNull(drsHost)));
+    var mockDrsApi = new DrsApi(apiClient); // mock(DrsApi.class);
+
+    // ObjectIds are decoded and re-encoded when sent to the Drs server
+    var effectiveObjectId =
+        Optional.ofNullable(drsObject.getId())
+            .map(objectId -> URLDecoder.decode(objectId, StandardCharsets.UTF_8))
+            .map(objectId -> URLEncoder.encode(objectId, StandardCharsets.UTF_8))
+            .orElse("");
+
+    when(drsApiFactory.getApiFromUriComponents(
+            eq(
+                UriComponentsBuilder.newInstance()
+                    .scheme("drs")
+                    .host(drsHost)
+                    .path(effectiveObjectId)
+                    .build()),
+            any()))
+        .thenReturn(mockDrsApi);
+
+    // Mock the Options endpoint
+    when(restTemplate.exchange(any(), eq(new ParameterizedTypeReference<Authorizations>() {})))
+        .thenAnswer(
+            a -> {
+              RequestEntity<Authorizations> request = a.getArgument(0);
+              var drsServerUrl =
+                  "https://" + drsHost + "/ga4gh/drs/v1/objects/" + effectiveObjectId;
+              if (request.getUrl().toString().equalsIgnoreCase(drsServerUrl)) {
+                return ResponseEntity.ok(
+                    new Authorizations().supportedTypes(List.of(SupportedTypesEnum.BEARERAUTH)));
+              } else {
+                return ResponseEntity.notFound();
+              }
+            });
+
+    // Mock the DrsObject retrieval endpoint
+    when(restTemplate.exchange(any(), eq(new ParameterizedTypeReference<DrsObject>() {})))
+        .thenAnswer(
+            a -> {
+              RequestEntity<DrsObject> request = a.getArgument(0);
+              var drsServerUrl =
+                  "https://" + drsHost + "/ga4gh/drs/v1/objects/" + effectiveObjectId;
+              if (request.getUrl().toString().equalsIgnoreCase(drsServerUrl)) {
+                return ResponseEntity.ok(drsObject);
+              } else {
+                return ResponseEntity.notFound();
+              }
+            });
 
     return mockDrsApi;
   }
