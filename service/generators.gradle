@@ -28,21 +28,27 @@ swaggerSources {
 
 	ga4gh {
 		inputFile = file('src/main/resources/vendor/data-repository-service-1.2.0.yaml')
-		code(makeClientCodeClosure('io.github.ga4gh.drs'))
+		code(makeClientCodeClosure('io.github.ga4gh.drs', true))
 	}
 
 	bond {
 		inputFile = file('src/main/resources/vendor/bond.yaml')
-		code(makeClientCodeClosure('bio.terra.bond'))
+		code(makeClientCodeClosure('bio.terra.bond', false))
 	}
 
 	sam {
 		inputFile = file('src/main/resources/vendor/sam.yaml')
-		code(makeClientCodeClosure('bio.terra.sam'))
+		code(makeClientCodeClosure('bio.terra.sam', false))
 	}
 }
 
-def makeClientCodeClosure(String id) {
+/**
+ * Creates a closure that configures swagger code generation for a client library.
+ * @param id The base package name for the generated client library
+ * @param useCustomTemplates If true, use the templates in src/main/resources/swaggercodegen
+ * @return The closure that configures swagger code generation
+ */
+def makeClientCodeClosure(String id, boolean useCustomTemplates) {
 	return () -> {
 		language = 'java'
 		library = 'resttemplate'
@@ -52,6 +58,9 @@ def makeClientCodeClosure(String id) {
 				modelDocs: false, modelTests: false
 		]
 
+		if (useCustomTemplates) {
+			templateDir = file("${projectDir}/src/main/resources/swaggercodegen")
+		}
 		additionalProperties = [
 				modelPackage  : "${id}.model",
 				apiPackage    : "${id}.api",
