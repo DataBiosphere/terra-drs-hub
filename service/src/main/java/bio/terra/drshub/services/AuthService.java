@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -40,6 +41,12 @@ public class AuthService {
   private final Map<String, Optional<List<String>>> passportCache =
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
 
+  private final Map<Pair<String, String>, SaKeyObject> serviceAccountKeyCache =
+      Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
+
+  private final Map<Pair<String, String>, Optional<List<String>>> fenceAccessTokenCache =
+      Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
+
   public AuthService(
       BondApiFactory bondApiFactory,
       DrsApiFactory drsApiFactory,
@@ -59,8 +66,14 @@ public class AuthService {
    * @return The SA key
    */
   public SaKeyObject fetchUserServiceAccount(DrsProvider drsProvider, BearerToken bearerToken) {
-    var bondApi = bondApiFactory.getApi(bearerToken);
-    return bondApi.getLinkSaKey(drsProvider.getBondProvider().orElseThrow().getUriValue());
+    var cacheKey =
+        Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
+    return serviceAccountKeyCache.computeIfAbsent(
+        cacheKey,
+        pair -> {
+          var bondApi = bondApiFactory.getApi(bearerToken);
+          return bondApi.getLinkSaKey(pair.getRight());
+        });
   }
 
   /**
@@ -213,17 +226,22 @@ public class AuthService {
   // Reach out to Bond and get the fence token for the user.
   private Optional<List<String>> getFenceAccessToken(
       String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
-    log.info(
-        "Requesting Bond access token for '{}' from '{}'",
-        drsUri,
-        drsProvider.getBondProvider().orElseThrow());
+    var cacheKey =
+        Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
+    return fenceAccessTokenCache.computeIfAbsent(
+        cacheKey,
+        pair -> {
+          log.info(
+              "Requesting Bond access token for '{}' from '{}'",
+              drsUri,
+              drsProvider.getBondProvider().orElseThrow());
 
-    var bondApi = bondApiFactory.getApi(bearerToken);
+          var bondApi = bondApiFactory.getApi(bearerToken);
 
-    var response =
-        bondApi.getLinkAccessToken(drsProvider.getBondProvider().orElseThrow().getUriValue());
+          var response = bondApi.getLinkAccessToken(pair.getRight());
 
-    return Optional.ofNullable(response.getToken()).map(List::of);
+          return Optional.ofNullable(response.getToken()).map(List::of);
+        });
   }
 
   /**
