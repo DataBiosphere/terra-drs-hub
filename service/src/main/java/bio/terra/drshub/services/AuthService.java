@@ -45,10 +45,11 @@ public class AuthService {
   // we need to reach out to Bond twice:
   //   1. Get the fence token
   //   2. Get the fence service account.
-  // These two caches, keyed on a combination of the user's bearer token and the Bond provider.
-  // This means that the cache entries are per-user and per-Bond provider. So, if a single user
-  // is making requests using two different auth providers from Bond, they will have 2 entries
-  // in the cache, one per provider.
+  // These two caches, keyed on a combination of the user's bearer token and the Bond provider,
+  // keep the responses from Bond around to keep us from making multiple redundant requests.
+  // The cache entries are per-user and per-Bond provider.
+  // So, if a single user is making requests using two different auth providers from Bond,
+  // they will have 2 entries in the cache, one per provider.
   private final Map<Pair<String, String>, SaKeyObject> serviceAccountKeyCache =
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
 
