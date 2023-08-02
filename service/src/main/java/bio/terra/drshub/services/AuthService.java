@@ -281,4 +281,11 @@ public class AuthService {
             .requesterPays(false);
     return samApi.signedUrlForBlob(requestBody, googleProject).replaceAll("(^\")|(\"$)", "");
   }
+
+  @VisibleForTesting
+  public void clearCaches() {
+    passportCache.clear();
+    serviceAccountKeyCache.clear();
+    fenceAccessTokenCache.clear();
+  }
 }

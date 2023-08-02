@@ -18,6 +18,7 @@ import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.BondProviderEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
@@ -47,6 +48,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,9 +80,15 @@ public class DrsHubApiControllerTest extends BaseTest {
   public static final String TDR_TEST_HOST = "jade.datarepo-dev.broadinstitute.org";
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private AuthService authService;
   @MockBean BondApiFactory bondApiFactory;
   @MockBean DrsApiFactory drsApiFactory;
   @MockBean ExternalCredsApiFactory externalCredsApiFactory;
+
+  @BeforeEach
+  void before() {
+    authService.clearCaches();
+  }
 
   @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassports() throws Exception {
