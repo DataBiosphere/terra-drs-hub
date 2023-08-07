@@ -78,12 +78,15 @@ public class AuthService {
     var cacheKey =
         Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
     if (serviceAccountKeyCache.containsKey(cacheKey)) {
-      log.info("Cache hit. Not fetching service account from DRS Provider '{}'", drsProvider.getName());
+      log.info(
+          "Cache hit. Not fetching service account from DRS Provider '{}'", drsProvider.getName());
     }
     return serviceAccountKeyCache.computeIfAbsent(
         cacheKey,
         pair -> {
-          log.info("Cache miss. Fetching fence service account from for DRS Provider '{}'", drsProvider.getName());
+          log.info(
+              "Cache miss. Fetching fence service account from for DRS Provider '{}'",
+              drsProvider.getName());
           var bondApi = bondApiFactory.getApi(bearerToken);
           return bondApi.getLinkSaKey(pair.getRight());
         });
@@ -242,7 +245,10 @@ public class AuthService {
     var cacheKey =
         Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
     if (fenceAccessTokenCache.containsKey(cacheKey)) {
-      log.info("Cache hit. Not fetching Bond access token for '{}' from '{}'", drsUri, drsProvider.getName());
+      log.info(
+          "Cache hit. Not fetching Bond access token for '{}' from '{}'",
+          drsUri,
+          drsProvider.getName());
     }
     return fenceAccessTokenCache.computeIfAbsent(
         cacheKey,
