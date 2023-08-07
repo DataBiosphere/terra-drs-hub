@@ -63,6 +63,9 @@ server:
     enabled: true
     mime-types: text/css,application/javascript
   port: 8080
+  tomcat:
+    threads:
+      max: ${TOMCAT_THREADS:200} # Tomcat defaults to 200 threads (https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.server.server.tomcat.threads.max)
 
 spring:
   application:
