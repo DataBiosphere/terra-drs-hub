@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.util.Apache4SslUtils;
 import nl.altindag.ssl.util.PemUtils;
@@ -23,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 
 @Service
+@Slf4j
 public class DrsApiFactory {
 
   private static final Integer CONNECTION_POOL_SIZE = 500;
@@ -34,6 +36,10 @@ public class DrsApiFactory {
     return factoryCache.computeIfAbsent(
         key,
         pair -> {
+          log.info(
+              "Creating new DrsApi client for host '{}', for DRS Provider '{}'",
+              pair.getLeft(),
+              pair.getRight());
           var mTlsConfig = drsProvider.getMTlsConfig();
           var drsClient =
               mTlsConfig == null
