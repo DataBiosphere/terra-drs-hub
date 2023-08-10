@@ -17,7 +17,9 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -98,7 +100,11 @@ public record SignedUrlService(
     var object =
         drsResolutionService.resolveDrsObject(
             dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip);
-    var gsUri = object.getGsUri();
-    return BlobId.fromGsUtilUri(gsUri);
+    try {
+      String gsUri = object.get(drsHubConfig.getPencilsDownSeconds(), TimeUnit.SECONDS).getGsUri();
+      return BlobId.fromGsUtilUri(gsUri);
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new DrsHubException("Could not resolve DRS Object", e);
+    }
   }
 }

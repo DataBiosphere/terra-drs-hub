@@ -57,6 +57,8 @@ drshub:
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure
+  pencilsDownSeconds: 58
+  asyncThreads: ${TOMCAT_MAX_THREADS:200}
 
 server:
   compression:
