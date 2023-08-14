@@ -10,6 +10,7 @@ import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.util.AsyncUtils;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -17,9 +18,7 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +30,8 @@ public record SignedUrlService(
     DrsProviderService drsProviderService,
     GoogleStorageService googleStorageService,
     DrsResolutionService drsResolutionService,
-    AuditLogger auditLogger) {
+    AuditLogger auditLogger,
+    AsyncUtils asyncUtils) {
 
   public URL getSignedUrl(
       String bucket,
@@ -97,14 +97,9 @@ public record SignedUrlService(
   }
 
   private BlobId getBlobIdFromDrsUri(String dataObjectUri, BearerToken bearerToken, String ip) {
-    var object =
+    var objectFuture =
         drsResolutionService.resolveDrsObject(
             dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip);
-    try {
-      String gsUri = object.get(drsHubConfig.getPencilsDownSeconds(), TimeUnit.SECONDS).getGsUri();
-      return BlobId.fromGsUtilUri(gsUri);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      throw new DrsHubException("Could not resolve DRS Object", e);
-    }
+    return asyncUtils.runAndCatch(objectFuture, result -> BlobId.fromGsUtilUri(result.getGsUri()));
   }
 }

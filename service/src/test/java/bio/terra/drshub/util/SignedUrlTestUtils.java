@@ -33,6 +33,7 @@ import java.security.Security;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -82,9 +83,10 @@ public class SignedUrlTestUtils {
       String bucketName,
       String objectName) {
     doReturn(
-            AnnotatedResourceMetadata.builder()
-                .build()
-                .gsUri("gs://" + bucketName + "/" + objectName))
+            CompletableFuture.completedFuture(
+                AnnotatedResourceMetadata.builder()
+                    .build()
+                    .gsUri("gs://" + bucketName + "/" + objectName)))
         .when(drsResolutionService)
         .resolveDrsObject(
             eq(drsUri), any(List.class), any(BearerToken.class), eq(true), nullable(String.class));
