@@ -103,6 +103,7 @@ class VerifyPactsDrsHubApiController {
     drsProvider.setMetadataAuth(false);
     drsProvider.setBondProvider(BondProviderEnum.anvil);
     drsProvider.setUseAliasesForLocalizationPath(true);
+    drsProvider.setName("AnVIL");
 
     var accessMethodConfig = ProviderAccessMethodConfig.create();
     accessMethodConfig.setAuth(AccessUrlAuthEnum.passport);
