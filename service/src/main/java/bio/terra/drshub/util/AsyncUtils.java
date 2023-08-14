@@ -8,9 +8,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public record AsyncUtils(DrsHubConfig drsHubConfig) {
 
   public <T, U> U runAndCatch(CompletableFuture<T> completableFuture, Function<T, U> mapper) {
@@ -19,7 +22,11 @@ public record AsyncUtils(DrsHubConfig drsHubConfig) {
       return mapper.apply(result);
     } catch (TimeoutException ex) {
       throw new ServiceUnavailableException(ex);
-    } catch (InterruptedException | ExecutionException ex) {
+    } catch (InterruptedException ex) {
+      log.error("Encountered an InterruptedException while executing an async task", ex);
+      Thread.currentThread().interrupt();
+    }
+    catch (ExecutionException ex) {
       var cause = ex.getCause();
       if (cause instanceof RuntimeException) {
         throw (RuntimeException) cause;
