@@ -90,6 +90,8 @@ class VerifyPactsDrsHubApiController {
 
   @State({"resolve Drs url"})
   public void resolveDrsUrl(Map<String, String> providerStateParams) throws Exception {
+    when(drsHubConfig.getPencilsDownSeconds()).thenReturn(1);
+
     when(authService.buildAuthorizations(any(), any(), any()))
         .thenReturn(
             List.of(
