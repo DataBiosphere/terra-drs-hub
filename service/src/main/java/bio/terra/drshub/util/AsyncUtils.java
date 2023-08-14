@@ -8,7 +8,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -25,11 +24,11 @@ public record AsyncUtils(DrsHubConfig drsHubConfig) {
     } catch (InterruptedException ex) {
       log.error("Encountered an InterruptedException while executing an async task", ex);
       Thread.currentThread().interrupt();
-    }
-    catch (ExecutionException ex) {
+      throw new DrsHubException(ex);
+    } catch (ExecutionException ex) {
       var cause = ex.getCause();
-      if (cause instanceof RuntimeException) {
-        throw (RuntimeException) cause;
+      if (cause instanceof RuntimeException runtimeException) {
+        throw runtimeException;
       } else {
         throw new DrsHubException(ex);
       }
