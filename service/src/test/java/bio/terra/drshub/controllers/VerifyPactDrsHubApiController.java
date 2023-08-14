@@ -23,6 +23,7 @@ import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.DrsProviderService;
 import bio.terra.drshub.services.DrsResolutionService;
+import bio.terra.drshub.util.AsyncUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
@@ -60,6 +61,7 @@ class VerifyPactsDrsHubApiController {
   @MockBean private AuditLogger auditLogger;
   @SpyBean private DrsResolutionService drsResolutionService;
   @SpyBean private DrsProviderService drsProviderService;
+  @SpyBean private AsyncUtils asyncUtils;
 
   @Autowired private ObjectMapper objectMapper;
 
