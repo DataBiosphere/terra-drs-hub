@@ -73,7 +73,8 @@ public class DrsResolutionService {
       List<String> rawRequestedFields,
       BearerToken bearerToken,
       Boolean forceAccessUrl,
-      String ip) {
+      String ip,
+      String googleProject) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -97,7 +98,8 @@ public class DrsResolutionService {
                       drsUri,
                       bearerToken,
                       forceAccessUrl,
-                      ip);
+                      ip,
+                      googleProject);
               return buildResponseObject(requestedFields, metadata, provider);
             },
             asyncExecutor);
@@ -110,7 +112,8 @@ public class DrsResolutionService {
       String drsUri,
       BearerToken bearerToken,
       boolean forceAccessUrl,
-      String ip) {
+      String ip,
+      String googleProject) {
 
     AuditLogEvent.Builder auditEventBuilder =
         new AuditLogEvent.Builder()
@@ -157,7 +160,8 @@ public class DrsResolutionService {
           uriComponents,
           auditEventBuilder,
           authorizations,
-          forceAccessUrl);
+          forceAccessUrl,
+          googleProject);
     }
 
     auditLogger.logEvent(
@@ -175,7 +179,8 @@ public class DrsResolutionService {
       UriComponents uriComponents,
       AuditLogEvent.Builder auditEventBuilder,
       List<DrsHubAuthorization> authorizations,
-      boolean forceAccessUrl) {
+      boolean forceAccessUrl,
+      String googleProject) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
     drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
@@ -191,7 +196,8 @@ public class DrsResolutionService {
                 accessId,
                 accessMethodType,
                 authorizations,
-                auditEventBuilder);
+                auditEventBuilder,
+                googleProject);
         drsMetadataBuilder.accessUrl(accessUrl);
       } catch (RuntimeException e) {
         auditLogger.logEvent(
@@ -241,11 +247,14 @@ public class DrsResolutionService {
       String accessId,
       TypeEnum accessMethodType,
       List<DrsHubAuthorization> drsHubAuthorizations,
-      AuditLogEvent.Builder auditLogEventBuilder) {
+      AuditLogEvent.Builder auditLogEventBuilder,
+      String googleProject) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
-
+    if (googleProject != null) {
+      drsApi.setHeader("x-user-project", googleProject);
+    }
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
           authorization.getAuthForAccessMethodType().apply(accessMethodType);

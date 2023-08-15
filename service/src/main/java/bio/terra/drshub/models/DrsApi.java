@@ -13,4 +13,8 @@ public class DrsApi extends ObjectsApi {
   public void setBearerToken(String bearerToken) {
     ((OAuth) this.getApiClient().getAuthentication("BearerAuth")).setAccessToken(bearerToken);
   }
+
+  public void setHeader(String name, String value) {
+    this.getApiClient().addDefaultHeader(name, value);
+  }
 }

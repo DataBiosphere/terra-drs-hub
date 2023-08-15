@@ -62,7 +62,7 @@ public class GcsApiControllerTest extends BaseTest {
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, drsUri, bucketName, objectName);
+        drsResolutionService, drsUri, bucketName, objectName, googleProject);
 
     var response = getSignedUrlRequest(TEST_ACCESS_TOKEN, null, null, drsUri, googleProject);
     response.andExpect(content().string(url.toString()));
@@ -72,7 +72,8 @@ public class GcsApiControllerTest extends BaseTest {
             eq(Fields.CORE_FIELDS),
             eq(new BearerToken(TEST_ACCESS_TOKEN)),
             eq(true),
-            eq(null));
+            eq(null),
+            eq(googleProject));
   }
 
   private ResultActions getSignedUrlRequest(
@@ -87,14 +88,15 @@ public class GcsApiControllerTest extends BaseTest {
       body.putAll(Map.of("bucket", bucketName, "object", objectName));
     }
     var requestBody = objectMapper.writeValueAsString(body);
-    return getSignedUrlRequestRaw(accessToken, requestBody);
+    return getSignedUrlRequestRaw(accessToken, requestBody, googleProject);
   }
 
-  private ResultActions getSignedUrlRequestRaw(String accessToken, String requestBody)
+  private ResultActions getSignedUrlRequestRaw(String accessToken, String requestBody, String googleProject)
       throws Exception {
     return mvc.perform(
         post("/api/v4/gcs/getSignedUrl")
             .header("authorization", "bearer " + accessToken)
+            .header("x-user-project", googleProject)
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
   }
