@@ -85,7 +85,7 @@ public class AuthService {
         cacheKey,
         pair -> {
           log.info(
-              "Cache miss. Fetching fence service account from for DRS Provider '{}'",
+              "Cache miss. Fetching fence service account from Bond for DRS Provider '{}'",
               drsProvider.getName());
           var bondApi = bondApiFactory.getApi(bearerToken);
           return bondApi.getLinkSaKey(pair.getRight());
