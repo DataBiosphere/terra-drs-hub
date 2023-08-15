@@ -10,6 +10,7 @@ import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.util.AsyncUtils;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -29,7 +30,8 @@ public record SignedUrlService(
     DrsProviderService drsProviderService,
     GoogleStorageService googleStorageService,
     DrsResolutionService drsResolutionService,
-    AuditLogger auditLogger) {
+    AuditLogger auditLogger,
+    AsyncUtils asyncUtils) {
 
   public URL getSignedUrl(
       String bucket,
@@ -96,12 +98,10 @@ public record SignedUrlService(
         blobInfo, duration.toMinutes(), TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
   }
 
-  private BlobId getBlobIdFromDrsUri(
-      String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
-    var object =
+  private BlobId getBlobIdFromDrsUri(String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
+    var objectFuture =
         drsResolutionService.resolveDrsObject(
             dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip, googleProject);
-    var gsUri = object.getGsUri();
-    return BlobId.fromGsUtilUri(gsUri);
+    return asyncUtils.runAndCatch(objectFuture, result -> BlobId.fromGsUtilUri(result.getGsUri()));
   }
 }

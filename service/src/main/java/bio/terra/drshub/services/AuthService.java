@@ -77,9 +77,16 @@ public class AuthService {
   public SaKeyObject fetchUserServiceAccount(DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
         Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
+    if (serviceAccountKeyCache.containsKey(cacheKey)) {
+      log.info(
+          "Cache hit. Not fetching service account from DRS Provider '{}'", drsProvider.getName());
+    }
     return serviceAccountKeyCache.computeIfAbsent(
         cacheKey,
         pair -> {
+          log.info(
+              "Cache miss. Fetching fence service account from Bond for DRS Provider '{}'",
+              drsProvider.getName());
           var bondApi = bondApiFactory.getApi(bearerToken);
           return bondApi.getLinkSaKey(pair.getRight());
         });
@@ -237,11 +244,17 @@ public class AuthService {
       String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
         Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
+    if (fenceAccessTokenCache.containsKey(cacheKey)) {
+      log.info(
+          "Cache hit. Not fetching Bond access token for '{}' from '{}'",
+          drsUri,
+          drsProvider.getName());
+    }
     return fenceAccessTokenCache.computeIfAbsent(
         cacheKey,
         pair -> {
           log.info(
-              "Requesting Bond access token for '{}' from '{}'",
+              "Fetching Bond access token for '{}' from '{}'",
               drsUri,
               drsProvider.getBondProvider().orElseThrow());
 
@@ -260,9 +273,13 @@ public class AuthService {
    * @return An Optional list of passports tied to the user.
    */
   public Optional<List<String>> fetchPassports(BearerToken bearerToken) {
+    if (passportCache.containsKey(bearerToken.getToken())) {
+      log.info("Cache hit. Not fetching passports from ECM");
+    }
     return passportCache.computeIfAbsent(
         bearerToken.getToken(),
         token -> {
+          log.info("Cache miss. Fetching passports from ECM");
           var ecmApi = externalCredsApiFactory.getApi(bearerToken.getToken());
           try {
             // For now, we are only getting a RAS passport. In the future it may also fetch from
@@ -288,6 +305,7 @@ public class AuthService {
             .bucketName(bucketName)
             .blobName(objectName)
             .requesterPays(false);
+    log.info("Fetching signed URL from Sam for 'gs://{}/{}'", bucketName, objectName);
     return samApi.signedUrlForBlob(requestBody, googleProject).replaceAll("(^\")|(\"$)", "");
   }
 

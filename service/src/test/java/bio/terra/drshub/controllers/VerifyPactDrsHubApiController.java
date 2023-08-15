@@ -23,6 +23,7 @@ import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.DrsProviderService;
 import bio.terra.drshub.services.DrsResolutionService;
+import bio.terra.drshub.util.AsyncUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessURL;
@@ -60,6 +61,7 @@ class VerifyPactsDrsHubApiController {
   @MockBean private AuditLogger auditLogger;
   @SpyBean private DrsResolutionService drsResolutionService;
   @SpyBean private DrsProviderService drsProviderService;
+  @SpyBean private AsyncUtils asyncUtils;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -88,6 +90,8 @@ class VerifyPactsDrsHubApiController {
 
   @State({"resolve Drs url"})
   public void resolveDrsUrl(Map<String, String> providerStateParams) throws Exception {
+    when(drsHubConfig.getPencilsDownSeconds()).thenReturn(1);
+
     when(authService.buildAuthorizations(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -103,6 +107,7 @@ class VerifyPactsDrsHubApiController {
     drsProvider.setMetadataAuth(false);
     drsProvider.setBondProvider(BondProviderEnum.anvil);
     drsProvider.setUseAliasesForLocalizationPath(true);
+    drsProvider.setName("AnVIL");
 
     var accessMethodConfig = ProviderAccessMethodConfig.create();
     accessMethodConfig.setAuth(AccessUrlAuthEnum.passport);

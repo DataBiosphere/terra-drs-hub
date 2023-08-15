@@ -26,4 +26,8 @@ public interface DrsHubConfigInterface {
   // is not set yet. Spring does not seem to recognize Optional.
   @Nullable
   VersionProperties getVersion();
+
+  Integer getPencilsDownSeconds();
+
+  Integer asyncThreads();
 }

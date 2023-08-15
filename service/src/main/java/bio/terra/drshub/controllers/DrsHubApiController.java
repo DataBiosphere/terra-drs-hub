@@ -7,6 +7,7 @@ import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsResolutionService;
+import bio.terra.drshub.util.AsyncUtils;
 import java.util.ArrayList;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
@@ -16,20 +17,12 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 @Slf4j
-public class DrsHubApiController implements DrsHubApi {
-
-  private final HttpServletRequest request;
-  private final DrsResolutionService drsResolutionService;
-  private final BearerTokenFactory bearerTokenFactory;
-
-  public DrsHubApiController(
-      HttpServletRequest request,
-      DrsResolutionService drsResolutionService,
-      BearerTokenFactory bearerTokenFactory) {
-    this.request = request;
-    this.drsResolutionService = drsResolutionService;
-    this.bearerTokenFactory = bearerTokenFactory;
-  }
+public record DrsHubApiController(
+    HttpServletRequest request,
+    DrsResolutionService drsResolutionService,
+    BearerTokenFactory bearerTokenFactory,
+    AsyncUtils asyncUtils)
+    implements DrsHubApi {
 
   @Override
   public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
@@ -42,12 +35,10 @@ public class DrsHubApiController implements DrsHubApi {
     var googleProject = request.getHeader("x-user-project");
 
     log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
-
-    var resourceMetadata =
+    return asyncUtils.runAndCatch(
         drsResolutionService.resolveDrsObject(
-            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl, ip, googleProject);
-
-    return ResponseEntity.ok(resourceMetadata);
+            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl, ip, googleProject),
+        ResponseEntity::ok);
   }
 
   private void validateRequest(RequestObject body) {

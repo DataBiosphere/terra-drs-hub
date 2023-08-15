@@ -19,23 +19,23 @@ public class DrsApiFactoryTest extends BaseTest {
   @Test
   void testMTlsConfigured() {
     var mTlsConfig = MTlsConfig.create().setCertPath("fake.crt").setKeyPath("fake.key");
-    var drsProvider = DrsProvider.create().setMTlsConfig(mTlsConfig);
+    var drsProvider = DrsProvider.create().setMTlsConfig(mTlsConfig).setName("testMtlsDrsProvider");
     var spy = spy(drsApiFactory);
 
     spy.getApiFromUriComponents(
         UriComponentsBuilder.newInstance().host("test").build(), drsProvider);
 
-    verify(spy).makeMTlsRestTemplate(mTlsConfig.getCertPath(), mTlsConfig.getKeyPath());
+    verify(spy).makeMTlsRestTemplateWithPooling(mTlsConfig.getCertPath(), mTlsConfig.getKeyPath());
   }
 
   @Test
   void testMTlsNotConfigured() {
-    var drsProvider = DrsProvider.create();
+    var drsProvider = DrsProvider.create().setName("testDrsProvider");
     var spy = spy(drsApiFactory);
 
     spy.getApiFromUriComponents(
         UriComponentsBuilder.newInstance().host("test").build(), drsProvider);
 
-    verify(spy, never()).makeMTlsRestTemplate(anyString(), anyString());
+    verify(spy, never()).makeMTlsRestTemplateWithPooling(anyString(), anyString());
   }
 }
