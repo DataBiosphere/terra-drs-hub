@@ -146,6 +146,8 @@ spring.config.activate.on-profile: dev
 drshub:
   compactIdHosts:
     "drs.anv0": jade.datarepo-dev.broadinstitute.org
+  bondUrl: https://bond.dsde-dev.broadinstitute.org
+
 ---
 # staging
 spring.config.activate.on-profile: staging
