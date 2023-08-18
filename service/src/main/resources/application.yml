@@ -1,7 +1,7 @@
 deploy_env: ${DEPLOY_ENV:dev} # since there's a default, define this once
 
 drshub:
-  bondUrl: https://broad-bond-${deploy_env}.appspot.com
+  bondUrl: https://bond.dsde-${deploy_env}.broadinstitute.org
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
