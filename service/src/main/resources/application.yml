@@ -160,3 +160,4 @@ spring.config.activate.on-profile: alpha
 drshub:
   compactIdHosts:
     "drs.anv0": data.alpha.envs-terra.bio
+  bondUrl: https://bond.dsde-alpha.broadinstitute.org
