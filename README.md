@@ -149,7 +149,7 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 ### Dev
 | Provider            | Compact Id (CIB)  | Host URI                                   |
 |---------------------|-------------------|--------------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | staging.theanvil.io                        |
+| AnVIL (gen3 hosted) | dg.anv0           | jade.datarepo-dev.broadinstitute.org       |
 | AnVIL (TDR hosted)  | drs.anv0          | jade.datarepo-dev.broadinstitute.org       |
 | BDC                 | dg.712c           | staging.gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc-staging.datacommons.io            |
@@ -159,7 +159,7 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 ### Alpha
 | Provider            | Compact Id (CIB)  | Host URI                                   |
 |---------------------|-------------------|--------------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | staging.theanvil.io                        |
+| AnVIL (gen3 hosted) | dg.anv0           | data.alpha.envs-terra.bio                  |
 | AnVIL (TDR hosted)  | drs.anv0          | data.alpha.envs-terra.bio                  |
 | BDC                 | dg.712c           | staging.gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc-staging.datacommons.io            |
@@ -170,7 +170,7 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 
 | Provider            | Compact Id (CIB)  | Host URI                                   |
 |---------------------|-------------------|--------------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | staging.theanvil.io                        |
+| AnVIL (gen3 hosted) | dg.anv0           | data.staging.envs-terra.bio                |
 | AnVIL (TDR hosted)  | drs.anv0          | data.staging.envs-terra.bio                |
 | BDC                 | dg.712c           | staging.gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc-staging.datacommons.io            |
@@ -181,7 +181,7 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 
 | Provider            | Compact Id (CIB)  | Host URI                           |
 |---------------------|-------------------|------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | gen3.theanvil.io                   |
+| AnVIL (gen3 hosted) | dg.anv0           | data.terra.bio                     |
 | AnVIL (TDR hosted)  | drs.anv0          | data.terra.bio                     |
 | BDC                 | dg.4503           | gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc.datacommons.io            |

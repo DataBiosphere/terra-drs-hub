@@ -135,7 +135,7 @@ spring.config.activate.on-profile: prod
 drshub:
   compactIdHosts:
     "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst
-    "dg.anv0": data.terra.bio # old anvil (now hosted on TDR)
+    "dg.anv0": data.terra.bio # old anvil (hosted on TDR)
     "drs.anv0": data.terra.bio # new anvil (hosted on TDR)
     "dg.4dfc": nci-crdc.datacommons.io # cancer research data commons
     "dg.f82a1a": data.kidsfirstdrc.org # kidsfirst
