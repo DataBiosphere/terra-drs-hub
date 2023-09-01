@@ -126,7 +126,6 @@ drshub:
   signedUrlDuration: 1h
   compactIdHosts:
     "dg.712c": staging.gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst staging
-    "dg.anv0": staging.theanvil.io # this is the old anvil CIB, the new one (drs.anv0) is set explicitly for each env
     "dg.4dfc": nci-crdc-staging.datacommons.io # cancer research data commons
     "dg.f82a1a": gen3staging.kidsfirstdrc.org # kidsfirst
     "dg.test0": ctds-test-env.planx-pla.net # passport test
@@ -136,7 +135,7 @@ spring.config.activate.on-profile: prod
 drshub:
   compactIdHosts:
     "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst
-    "dg.anv0": gen3.theanvil.io # old anvil
+    "dg.anv0": data.terra.bio # old anvil (hosted on TDR)
     "drs.anv0": data.terra.bio # new anvil (hosted on TDR)
     "dg.4dfc": nci-crdc.datacommons.io # cancer research data commons
     "dg.f82a1a": data.kidsfirstdrc.org # kidsfirst
@@ -146,15 +145,18 @@ spring.config.activate.on-profile: dev
 drshub:
   compactIdHosts:
     "drs.anv0": jade.datarepo-dev.broadinstitute.org
+    "dg.anv0": jade.datarepo-dev.broadinstitute.org
 ---
 # staging
 spring.config.activate.on-profile: staging
 drshub:
   compactIdHosts:
     "drs.anv0": data.staging.envs-terra.bio
+    "dg.anv0": data.staging.envs-terra.bio
 ---
 # alpha
 spring.config.activate.on-profile: alpha
 drshub:
   compactIdHosts:
     "drs.anv0": data.alpha.envs-terra.bio
+    "dg.anv0": data.alpha.envs-terra.bio

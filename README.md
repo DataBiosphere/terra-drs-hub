@@ -142,14 +142,14 @@ DrsHub runs in Kubernetes in GCP. Current deployments for each env can be found 
 Note: there are a few tricky cases with the **compact IDs (CID)**:
 - BioDataCatalyst uses the CIB `dg.4503` in production, and `dg.712c` in non-prod environments
 - The AnVIL currently has two CIBs in use
-  - `dg.anv0` for old gen3 hosted data
+  - `dg.anv0` for old gen3 and TDR hosted data
   - `drs.anv0` (note the **dg** vs **drs** prefix) for TDR hosted data, this will be used going forward
 - Most of these providers have only `prod` and `not prod` URIs, TDR is the only one that has specific URIs for each lower environment
 
 ### Dev
 | Provider            | Compact Id (CIB)  | Host URI                                   |
 |---------------------|-------------------|--------------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | staging.theanvil.io                        |
+| AnVIL (TDR hosted)  | dg.anv0           | jade.datarepo-dev.broadinstitute.org       |
 | AnVIL (TDR hosted)  | drs.anv0          | jade.datarepo-dev.broadinstitute.org       |
 | BDC                 | dg.712c           | staging.gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc-staging.datacommons.io            |
@@ -159,7 +159,7 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 ### Alpha
 | Provider            | Compact Id (CIB)  | Host URI                                   |
 |---------------------|-------------------|--------------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | staging.theanvil.io                        |
+| AnVIL (TDR hosted)  | dg.anv0           | data.alpha.envs-terra.bio                  |
 | AnVIL (TDR hosted)  | drs.anv0          | data.alpha.envs-terra.bio                  |
 | BDC                 | dg.712c           | staging.gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc-staging.datacommons.io            |
@@ -170,7 +170,7 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 
 | Provider            | Compact Id (CIB)  | Host URI                                   |
 |---------------------|-------------------|--------------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | staging.theanvil.io                        |
+| AnVIL (TDR hosted)  | dg.anv0           | data.staging.envs-terra.bio                |
 | AnVIL (TDR hosted)  | drs.anv0          | data.staging.envs-terra.bio                |
 | BDC                 | dg.712c           | staging.gen3.biodatacatalyst.nhlbi.nih.gov |
 | CRDC                | dg.4dfc           | nci-crdc-staging.datacommons.io            |
@@ -179,14 +179,14 @@ Note: there are a few tricky cases with the **compact IDs (CID)**:
 
 ### Prod
 
-| Provider            | Compact Id (CIB)  | Host URI                           |
-|---------------------|-------------------|------------------------------------|
-| AnVIL (gen3 hosted) | dg.anv0           | gen3.theanvil.io                   |
-| AnVIL (TDR hosted)  | drs.anv0          | data.terra.bio                     |
-| BDC                 | dg.4503           | gen3.biodatacatalyst.nhlbi.nih.gov |
-| CRDC                | dg.4dfc           | nci-crdc.datacommons.io            |
-| KidsFirst           | dg.f82a1a         | data.kidsfirstdrc.org              |
-| Passport Test       |                   |                                    |
+| Provider             | Compact Id (CIB)  | Host URI                           |
+|----------------------|-------------------|------------------------------------|
+| AnVIL (TDR hosted)   | dg.anv0           | data.terra.bio                     |
+| AnVIL (TDR hosted)   | drs.anv0          | data.terra.bio                     |
+| BDC                  | dg.4503           | gen3.biodatacatalyst.nhlbi.nih.gov |
+| CRDC                 | dg.4dfc           | nci-crdc.datacommons.io            |
+| KidsFirst            | dg.f82a1a         | data.kidsfirstdrc.org              |
+| Passport Test        |                   |                                    |
 
 ## SonarCloud Status
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=DataBiosphere_terra-drs-hub&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DataBiosphere_terra-drs-hub)
