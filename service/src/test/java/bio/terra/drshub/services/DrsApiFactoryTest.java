@@ -43,9 +43,8 @@ public class DrsApiFactoryTest extends BaseTest {
   void testIndependentApiClients() {
     var drsProvider = DrsProvider.create().setName("testDrsProvider");
     var client1 =
-        spy(
-            drsApiFactory.getApiFromUriComponents(
-                UriComponentsBuilder.newInstance().host("test").build(), drsProvider));
+        drsApiFactory.getApiFromUriComponents(
+            UriComponentsBuilder.newInstance().host("test").build(), drsProvider);
     var separateApiClient =
         spy(
             drsApiFactory
@@ -53,6 +52,6 @@ public class DrsApiFactoryTest extends BaseTest {
                     UriComponentsBuilder.newInstance().host("test").build(), drsProvider)
                 .getApiClient());
     client1.setHeader("test-header", "test-value");
-    verify(separateApiClient.addDefaultHeader(anyString(), anyString()), never());
+    verify(separateApiClient, never()).addDefaultHeader(anyString(), anyString());
   }
 }
