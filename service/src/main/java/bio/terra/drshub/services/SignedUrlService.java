@@ -98,7 +98,8 @@ public record SignedUrlService(
         blobInfo, duration.toMinutes(), TimeUnit.MINUTES, Storage.SignUrlOption.withV4Signature());
   }
 
-  private BlobId getBlobIdFromDrsUri(String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
+  private BlobId getBlobIdFromDrsUri(
+      String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
     var objectFuture =
         drsResolutionService.resolveDrsObject(
             dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip, googleProject);
