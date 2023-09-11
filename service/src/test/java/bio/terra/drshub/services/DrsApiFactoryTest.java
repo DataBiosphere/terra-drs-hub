@@ -38,4 +38,20 @@ public class DrsApiFactoryTest extends BaseTest {
 
     verify(spy, never()).makeMTlsRestTemplateWithPooling(anyString(), anyString());
   }
+
+  @Test
+  void testIndependentApiClients() {
+    var drsProvider = DrsProvider.create().setName("testDrsProvider");
+    var client1 =
+        drsApiFactory.getApiFromUriComponents(
+            UriComponentsBuilder.newInstance().host("test").build(), drsProvider);
+    var separateApiClient =
+        spy(
+            drsApiFactory
+                .getApiFromUriComponents(
+                    UriComponentsBuilder.newInstance().host("test").build(), drsProvider)
+                .getApiClient());
+    client1.setHeader("test-header", "test-value");
+    verify(separateApiClient, never()).addDefaultHeader(anyString(), anyString());
+  }
 }

@@ -3,15 +3,11 @@ package bio.terra.drshub.services;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.DrsApi;
 import io.github.ga4gh.drs.client.ApiClient;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.util.Apache4SslUtils;
 import nl.altindag.ssl.util.PemUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -28,33 +24,25 @@ import org.springframework.web.util.UriComponents;
 public class DrsApiFactory {
 
   private static final Integer CONNECTION_POOL_SIZE = 500;
-  private final Map<Pair<String, String>, DrsApi> factoryCache =
-      Collections.synchronizedMap(new HashMap<>());
 
   public DrsApi getApiFromUriComponents(UriComponents uriComponents, DrsProvider drsProvider) {
-    var key = Pair.of(uriComponents.getHost(), drsProvider.getName());
-    return factoryCache.computeIfAbsent(
-        key,
-        pair -> {
-          log.info(
-              "Creating new DrsApi client for host '{}', for DRS Provider '{}'",
-              pair.getLeft(),
-              pair.getRight());
-          var mTlsConfig = drsProvider.getMTlsConfig();
-          var drsClient =
-              mTlsConfig == null
-                  ? new ApiClient(makeRestTemplateWithPooling())
-                  : new ApiClient(
-                      makeMTlsRestTemplateWithPooling(
-                          mTlsConfig.getCertPath(), mTlsConfig.getKeyPath()));
+    log.info(
+        "Creating new DrsApi client for host '{}', for DRS Provider '{}'",
+        uriComponents.getHost(),
+        drsProvider.getName());
+    var mTlsConfig = drsProvider.getMTlsConfig();
+    var drsClient =
+        mTlsConfig == null
+            ? new ApiClient(makeRestTemplateWithPooling())
+            : new ApiClient(
+                makeMTlsRestTemplateWithPooling(mTlsConfig.getCertPath(), mTlsConfig.getKeyPath()));
 
-          drsClient.setBasePath(
-              drsClient
-                  .getBasePath()
-                  .replace("{serverURL}", Objects.requireNonNull(pair.getLeft())));
+    drsClient.setBasePath(
+        drsClient
+            .getBasePath()
+            .replace("{serverURL}", Objects.requireNonNull(uriComponents.getHost())));
 
-          return new DrsApi(drsClient);
-        });
+    return new DrsApi(drsClient);
   }
 
   RestTemplate makeRestTemplateWithPooling() {

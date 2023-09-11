@@ -91,8 +91,8 @@ public class GcsApiControllerTest extends BaseTest {
     return getSignedUrlRequestRaw(accessToken, requestBody, googleProject);
   }
 
-  private ResultActions getSignedUrlRequestRaw(String accessToken, String requestBody, String googleProject)
-      throws Exception {
+  private ResultActions getSignedUrlRequestRaw(
+      String accessToken, String requestBody, String googleProject) throws Exception {
     return mvc.perform(
         post("/api/v4/gcs/getSignedUrl")
             .header("authorization", "bearer " + accessToken)
