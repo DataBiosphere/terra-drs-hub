@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: Bard API
+  description: >-
+    A lightweight service to handle tracking user and api events in a compliant
+    manner
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /api/event:
+    post:
+      summary: Log a user event
+      tags: [ bard ]
+      description: >-
+        Records the event to a log and optionally forwards it to mixpanel.
+        Optionally takes an authorization token which must be verified with Sam.
+        If properties['pushToMixpanel'] is false, only log the event (the property defaults to true).
+        The logs will still get sent to BigQuery via a log sink.
+      operationId: event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: Event was logged successfully
+  /api/identify:
+    post:
+      summary: Merge two user id's
+      tags: [ bard ]
+      description: >-
+        Calls MixPanel's `$identify` endpoint to merge the included
+        distinct_ids. This merges the client generated id, used for anonymous,
+        non-authenticated metrics with the Bard auto-generated `distinct_id` to
+        link an anonymous session with a user. Requires an authorization token
+        that is verified with Sam
+      operationId: identify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Itentify'
+      responses:
+        '200':
+          description: Session was identified successfully
+  /api/syncProfile:
+    post:
+      summary: Update mixpanel profile
+      tags: [ bard ]
+      description: >-
+        Syncs profile info from orchestration to mixpanel. Requires an
+        authorization token, which pulls the corresponding profile from
+        Orchestration to sync into mixpanel
+      operationId: syncProfile
+      responses:
+        '200':
+          description: Profile was synced successfully
+  /status:
+    get:
+      summary: System status
+      tags: [ bard ]
+      operationId: status
+      responses:
+        '200':
+          description: Service is up and running
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Event:
+      type: object
+      properties:
+        event:
+          type: string
+        properties:
+          # Putting the body as an allOf coaxes the client to use a typed object that extents
+          # Map rather than a raw Map.
+          $ref: '#/components/schemas/EventProperties'
+      required:
+        - event
+        - properties
+    EventProperties:
+      type: object
+      properties:
+        # Note: there is a bug in the codegen that makes Jackson ignore these values.  In this
+        # repo we add a customer serializer to work around this issue.
+        # See bio.terra.drshub.services.BardApiFactory.EventPropertiesSerializer
+        appId:
+          type: string
+        pushToMixpanel:
+          type: boolean
+      additionalProperties:
+        type: object
+      required:
+        - appId
+    Itentify:
+      type: object
+      properties:
+        anonId:
+          type: string
+      required:
+        - anonId
+security:
+  - bearerAuth: []
