@@ -1,6 +1,7 @@
 deploy_env: ${DEPLOY_ENV:dev} # since there's a default, define this once
 
 drshub:
+  bardUrl: https://terra-bard-${deploy_env}.appspot.com
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
@@ -58,6 +59,7 @@ drshub:
           fetchAccessUrl: true # Used for Azure
   pencilsDownSeconds: 58
   asyncThreads: ${TOMCAT_MAX_THREADS:200}
+  trackInMixpanel: false
 
 server:
   compression:
