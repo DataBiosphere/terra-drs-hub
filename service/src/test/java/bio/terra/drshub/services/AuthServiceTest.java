@@ -15,7 +15,7 @@ import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.externalcreds.api.OidcApi;
 import bio.terra.sam.api.SamApi;
-import bio.terra.sam.model.ProjectSignedUrlForBlobBody;
+import bio.terra.sam.model.UserSignedUrlForBlobBody;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
 import java.util.List;
@@ -205,14 +205,14 @@ class AuthServiceTest extends BaseTest {
 
     when(samApiFactory.getApi(eq(bearerToken))).thenReturn(samApi);
     var body =
-        new ProjectSignedUrlForBlobBody()
+        new UserSignedUrlForBlobBody()
             .bucketName(bucketName)
             .blobName(objectName)
-            .requesterPays(false);
-    when(samApi.signedUrlForBlob(eq(body), eq(googleProject))).thenReturn("\"" + url + "\"");
+            .requesterPaysProject(googleProject);
+    when(samApi.signedUrlForBlob(eq(body))).thenReturn("\"" + url + "\"");
 
     var signedUrl =
-        authService.getSignedUrlForBlob(bearerToken, googleProject, bucketName, objectName);
+        authService.getSignedUrlForBlob(bearerToken, bucketName, objectName, googleProject);
     assertEquals(url, signedUrl);
   }
 }

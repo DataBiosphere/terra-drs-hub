@@ -73,7 +73,7 @@ public class SignedUrlTestUtils {
       URL url) {
 
     when(authService.getSignedUrlForBlob(
-            any(BearerToken.class), eq(googleProject), eq(bucketName), eq(objectName)))
+            any(BearerToken.class), eq(bucketName), eq(objectName), eq(googleProject)))
         .thenReturn(url.toString());
   }
 
@@ -95,7 +95,7 @@ public class SignedUrlTestUtils {
             any(BearerToken.class),
             eq(true),
             nullable(String.class),
-            nullable(String.class));
+            eq(googleProject));
   }
 
   public static String generateSaKeyObjectString()

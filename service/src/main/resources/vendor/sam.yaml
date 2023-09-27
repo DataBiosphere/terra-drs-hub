@@ -18,19 +18,11 @@ servers:
     description: Development
 
 paths:
-  /api/google/v1/user/petServiceAccount/{project}/signedUrlForBlob:
+  /api/google/v1/user/signedUrlForBlob:
     post:
-      summary: gets a signed url for a blob using the pet service account for the user in the provided project
+      summary: gets a signed url for a blob using the arbitrary pet service account for the user and an optional requester pays google project
       tags: [ sam ]
       operationId: signedUrlForBlob
-      parameters:
-        - name: project
-          in: path
-          required: true
-          description: The Google Project to get the Pet Service Account from for URL signing.
-          schema:
-            type: string
-            example: terra-abcd1234
       requestBody:
         required: true
         content:
@@ -51,10 +43,9 @@ paths:
                   type: number
                   description: Optional validity duration of the link in minutes. Defaults to 1 hour.
                   default: 60
-                requesterPays:
-                  type: boolean
-                  description: Use the pet service account project as the user project in the request.
-                  default: true
+                requesterPaysProject:
+                  type: string
+                  description: Optional Google Project to bill for requester pays objects
       responses:
         200:
           description: signed URL for the blob, signed by the Pet Service Account key
@@ -85,10 +76,9 @@ components:
                 type: number
                 description: Optional validity duration of the link in minutes. Defaults to 1 hour.
                 default: 60
-              requesterPays:
-                type: boolean
-                description: Use the pet service account project as the user project in the request.
-                default: true
+              requesterPaysProject:
+                type: string
+                description: Optional Google Project to bill for requester pays objects
   securitySchemes:
     authorization:
       type: oauth2
