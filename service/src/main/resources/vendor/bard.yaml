@@ -43,7 +43,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Itentify'
+              $ref: '#/components/schemas/Identify'
       responses:
         '200':
           description: Session was identified successfully
@@ -99,7 +99,7 @@ components:
         type: object
       required:
         - appId
-    Itentify:
+    Identify:
       type: object
       properties:
         anonId:

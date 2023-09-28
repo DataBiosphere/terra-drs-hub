@@ -55,6 +55,7 @@ public record TrackingInterceptor(
 
       properties.putAll(readBody(request));
 
+      // There are all the known headers that are potentially sent to DRSHub that we want to track
       addToPropertiesIfPresentInHeader(request, properties, "x-user-project", "userProject");
       addToPropertiesIfPresentInHeader(request, properties, "X-Forwarded-For", "ip");
       addToPropertiesIfPresentInHeader(
