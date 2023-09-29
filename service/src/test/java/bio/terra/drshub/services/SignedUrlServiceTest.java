@@ -81,7 +81,7 @@ public class SignedUrlServiceTest extends BaseTest {
   void testFailsToParseInvalidURLsFromSam() {
 
     when(authService.getSignedUrlForBlob(
-            any(BearerToken.class), any(String.class), any(String.class), any(String.class)))
+            any(BearerToken.class), any(String.class), any(String.class)))
         .thenReturn("not_a_valid_url");
 
     var drsUri = "drs://drs.anv0:1234/456/2315asd";

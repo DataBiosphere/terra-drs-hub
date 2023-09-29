@@ -55,7 +55,8 @@ public record SignedUrlService(
 
     if (drsProvider.getAccessMethodByType(AccessMethod.TypeEnum.GS).getAuth()
         == AccessUrlAuthEnum.current_request) {
-      return getSignedUrlFromSam(bearerToken, bucket, objectName, googleProject);
+      return getSignedUrlFromSam(
+          bearerToken, String.format("gs://%s/%s", bucket, objectName), googleProject);
     } else {
       return getSignedUrlFromDrsProvider(
           bearerToken, drsProvider, googleProject, bucket, objectName, dataObjectUri, ip);
@@ -63,10 +64,9 @@ public record SignedUrlService(
   }
 
   private URL getSignedUrlFromSam(
-      BearerToken bearerToken, String bucketName, String blobName, String requesterPaysProject) {
+      BearerToken bearerToken, String gsPath, String requesterPaysProject) {
     try {
-      return new URL(
-          authService.getSignedUrlForBlob(bearerToken, bucketName, blobName, requesterPaysProject));
+      return new URL(authService.getSignedUrlForBlob(bearerToken, gsPath, requesterPaysProject));
     } catch (MalformedURLException ex) {
       throw new DrsHubException("Could not parse signed URL from Sam", ex);
     }

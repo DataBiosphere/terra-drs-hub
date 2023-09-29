@@ -298,14 +298,11 @@ public class AuthService {
   }
 
   public String getSignedUrlForBlob(
-      BearerToken bearerToken, String bucketName, String objectName, String requesterPaysProject) {
+      BearerToken bearerToken, String gsPath, String requesterPaysProject) {
     var samApi = samApiFactory.getApi(bearerToken);
     var requestBody =
-        new UserSignedUrlForBlobBody()
-            .bucketName(bucketName)
-            .blobName(objectName)
-            .requesterPaysProject(requesterPaysProject);
-    log.info("Fetching signed URL from Sam for 'gs://{}/{}'", bucketName, objectName);
+        new UserSignedUrlForBlobBody().gsPath(gsPath).requesterPaysProject(requesterPaysProject);
+    log.info("Fetching signed URL from Sam for '{}'", gsPath);
     return samApi.signedUrlForBlob(requestBody).replaceAll("(^\")|(\"$)", "");
   }
 

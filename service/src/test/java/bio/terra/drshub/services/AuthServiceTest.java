@@ -199,20 +199,16 @@ class AuthServiceTest extends BaseTest {
   public void testSamSignsGsUrls() {
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
+    var gsPath = "gs://" + bucketName + "/" + objectName;
     var googleProject = "test-google-project";
     var url = "https://storage.cloud.google.com" + "/" + bucketName + "/" + objectName;
     var bearerToken = new BearerToken("12345");
 
     when(samApiFactory.getApi(eq(bearerToken))).thenReturn(samApi);
-    var body =
-        new UserSignedUrlForBlobBody()
-            .bucketName(bucketName)
-            .blobName(objectName)
-            .requesterPaysProject(googleProject);
+    var body = new UserSignedUrlForBlobBody().gsPath(gsPath).requesterPaysProject(googleProject);
     when(samApi.signedUrlForBlob(eq(body))).thenReturn("\"" + url + "\"");
 
-    var signedUrl =
-        authService.getSignedUrlForBlob(bearerToken, bucketName, objectName, googleProject);
+    var signedUrl = authService.getSignedUrlForBlob(bearerToken, gsPath, googleProject);
     assertEquals(url, signedUrl);
   }
 }
