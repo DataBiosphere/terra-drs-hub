@@ -75,8 +75,9 @@ dependencies {
 		exclude group: 'com.vaadin.external.google', module: 'android-json'
 	}
 
-	testImplementation("au.com.dius.pact.provider:junit5:4.1.7")
+	testImplementation('au.com.dius.pact.provider:junit5:4.1.7')
 	testImplementation('au.com.dius.pact.provider:junit5spring:4.1.7')
+	testImplementation('org.awaitility:awaitility:4.2.0')
 }
 
 sonarqube {

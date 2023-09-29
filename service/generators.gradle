@@ -31,6 +31,11 @@ swaggerSources {
 		code(makeClientCodeClosure('io.github.ga4gh.drs', true))
 	}
 
+	bard {
+		inputFile = file('src/main/resources/vendor/bard.yaml')
+		code(makeClientCodeClosure('bio.terra.bard', false))
+	}
+
 	bond {
 		inputFile = file('src/main/resources/vendor/bond.yaml')
 		code(makeClientCodeClosure('bio.terra.bond', false))
@@ -75,6 +80,7 @@ Set<String> swaggerSourcePaths = [
 		"${swaggerSources.ga4gh.code.outputDir}/src/main/java",
 		"${swaggerSources.bond.code.outputDir}/src/main/java",
 		"${swaggerSources.sam.code.outputDir}/src/main/java",
+		"${swaggerSources.bard.code.outputDir}/src/main/java",
 ]
 
 

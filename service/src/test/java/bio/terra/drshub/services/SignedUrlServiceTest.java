@@ -70,7 +70,7 @@ public class SignedUrlServiceTest extends BaseTest {
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, drsUri, bucketName, objectName, googleProject);
+        drsResolutionService, drsUri, bucketName, objectName, googleProject, true);
     var signedUrl =
         signedUrlService.getSignedUrl(
             null, null, drsUri, googleProject, new BearerToken("12345"), "127.0.0.1");

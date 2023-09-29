@@ -82,10 +82,12 @@ public class SignedUrlTestUtils {
       String drsUri,
       String bucketName,
       String objectName,
-      String googleProject) {
+      String googleProject,
+      boolean forceAccessUrl) {
     doReturn(
             CompletableFuture.completedFuture(
                 AnnotatedResourceMetadata.builder()
+                    .requestedFields(List.of())
                     .build()
                     .gsUri("gs://" + bucketName + "/" + objectName)))
         .when(drsResolutionService)
@@ -93,7 +95,7 @@ public class SignedUrlTestUtils {
             eq(drsUri),
             any(List.class),
             any(BearerToken.class),
-            eq(true),
+            eq(forceAccessUrl),
             nullable(String.class),
             eq(googleProject));
   }

@@ -7,6 +7,7 @@ import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsResolutionService;
+import bio.terra.drshub.tracking.TrackCall;
 import bio.terra.drshub.util.AsyncUtils;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -25,6 +26,7 @@ public record DrsHubApiController(
     implements DrsHubApi {
 
   @Override
+  @TrackCall
   public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
     var bearerToken = bearerTokenFactory.from(request);
     validateRequest(body);
