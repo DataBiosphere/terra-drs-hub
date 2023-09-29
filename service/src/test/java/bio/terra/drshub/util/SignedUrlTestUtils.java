@@ -97,7 +97,7 @@ public class SignedUrlTestUtils {
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),
-            eq(googleProject));
+            nullable(String.class));
   }
 
   public static String generateSaKeyObjectString()
