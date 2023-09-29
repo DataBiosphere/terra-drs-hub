@@ -4,6 +4,7 @@ import bio.terra.common.iam.BearerTokenFactory;
 import bio.terra.drshub.generated.api.GcsApi;
 import bio.terra.drshub.generated.model.GetSignedUrlRequest;
 import bio.terra.drshub.services.SignedUrlService;
+import bio.terra.drshub.tracking.TrackCall;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class GcsApiController implements GcsApi {
   }
 
   @Override
+  @TrackCall
   public ResponseEntity<String> getSignedUrl(GetSignedUrlRequest body) {
     var bearerToken = bearerTokenFactory.from(request);
     var ip = request.getHeader("X-Forwarded-For");

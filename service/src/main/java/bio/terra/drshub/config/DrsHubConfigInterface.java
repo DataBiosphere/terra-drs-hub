@@ -9,6 +9,8 @@ import org.immutables.value.Value;
 @PropertiesInterfaceStyle
 public interface DrsHubConfigInterface {
 
+  String getBardUrl();
+
   String getBondUrl();
 
   String getSamUrl();
@@ -30,4 +32,8 @@ public interface DrsHubConfigInterface {
   Integer getPencilsDownSeconds();
 
   Integer asyncThreads();
+
+  // If this is true, then we will track calls to the Bard API in MixPanel in addition to the
+  // BigQuery Data warehouse.
+  Boolean trackInMixPanel();
 }
