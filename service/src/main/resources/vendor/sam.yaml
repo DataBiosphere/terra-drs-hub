@@ -20,7 +20,7 @@ servers:
 paths:
   /api/google/v1/user/signedUrlForBlob:
     post:
-      summary: gets a signed url for a blob using the arbitrary pet service account for the user and an optional requester pays google project
+      summary: gets a signed url for a blob using an optional requester pays google project
       tags: [ sam ]
       operationId: signedUrlForBlob
       requestBody:
@@ -30,8 +30,7 @@ paths:
             schema:
               type: object
               required:
-                - bucketName
-                - blobName
+                - gsPath
               properties:
                 gsPath:
                   type: string
@@ -45,7 +44,7 @@ paths:
                   description: Optional Google Project to bill for requester pays objects
       responses:
         200:
-          description: signed URL for the blob, signed by the Pet Service Account key
+          description: signed URL for the blob
           content:
             application/json:
               schema:
@@ -60,8 +59,7 @@ components:
           schema:
             type: object
             required:
-              - bucketName
-              - blobName
+              - gsPath
             properties:
               gsPath:
                 type: string
