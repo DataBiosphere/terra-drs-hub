@@ -6,7 +6,7 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
-import bio.terra.sam.model.ProjectSignedUrlForBlobBody;
+import bio.terra.sam.model.UserSignedUrlForBlobBody;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
@@ -298,15 +298,12 @@ public class AuthService {
   }
 
   public String getSignedUrlForBlob(
-      BearerToken bearerToken, String googleProject, String bucketName, String objectName) {
+      BearerToken bearerToken, String gsPath, String requesterPaysProject) {
     var samApi = samApiFactory.getApi(bearerToken);
     var requestBody =
-        new ProjectSignedUrlForBlobBody()
-            .bucketName(bucketName)
-            .blobName(objectName)
-            .requesterPays(false);
-    log.info("Fetching signed URL from Sam for 'gs://{}/{}'", bucketName, objectName);
-    return samApi.signedUrlForBlob(requestBody, googleProject).replaceAll("(^\")|(\"$)", "");
+        new UserSignedUrlForBlobBody().gsPath(gsPath).requesterPaysProject(requesterPaysProject);
+    log.info("Fetching signed URL from Sam for '{}'", gsPath);
+    return samApi.signedUrlForBlob(requestBody).replaceAll("(^\")|(\"$)", "");
   }
 
   @VisibleForTesting

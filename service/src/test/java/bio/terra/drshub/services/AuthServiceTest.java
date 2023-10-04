@@ -15,7 +15,7 @@ import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.externalcreds.api.OidcApi;
 import bio.terra.sam.api.SamApi;
-import bio.terra.sam.model.ProjectSignedUrlForBlobBody;
+import bio.terra.sam.model.UserSignedUrlForBlobBody;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
 import java.util.List;
@@ -199,20 +199,16 @@ class AuthServiceTest extends BaseTest {
   public void testSamSignsGsUrls() {
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
+    var gsPath = "gs://" + bucketName + "/" + objectName;
     var googleProject = "test-google-project";
     var url = "https://storage.cloud.google.com" + "/" + bucketName + "/" + objectName;
     var bearerToken = new BearerToken("12345");
 
     when(samApiFactory.getApi(eq(bearerToken))).thenReturn(samApi);
-    var body =
-        new ProjectSignedUrlForBlobBody()
-            .bucketName(bucketName)
-            .blobName(objectName)
-            .requesterPays(false);
-    when(samApi.signedUrlForBlob(eq(body), eq(googleProject))).thenReturn("\"" + url + "\"");
+    var body = new UserSignedUrlForBlobBody().gsPath(gsPath).requesterPaysProject(googleProject);
+    when(samApi.signedUrlForBlob(eq(body))).thenReturn("\"" + url + "\"");
 
-    var signedUrl =
-        authService.getSignedUrlForBlob(bearerToken, googleProject, bucketName, objectName);
+    var signedUrl = authService.getSignedUrlForBlob(bearerToken, gsPath, googleProject);
     assertEquals(url, signedUrl);
   }
 }

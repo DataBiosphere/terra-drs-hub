@@ -72,8 +72,8 @@ public class SignedUrlTestUtils {
       String objectName,
       URL url) {
 
-    when(authService.getSignedUrlForBlob(
-            any(BearerToken.class), eq(googleProject), eq(bucketName), eq(objectName)))
+    var gsPath = String.format("gs://%s/%s", bucketName, objectName);
+    when(authService.getSignedUrlForBlob(any(BearerToken.class), eq(gsPath), eq(googleProject)))
         .thenReturn(url.toString());
   }
 
