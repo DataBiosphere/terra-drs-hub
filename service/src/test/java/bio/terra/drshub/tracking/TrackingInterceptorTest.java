@@ -58,17 +58,7 @@ class TrackingInterceptorTest extends BaseTest {
         .logEvent(
             TEST_BEARER_TOKEN,
             EVENT_NAME,
-            Map.of(
-                "statusCode",
-                200,
-                "requestUrl",
-                url,
-                "url",
-                DRS_URI,
-                "fields",
-                List.of(),
-                "ip",
-                TEST_IP_ADDRESS));
+            Map.of("statusCode", 200, "requestUrl", url, "url", DRS_URI, "fields", List.of()));
   }
 
   @Test
