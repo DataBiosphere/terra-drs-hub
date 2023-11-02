@@ -220,11 +220,10 @@ public class DrsResolutionService {
     var sendMetadataAuth = drsProvider.isMetadataAuth();
 
     var objectId = getObjectId(uriComponents);
-    log.info(
-        "Requesting DRS metadata for {} with auth required {} from host {}",
-        drsUri,
-        sendMetadataAuth,
-        uriComponents.getHost());
+    String drsRequestLogMessage =
+        "Requesting DRS metadata for %s with auth required %s from host %s"
+            .formatted(drsUri, sendMetadataAuth, uriComponents.getHost());
+    log.info(drsRequestLogMessage);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     if (sendMetadataAuth) {
@@ -233,8 +232,16 @@ public class DrsResolutionService {
       drsApi.setBearerToken(bearerToken.getToken());
       if (authorizations.stream()
           .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
-        Optional<List<String>> passports = authService.fetchPassports(bearerToken);
-        return drsApi.postObject(Map.of("passports", passports.orElse(List.of(""))), objectId);
+        List<String> passports = authService.fetchPassports(bearerToken).orElse(List.of());
+        if (!passports.isEmpty()) {
+          try {
+            return drsApi.postObject(Map.of("passports", passports), objectId);
+          } catch (Exception ex) {
+            // We are catching a general exception to ensure that we fall back to getting the object
+            // via bearer token in case of any failure
+            log.warn(drsRequestLogMessage + " failed via passport, using bearer token", ex);
+          }
+        }
       }
     }
 
