@@ -13,6 +13,7 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
@@ -211,7 +212,8 @@ public class DrsResolutionService {
     }
   }
 
-  private DrsObject fetchObjectInfo(
+  @VisibleForTesting
+  DrsObject fetchObjectInfo(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String drsUri,
