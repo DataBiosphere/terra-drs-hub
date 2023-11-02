@@ -136,6 +136,9 @@ DrsHub runs in Kubernetes in GCP. Current deployments for each env can be found 
 - Staging
   - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-staging/terra-staging/drshub-deployment/overview?project=broad-dsde-staging)
   - [Swagger UI](https://drshub.dsde-staging.broadinstitute.org/)
+- Production
+  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-prod/terra-prod/drshub-deployment/overview?project=broad-dsde-prod)
+  - [Swagger UI](https://drshub.dsde-prod.broadinstitute.org/)
 
 ### DRS Provider Compact ID/URIs per Environment
 
