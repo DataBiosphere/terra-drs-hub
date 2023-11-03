@@ -80,10 +80,13 @@ Some architecture diagrams can be found in [LucidChart](https://lucid.app/docume
 ### Setup
 Install Java 17 SDK from your preferred provider. A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/).
 
-If developing in IntelliJ, you can just configure the Project SDK to use Java 17.
+If developing in IntelliJ, you can configure the Project SDK to use Java 17.
 You'll also need to set the Gradle JVM, located at `Preferences | Build, Execution, Deployment | Build Tools | Gradle`.
 
-You must use [git-secrets](https://github.com/awslabs/git-secrets). You should be doing this anyway for all of your repositories.
+You must use [git-secrets](https://github.com/awslabs/git-secrets) to protect against committing passwords
+or other sensitive information ot this repository.  The linked repository gives instructions for
+installing and setting it up.
+
 DrsHub uses [Minnie Kenny](https://minnie-kenny.readthedocs.io/en/latest/), and is configured to run `minnie_kenny.sh` on `./gradlew test` tasks, ensuring that git-secrets is set up.
 You can also run it manually to make sure `git-secrets` is set up without testing.
 
@@ -93,7 +96,7 @@ DrsHub uses Gradle as a build tool. Some common Gradle commands you may want to 
 ```shell
 ./gradlew generateSwaggerCode # Generate Swagger code for models and Swagger UI
 ./gradlew bootRun # Run DrsHub locally (Swagger UI at localhost:8080)
-./gradlew unitTest # Run the unit tests
+./gradlew test # Run the unit tests
 ./gradlew jib # Build the DrsHub Docker image
 ```
 
@@ -136,6 +139,9 @@ DrsHub runs in Kubernetes in GCP. Current deployments for each env can be found 
 - Staging
   - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-staging/terra-staging/drshub-deployment/overview?project=broad-dsde-staging)
   - [Swagger UI](https://drshub.dsde-staging.broadinstitute.org/)
+- Production
+  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-prod/terra-prod/drshub-deployment/overview?project=broad-dsde-prod)
+  - [Swagger UI](https://drshub.dsde-prod.broadinstitute.org/)
 
 ### DRS Provider Compact ID/URIs per Environment
 
