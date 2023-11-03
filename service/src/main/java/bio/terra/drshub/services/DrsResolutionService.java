@@ -234,15 +234,15 @@ public class DrsResolutionService {
       drsApi.setBearerToken(bearerToken.getToken());
       if (authorizations.stream()
           .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
-        List<String> passports = authService.fetchPassports(bearerToken).orElse(List.of());
-        if (!passports.isEmpty()) {
-          try {
+        try {
+          List<String> passports = authService.fetchPassports(bearerToken).orElse(List.of());
+          if (!passports.isEmpty()) {
             return drsApi.postObject(Map.of("passports", passports), objectId);
-          } catch (Exception ex) {
-            // We are catching a general exception to ensure that we fall back to getting the object
-            // via bearer token in case of any failure
-            log.warn(drsRequestLogMessage + " failed via passport, using bearer token", ex);
           }
+        } catch (Exception ex) {
+          // We are catching a general exception to ensure that we fall back to getting the object
+          // via bearer token in case of any failure
+          log.warn(drsRequestLogMessage + " failed via passport, using bearer token", ex);
         }
       }
     }

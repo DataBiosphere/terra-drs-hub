@@ -112,6 +112,27 @@ class DrsResolutionServiceTest {
         equalTo(DRS_OBJECT));
   }
 
+  @Test
+  void fetchObjectInfo_passportFetchThrows() {
+    when(authService.fetchPassports(TOKEN)).thenThrow(RuntimeException.class);
+    when(drsApi.getObject(PATH, null)).thenReturn(DRS_OBJECT);
+
+    var actual =
+        drsResolutionService.fetchObjectInfo(
+            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH, PASSPORTAUTH));
+
+    // When authorization is required, we pass the bearer token to the API.
+    verify(drsApi).setBearerToken(TOKEN.getToken());
+    // When RAS passports are a supported means of authorization, we try to obtain them.
+    verify(authService).fetchPassports(TOKEN);
+    verify(drsApi, never()).postObject(any(), any());
+
+    assertThat(
+        "Object fetched via getObject with token when passport fetch throws",
+        actual,
+        equalTo(DRS_OBJECT));
+  }
+
   private static Stream<Arguments> fetchObjectInfo_passportUnavailable() {
     return Stream.of(Arguments.arguments(Optional.empty(), Optional.of(List.of())));
   }
