@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.generated.model.RequestObject.ResolveFromEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsResolutionService;
@@ -93,6 +94,7 @@ public class SignedUrlTestUtils {
         .when(drsResolutionService)
         .resolveDrsObject(
             eq(drsUri),
+            eq(ResolveFromEnum.GS),
             any(List.class),
             any(BearerToken.class),
             eq(forceAccessUrl),
