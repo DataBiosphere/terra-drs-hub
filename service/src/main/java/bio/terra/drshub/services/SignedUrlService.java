@@ -5,6 +5,7 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.generated.model.RequestObject.ResolveFromEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -102,7 +103,13 @@ public record SignedUrlService(
       String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
     var objectFuture =
         drsResolutionService.resolveDrsObject(
-            dataObjectUri, Fields.CORE_FIELDS, bearerToken, true, ip, googleProject);
+            dataObjectUri,
+            ResolveFromEnum.GS,
+            Fields.CORE_FIELDS,
+            bearerToken,
+            true,
+            ip,
+            googleProject);
     return asyncUtils.runAndCatch(objectFuture, result -> BlobId.fromGsUtilUri(result.getGsUri()));
   }
 }

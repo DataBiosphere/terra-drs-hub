@@ -6,6 +6,7 @@ import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
+import bio.terra.drshub.generated.model.RequestObject.ResolveFromEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -21,6 +22,7 @@ import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +72,7 @@ public class DrsResolutionService {
   @Async("asyncExecutor")
   public CompletableFuture<AnnotatedResourceMetadata> resolveDrsObject(
       String drsUri,
+      ResolveFromEnum resolveFrom,
       List<String> rawRequestedFields,
       BearerToken bearerToken,
       Boolean forceAccessUrl,
@@ -93,6 +96,7 @@ public class DrsResolutionService {
               var metadata =
                   fetchObject(
                       provider,
+                      resolveFrom,
                       requestedFields,
                       uriComponents,
                       drsUri,
@@ -107,6 +111,7 @@ public class DrsResolutionService {
 
   private DrsMetadata fetchObject(
       DrsProvider drsProvider,
+      ResolveFromEnum resolveFrom,
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
@@ -141,27 +146,19 @@ public class DrsResolutionService {
     var drsMetadataBuilder = new DrsMetadata.Builder();
     drsMetadataBuilder.drsResponse(drsResponse);
 
-    var accessMethod = getAccessMethod(drsResponse, drsProvider);
-    var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
-
-    if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
-      var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
-      drsMetadataBuilder.bondSaKey(saKey);
-    }
-
     if (drsResponse != null) {
       setDrsResponseValues(
           drsMetadataBuilder,
           drsResponse,
           drsProvider,
-          accessMethod,
-          accessMethodType,
           requestedFields,
           uriComponents,
           auditEventBuilder,
           authorizations,
+          bearerToken,
           forceAccessUrl,
-          googleProject);
+          googleProject,
+          resolveFrom);
     }
 
     auditLogger.logEvent(
@@ -173,17 +170,42 @@ public class DrsResolutionService {
       DrsMetadata.Builder drsMetadataBuilder,
       DrsObject drsResponse,
       DrsProvider drsProvider,
-      Optional<AccessMethod> accessMethod,
-      TypeEnum accessMethodType,
       List<String> requestedFields,
       UriComponents uriComponents,
       AuditLogEvent.Builder auditEventBuilder,
       List<DrsHubAuthorization> authorizations,
+      BearerToken bearerToken,
       boolean forceAccessUrl,
-      String googleProject) {
+      String googleProject,
+      ResolveFromEnum resolveFrom) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
     drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
+
+    Optional<AccessMethod> accessMethod;
+    List<AccessMethod> accessMethods = getAccessMethods(drsResponse, drsProvider);
+    if (resolveFrom != null) {
+      if (resolveFrom.equals(ResolveFromEnum.AZURE)) {
+        accessMethod =
+            accessMethods.stream()
+                .filter(m -> m.getAccessId() != null)
+                .filter(m -> m.getAccessId().startsWith("az"))
+                .findFirst();
+      } else {
+        accessMethod =
+            accessMethods.stream()
+                .filter(m -> m.getType().toString().equals(resolveFrom.toString()))
+                .findFirst();
+      }
+    } else {
+      accessMethod = getAccessMethod(drsResponse, drsProvider);
+    }
+    var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
+
+    if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
+      var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
+      drsMetadataBuilder.bondSaKey(saKey);
+    }
 
     if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
       var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
@@ -315,6 +337,20 @@ public class DrsResolutionService {
       }
     }
     return Optional.empty();
+  }
+
+  private List<AccessMethod> getAccessMethods(DrsObject drsResponse, DrsProvider drsProvider) {
+    ArrayList<AccessMethod> accessMethods = new ArrayList<>();
+    if (!isEmpty(drsResponse)) {
+      for (var methodConfig : drsProvider.getAccessMethodConfigs()) {
+        var matchingMethod =
+            drsResponse.getAccessMethods().stream()
+                .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType())
+                .toList();
+        accessMethods.addAll(matchingMethod);
+      }
+    }
+    return accessMethods;
   }
 
   /**
