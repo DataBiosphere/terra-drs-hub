@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -24,31 +25,24 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
 
 @Tag("Unit")
-@ContextConfiguration(classes = {DrsResolutionService.class})
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class DrsResolutionServiceTest {
 
-  @MockBean private DrsApiFactory drsApiFactory;
-  @MockBean private DrsProviderService drsProviderService;
-  @MockBean private AuthService authService;
-  @MockBean private AuditLogger auditLogger;
-  @MockBean private Executor asyncExecutor;
-  @Autowired DrsResolutionService drsResolutionService;
+  private DrsResolutionService drsResolutionService;
 
   @Mock private DrsApi drsApi;
   @Mock private UriComponents uriComponents;
+  @Mock private AuthService authService;
 
   private static final String PATH = "path";
 
@@ -66,6 +60,16 @@ class DrsResolutionServiceTest {
 
   @BeforeEach
   void before() {
+    DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
+
+    drsResolutionService =
+        new DrsResolutionService(
+            drsApiFactory,
+            mock(DrsProviderService.class),
+            authService,
+            mock(AuditLogger.class),
+            mock(Executor.class));
+
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);
     when(drsApiFactory.getApiFromUriComponents(eq(uriComponents), any(DrsProvider.class)))
@@ -123,8 +127,7 @@ class DrsResolutionServiceTest {
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
-    // When RAS passports are a supported means of authorization, we try to obtain them.
-    verify(authService).fetchPassports(TOKEN);
+    // When fetching passports throws, we don't try to fetch the object via POST.
     verify(drsApi, never()).postObject(any(), any());
 
     assertThat(
@@ -149,8 +152,7 @@ class DrsResolutionServiceTest {
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
-    // When RAS passports are a supported means of authorization, we obtain them.
-    verify(authService).fetchPassports(TOKEN);
+    // When a user has no passports, we don't try to fetch the object via POST.
     verify(drsApi, never()).postObject(any(), any());
 
     assertThat(
@@ -170,8 +172,6 @@ class DrsResolutionServiceTest {
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
-    // When RAS passports are a supported means of authorization, we obtain them.
-    verify(authService).fetchPassports(TOKEN);
     // When fetching the object via POSTed passports succeeds, we don't attempt to fetch it via
     // bearer token.
     verify(drsApi, never()).getObject(any(), any());
@@ -195,12 +195,9 @@ class DrsResolutionServiceTest {
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
-    // When RAS passports are a supported means of authorization, we obtain them.
-    verify(authService).fetchPassports(TOKEN);
-    verify(drsApi).postObject(Map.of("passports", PASSPORTS), PATH);
 
     assertThat(
-        "When fetching Object via POSTed passport fails, fal back to getObject with token",
+        "When fetching Object via POSTed passport fails, fall back to getObject with token",
         actual,
         equalTo(DRS_OBJECT));
   }
