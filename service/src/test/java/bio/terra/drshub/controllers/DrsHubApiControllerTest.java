@@ -3,6 +3,7 @@ package bio.terra.drshub.controllers;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -117,11 +118,13 @@ public class DrsHubApiControllerTest extends BaseTest {
   @Test
   void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassportsUsingFallback()
       throws Exception {
+    var accessId = "gs";
     var cidProviderHost = getProviderHosts("passport");
     var drsObject = drsObjectWithRandomId("gs");
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "gs", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(
+            cidProviderHost.dnsHost(), drsObject, accessId, TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
@@ -144,6 +147,8 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+    verify(drsApi, never())
+        .postAccessURL(Map.of("passports", List.of("")), drsObject.getId(), accessId);
   }
 
   @Test
