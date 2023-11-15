@@ -3,6 +3,7 @@ package bio.terra.drshub.controllers;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,47 +102,60 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
   }
 
   @Test
-  void testCallsCorrectEndpointsWhenOnlyAccessUrlRequestedWithPassportsUsingFallback()
-      throws Exception {
+  void testFallbackWhenOnlyAccessUrlRequestedWithPassportsHasEmptyPassport() throws Exception {
+    var accessId = "gs";
     var cidProviderHost = getProviderHosts("passport");
     var drsObject = drsObjectWithRandomId("gs");
 
     var drsApi =
-        mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "gs", TEST_ACCESS_URL);
+        mockDrsApiAccessUrlWithToken(
+            cidProviderHost.dnsHost(), drsObject, accessId, TEST_ACCESS_URL);
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider().getBondProvider().get(),
+        cidProviderHost.drsProvider().getBondProvider().orElseThrow(),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
+    // need an extra verify because nothing in the mock cares that bearer token is set or not
+    verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+    // verify that the passport postAccessURL method was not called, since there is no passport
+    verify(drsApi, never()).postAccessURL(any(), any(), any());
+  }
+
+  @Test
+  void testFallbackWhenOnlyAccessUrlRequestedWithPassportsFails() throws Exception {
+    var accessId = "gs";
+    var cidProviderHost = getProviderHosts("passport");
+    var drsObject = drsObjectWithRandomId("gs");
+
+    var drsApi =
+        mockDrsApiAccessUrlWithToken(
+            cidProviderHost.dnsHost(), drsObject, accessId, TEST_ACCESS_URL);
+
+    when(drsApi.postAccessURL(
+            Map.of("passports", List.of(TEST_PASSPORT)), drsObject.getId(), accessId))
+        .thenThrow(new RestClientException("Failed to retrieve access url with passport"));
+
+    mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
+
+    mockBondLinkAccessTokenApi(
+        cidProviderHost.drsProvider().getBondProvider().orElseThrow(),
+        TEST_ACCESS_TOKEN,
+        TEST_BOND_SA_TOKEN);
+
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
+
+    // verify that the passport postAccessURL method was called for the passport
+    verify(drsApi)
+        .postAccessURL(Map.of("passports", List.of(TEST_PASSPORT)), drsObject.getId(), accessId);
     // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
   }
@@ -257,17 +271,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
@@ -683,6 +687,21 @@ public class DrsHubApiControllerTest extends BaseTest {
     }
 
     return responseMap;
+  }
+
+  private void postDrsHubRequestAccessUrlSuccess(ProviderHosts cidProviderHost, String drsObjectId)
+      throws Exception {
+    postDrsHubRequest(
+        TEST_ACCESS_TOKEN,
+        cidProviderHost.compactUriPrefix(),
+        drsObjectId,
+        List.of(Fields.ACCESS_URL))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(
+                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
+                    true));
   }
 
   private ResultActions postDrsHubRequest(
