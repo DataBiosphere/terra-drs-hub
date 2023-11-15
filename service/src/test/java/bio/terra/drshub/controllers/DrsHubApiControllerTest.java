@@ -128,7 +128,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
 
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider().getBondProvider().get(),
+        cidProviderHost.drsProvider().getBondProvider().orElseThrow(),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
@@ -167,7 +167,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
     mockBondLinkAccessTokenApi(
-        cidProviderHost.drsProvider().getBondProvider().get(),
+        cidProviderHost.drsProvider().getBondProvider().orElseThrow(),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
