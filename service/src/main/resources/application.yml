@@ -59,6 +59,7 @@ drshub:
           fetchAccessUrl: true # Used for Azure
   pencilsDownSeconds: 58
   asyncThreads: ${TOMCAT_MAX_THREADS:200}
+  bardEventLoggingEnabled: ${BARD_EVENT_LOGGING_ENABLED:true}
   trackInMixpanel: false
 
 server:
