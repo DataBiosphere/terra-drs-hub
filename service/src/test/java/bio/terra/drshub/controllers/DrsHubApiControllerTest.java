@@ -102,17 +102,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
   }
 
   @Test
@@ -132,17 +122,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
@@ -171,17 +151,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
     // verify that the passport postAccessURL method was called for the passport
     verify(drsApi)
@@ -301,17 +271,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            drsObject.getId(),
-            List.of(Fields.ACCESS_URL))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
-                    true));
+    postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
     verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
@@ -727,6 +687,21 @@ public class DrsHubApiControllerTest extends BaseTest {
     }
 
     return responseMap;
+  }
+
+  private void postDrsHubRequestAccessUrlSuccess(ProviderHosts cidProviderHost, String drsObjectId)
+      throws Exception {
+    postDrsHubRequest(
+        TEST_ACCESS_TOKEN,
+        cidProviderHost.compactUriPrefix(),
+        drsObjectId,
+        List.of(Fields.ACCESS_URL))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .json(
+                    objectMapper.writeValueAsString(Map.of(Fields.ACCESS_URL, TEST_ACCESS_URL)),
+                    true));
   }
 
   private ResultActions postDrsHubRequest(
