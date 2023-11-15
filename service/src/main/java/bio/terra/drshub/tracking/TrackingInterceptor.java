@@ -2,6 +2,7 @@ package bio.terra.drshub.tracking;
 
 import bio.terra.bard.model.EventProperties;
 import bio.terra.common.iam.BearerTokenFactory;
+import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.util.AsyncUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,7 +31,8 @@ public record TrackingInterceptor(
     TrackingService trackingService,
     AsyncUtils asyncUtils,
     BearerTokenFactory bearerTokenFactory,
-    ObjectMapper objectMapper)
+    ObjectMapper objectMapper,
+    DrsHubConfig config)
     implements HandlerInterceptor {
 
   public static final String EVENT_NAME = "drshub:api";
@@ -45,7 +47,8 @@ public record TrackingInterceptor(
     var responseStatus = HttpStatus.valueOf(response.getStatus());
     // Note: invalid responses will not be logged since there are no sessions to associate users
     // with
-    if (handler instanceof HandlerMethod handlerMethod
+    if (config.bardEventLoggingEnabled()
+        && handler instanceof HandlerMethod handlerMethod
         && handlerMethod.getMethod().getAnnotation(TrackCall.class) != null
         && responseStatus.is2xxSuccessful()) {
       var bearerToken = bearerTokenFactory.from(request);

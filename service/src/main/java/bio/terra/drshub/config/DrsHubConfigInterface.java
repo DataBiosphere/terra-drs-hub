@@ -36,4 +36,8 @@ public interface DrsHubConfigInterface {
   // If this is true, then we will track calls to the Bard API in MixPanel in addition to the
   // BigQuery Data warehouse.
   Boolean trackInMixPanel();
+
+  // Only log events to Bard when enabled: this is exposed to help debug performance regressions
+  // following the introduction of Bard logging.
+  Boolean bardEventLoggingEnabled();
 }
