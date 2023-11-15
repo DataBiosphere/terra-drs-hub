@@ -285,11 +285,9 @@ public class DrsResolutionService {
             }
             case PASSPORTAUTH -> {
               try {
-                if (auth.isPresent()) {
-                  yield drsApi.postAccessURL(Map.of("passports", auth.get()), objectId, accessId);
-                } else {
-                  yield null;
-                }
+                yield auth.map(
+                        a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
+                    .orElse(null);
               } catch (RestClientException e) {
                 log.error(
                     "Passport authorized request failed for {} with error {}",
