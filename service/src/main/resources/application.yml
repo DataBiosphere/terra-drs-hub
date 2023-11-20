@@ -62,6 +62,17 @@ drshub:
   bardEventLoggingEnabled: ${BARD_EVENT_LOGGING_ENABLED:true}
   trackInMixpanel: false
 
+management:
+  # For Micrometer metrics gathering
+  endpoints:
+    web:
+      exposure:
+        # Expose all management endpoints in Spring Boot
+        include: "*"
+  server:
+    # Expose metrics on a different port than our app so that they aren't exposed with other endpoints
+    port: 9098
+
 server:
   compression:
     enabled: true
