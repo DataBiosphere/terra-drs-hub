@@ -20,7 +20,6 @@ import io.github.ga4gh.drs.model.DrsObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -64,11 +63,7 @@ class DrsResolutionServiceTest {
 
     drsResolutionService =
         new DrsResolutionService(
-            drsApiFactory,
-            mock(DrsProviderService.class),
-            authService,
-            mock(AuditLogger.class),
-            mock(Executor.class));
+            drsApiFactory, mock(DrsProviderService.class), authService, mock(AuditLogger.class));
 
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);

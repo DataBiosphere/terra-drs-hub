@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -42,20 +41,17 @@ public class DrsResolutionService {
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
   private final AuditLogger auditLogger;
-  private final Executor asyncExecutor;
 
   @Autowired
   public DrsResolutionService(
       DrsApiFactory drsApiFactory,
       DrsProviderService drsProviderService,
       AuthService authService,
-      AuditLogger auditLogger,
-      Executor asyncExecutor) {
+      AuditLogger auditLogger) {
     this.drsApiFactory = drsApiFactory;
     this.drsProviderService = drsProviderService;
     this.authService = authService;
     this.auditLogger = auditLogger;
-    this.asyncExecutor = asyncExecutor;
   }
 
   /**
@@ -88,22 +84,20 @@ public class DrsResolutionService {
         provider.getName(),
         String.join(", ", requestedFields));
 
-    return new CompletableFuture<AnnotatedResourceMetadata>()
-        .completeAsync(
-            () -> {
-              var metadata =
-                  fetchObject(
-                      provider,
-                      requestedFields,
-                      uriComponents,
-                      drsUri,
-                      bearerToken,
-                      forceAccessUrl,
-                      ip,
-                      googleProject);
-              return buildResponseObject(requestedFields, metadata, provider);
-            },
-            asyncExecutor);
+    var metadata =
+        fetchObject(
+            provider,
+            requestedFields,
+            uriComponents,
+            drsUri,
+            bearerToken,
+            forceAccessUrl,
+            ip,
+            googleProject);
+
+    var response = buildResponseObject(requestedFields, metadata, provider);
+
+    return CompletableFuture.completedFuture(response);
   }
 
   private DrsMetadata fetchObject(
