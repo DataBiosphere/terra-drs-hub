@@ -7,6 +7,8 @@ env:
 
 jobs:
   publish-branch-image-job:
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -48,3 +50,14 @@ jobs:
         run: './gradlew :service:jibDockerBuild --image=${{ steps.image-name.outputs.name }} -Djib.console=plain'
       - name: Push GCR image
         run: 'docker push ${{ steps.image-name.outputs.name }}'
+
+  report-to-sherlock:
+    # Report new drshub version to Broad DevOps
+    uses: broadinstitute/sherlock/.github/workflows/client-report-app-version.yaml@main
+    needs: [ publish-branch-image-job ]
+    with:
+      new-version: ${{ needs.publish-branch-image-job.outputs.tag }}
+      chart-name: 'drshub'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
