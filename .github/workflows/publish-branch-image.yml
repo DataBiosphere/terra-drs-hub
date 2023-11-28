@@ -47,7 +47,11 @@ jobs:
         id: image-name
         run: echo name=gcr.io/${GOOGLE_PROJECT}/${SERVICE_NAME}:${{ steps.tag.outputs.tag }} >> $GITHUB_OUTPUT
       - name: Build image locally with jib
-        run: './gradlew :service:jibDockerBuild --image=${{ steps.image-name.outputs.name }} -Djib.console=plain'
+        run: |
+          ./gradlew --build-cache :service:jibDockerBuild \
+          --image=${{ steps.image-name.outputs.name }} \
+          -Djib.from.image=docker://drshub:local \
+          -Djib.console=plain
       - name: Push GCR image
         run: 'docker push ${{ steps.image-name.outputs.name }}'
 
