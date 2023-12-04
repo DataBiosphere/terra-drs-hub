@@ -14,6 +14,7 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
@@ -22,12 +23,10 @@ import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,20 +43,17 @@ public class DrsResolutionService {
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
   private final AuditLogger auditLogger;
-  private final Executor asyncExecutor;
 
   @Autowired
   public DrsResolutionService(
       DrsApiFactory drsApiFactory,
       DrsProviderService drsProviderService,
       AuthService authService,
-      AuditLogger auditLogger,
-      Executor asyncExecutor) {
+      AuditLogger auditLogger) {
     this.drsApiFactory = drsApiFactory;
     this.drsProviderService = drsProviderService;
     this.authService = authService;
     this.auditLogger = auditLogger;
-    this.asyncExecutor = asyncExecutor;
   }
 
   /**
@@ -91,23 +87,21 @@ public class DrsResolutionService {
         provider.getName(),
         String.join(", ", requestedFields));
 
-    return new CompletableFuture<AnnotatedResourceMetadata>()
-        .completeAsync(
-            () -> {
-              var metadata =
-                  fetchObject(
-                      provider,
-                      resolveFrom,
-                      requestedFields,
-                      uriComponents,
-                      drsUri,
-                      bearerToken,
-                      forceAccessUrl,
-                      ip,
-                      googleProject);
-              return buildResponseObject(requestedFields, metadata, provider);
-            },
-            asyncExecutor);
+    var metadata =
+        fetchObject(
+            provider,
+            resolveFrom,
+            requestedFields,
+            uriComponents,
+            drsUri,
+            bearerToken,
+            forceAccessUrl,
+            ip,
+            googleProject);
+
+    var response = buildResponseObject(requestedFields, metadata, provider);
+
+    return CompletableFuture.completedFuture(response);
   }
 
   private DrsMetadata fetchObject(
@@ -217,7 +211,8 @@ public class DrsResolutionService {
     }
   }
 
-  private DrsObject fetchObjectInfo(
+  @VisibleForTesting
+  DrsObject fetchObjectInfo(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String drsUri,
@@ -226,11 +221,10 @@ public class DrsResolutionService {
     var sendMetadataAuth = drsProvider.isMetadataAuth();
 
     var objectId = getObjectId(uriComponents);
-    log.info(
-        "Requesting DRS metadata for {} with auth required {} from host {}",
-        drsUri,
-        sendMetadataAuth,
-        uriComponents.getHost());
+    String drsRequestLogMessage =
+        "Requesting DRS metadata for %s with auth required %s from host %s"
+            .formatted(drsUri, sendMetadataAuth, uriComponents.getHost());
+    log.info(drsRequestLogMessage);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     if (sendMetadataAuth) {
@@ -239,8 +233,16 @@ public class DrsResolutionService {
       drsApi.setBearerToken(bearerToken.getToken());
       if (authorizations.stream()
           .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
-        Optional<List<String>> passports = authService.fetchPassports(bearerToken);
-        return drsApi.postObject(Map.of("passports", passports.orElse(List.of(""))), objectId);
+        try {
+          List<String> passports = authService.fetchPassports(bearerToken).orElse(List.of());
+          if (!passports.isEmpty()) {
+            return drsApi.postObject(Map.of("passports", passports), objectId);
+          }
+        } catch (Exception ex) {
+          // We are catching a general exception to ensure that we fall back to getting the object
+          // via bearer token in case of any failure
+          log.warn(drsRequestLogMessage + " failed via passport, using bearer token", ex);
+        }
       }
     }
 
@@ -282,8 +284,9 @@ public class DrsResolutionService {
             }
             case PASSPORTAUTH -> {
               try {
-                yield drsApi.postAccessURL(
-                    Map.of("passports", auth.orElse(List.of(""))), objectId, accessId);
+                yield auth.map(
+                        a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
+                    .orElse(null);
               } catch (RestClientException e) {
                 log.error(
                     "Passport authorized request failed for {} with error {}",
