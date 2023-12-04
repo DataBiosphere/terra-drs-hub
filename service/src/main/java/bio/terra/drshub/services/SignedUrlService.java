@@ -5,7 +5,7 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
-import bio.terra.drshub.generated.model.RequestObject.ResolveFromEnum;
+import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -104,7 +104,7 @@ public record SignedUrlService(
     var objectFuture =
         drsResolutionService.resolveDrsObject(
             dataObjectUri,
-            ResolveFromEnum.GS,
+            CloudPlatformEnum.GS,
             Fields.CORE_FIELDS,
             bearerToken,
             true,

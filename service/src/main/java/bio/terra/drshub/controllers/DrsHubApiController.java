@@ -40,7 +40,7 @@ public record DrsHubApiController(
     return asyncUtils.runAndCatch(
         drsResolutionService.resolveDrsObject(
             body.getUrl(),
-            body.getResolveFrom(),
+            body.getCloudPlatform(),
             body.getFields(),
             bearerToken,
             forceAccessUrl,

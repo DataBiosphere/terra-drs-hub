@@ -6,7 +6,7 @@ import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
-import bio.terra.drshub.generated.model.RequestObject.ResolveFromEnum;
+import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -69,7 +69,7 @@ public class DrsResolutionService {
   @Async("asyncExecutor")
   public CompletableFuture<AnnotatedResourceMetadata> resolveDrsObject(
       String drsUri,
-      ResolveFromEnum resolveFrom,
+      CloudPlatformEnum cloudPlatform,
       List<String> rawRequestedFields,
       BearerToken bearerToken,
       Boolean forceAccessUrl,
@@ -90,7 +90,7 @@ public class DrsResolutionService {
     var metadata =
         fetchObject(
             provider,
-            resolveFrom,
+            cloudPlatform,
             requestedFields,
             uriComponents,
             drsUri,
@@ -106,7 +106,7 @@ public class DrsResolutionService {
 
   private DrsMetadata fetchObject(
       DrsProvider drsProvider,
-      ResolveFromEnum resolveFrom,
+      CloudPlatformEnum cloudPlatform,
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
@@ -141,7 +141,7 @@ public class DrsResolutionService {
     var drsMetadataBuilder = new DrsMetadata.Builder();
     drsMetadataBuilder.drsResponse(drsResponse);
 
-    var accessMethod = getAccessMethod(drsResponse, drsProvider, resolveFrom);
+    var accessMethod = getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
@@ -312,15 +312,15 @@ public class DrsResolutionService {
   }
 
   private Optional<AccessMethod> getAccessMethod(
-      DrsObject drsResponse, DrsProvider drsProvider, ResolveFromEnum resolveFrom) {
+      DrsObject drsResponse, DrsProvider drsProvider, CloudPlatformEnum cloudPlatform) {
     Optional<AccessMethod> accessMethod = Optional.empty();
     if (!isEmpty(drsResponse)) {
       List<AccessMethod> accessMethods = getAccessMethods(drsResponse, drsProvider);
-      if (resolveFrom != null) {
-        accessMethod = getAccessMethodForCloud(accessMethods, resolveFrom);
+      if (cloudPlatform != null) {
+        accessMethod = getAccessMethodForCloud(accessMethods, cloudPlatform);
       }
-      // if there is no access method matching the resolveFrom cloud, or
-      // if the resolveFrom cloud was not specified, return a different access method
+      // if there is no access method matching the cloudPlatform, or
+      // if the cloudPlatform was not specified, return a different access method
       if (accessMethod.isEmpty() && !accessMethods.isEmpty()) {
         accessMethod = Optional.of(accessMethods.get(0));
       }
@@ -329,12 +329,12 @@ public class DrsResolutionService {
   }
 
   private Optional<AccessMethod> getAccessMethodForCloud(
-      List<AccessMethod> accessMethods, ResolveFromEnum resolveFrom) {
+      List<AccessMethod> accessMethods, CloudPlatformEnum cloudPlatform) {
     Predicate<AccessMethod> filter;
-    if (resolveFrom.equals(ResolveFromEnum.AZURE)) {
+    if (cloudPlatform.equals(CloudPlatformEnum.AZURE)) {
       filter = m -> m.getAccessId() != null && m.getAccessId().startsWith("az");
     } else {
-      filter = m -> m.getType().toString().equals(resolveFrom.toString());
+      filter = m -> m.getType().toString().equals(cloudPlatform.toString());
     }
     return accessMethods.stream().filter(filter).findFirst();
   }
@@ -344,8 +344,10 @@ public class DrsResolutionService {
       return List.of();
     }
     return drsProvider.getAccessMethodConfigs().stream()
-        .flatMap(methodConfig -> drsResponse.getAccessMethods().stream()
-            .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType()))
+        .flatMap(
+            methodConfig ->
+                drsResponse.getAccessMethods().stream()
+                    .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType()))
         .toList();
   }
 
