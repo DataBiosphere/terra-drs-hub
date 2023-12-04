@@ -316,7 +316,7 @@ public class DrsResolutionService {
       }
       // if there is no access method matching the resolveFrom cloud, or
       // if the resolveFrom cloud was not specified, return a different access method
-      if (accessMethod.isEmpty() & !accessMethods.isEmpty()) {
+      if (accessMethod.isEmpty() && !accessMethods.isEmpty()) {
         accessMethod = Optional.of(accessMethods.get(0));
       }
     }
