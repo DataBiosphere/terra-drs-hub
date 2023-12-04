@@ -1,9 +1,11 @@
 {
   "name": "FullPerf",
-  "description": "All perf tests",
-  "serverSpecificationFile": "drshub-perf.json",
+  "description": "All perf tests locally in the absence of a live perf environment (see: DR-3380)",
+  "serverSpecificationFile": "drshub-local.json",
   "testConfigurationFiles": [
     "perf/GetStatus.json",
-    "perf/GetVersion.json"
+    "perf/GetVersion.json",
+    "perf/ResolveTdrDrs50.json",
+    "perf/ResolveTdrDrs100.json"
   ]
 }

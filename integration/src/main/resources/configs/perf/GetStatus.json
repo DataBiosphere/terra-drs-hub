@@ -1,6 +1,6 @@
 {
   "name": "GetStatus",
-  "description": "Check the service status once. No authentication required.",
+  "description": "Check the service status 10 times. No authentication required.",
   "serverSpecificationFile": "drshub-local.json",
   "kubernetes": {},
   "application": {},

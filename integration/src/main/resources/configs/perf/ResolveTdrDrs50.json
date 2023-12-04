@@ -1,0 +1,17 @@
+{
+  "name": "ResolveTdrDrs50",
+  "description": "50 concurrent attempts to resolve DRS URIs from TDR.",
+  "serverSpecificationFile": "drshub-local.json",
+  "kubernetes": {},
+  "application": {},
+  "testScripts": [
+    {
+      "name": "ResolveTdrDrs",
+      "numberOfUserJourneyThreadsToRun": 60,
+      "userJourneyThreadPoolSize": 50,
+      "expectedTimeForEach": 10,
+      "expectedTimeForEachUnit": "SECONDS"
+    }
+  ],
+  "testUserFiles": ["scarlett.json"]
+}

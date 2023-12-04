@@ -1,6 +1,6 @@
 {
   "name": "GetVersion",
-  "description": "Check the version endpoint once. No authentication required.",
+  "description": "Check the version endpoint 10 times. No authentication required.",
   "serverSpecificationFile": "drshub-local.json",
   "kubernetes": {},
   "application": {},
