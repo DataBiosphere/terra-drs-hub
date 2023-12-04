@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -307,7 +308,8 @@ public class DrsResolutionService {
         Optional.ofNullable(uriComponents.getPath()).orElse(""), StandardCharsets.UTF_8);
   }
 
-  private Optional<AccessMethod> getAccessMethod(DrsObject drsResponse, DrsProvider drsProvider, ResolveFromEnum resolveFrom) {
+  private Optional<AccessMethod> getAccessMethod(
+      DrsObject drsResponse, DrsProvider drsProvider, ResolveFromEnum resolveFrom) {
     Optional<AccessMethod> accessMethod = Optional.empty();
     if (!isEmpty(drsResponse)) {
       List<AccessMethod> accessMethods = getAccessMethods(drsResponse, drsProvider);
@@ -323,35 +325,25 @@ public class DrsResolutionService {
     return accessMethod;
   }
 
-  private Optional<AccessMethod> getAccessMethodForCloud(List<AccessMethod> accessMethods, ResolveFromEnum resolveFrom) {
-    Optional<AccessMethod> accessMethod;
+  private Optional<AccessMethod> getAccessMethodForCloud(
+      List<AccessMethod> accessMethods, ResolveFromEnum resolveFrom) {
+    Predicate<AccessMethod> filter;
     if (resolveFrom.equals(ResolveFromEnum.AZURE)) {
-      accessMethod =
-          accessMethods.stream()
-              .filter(m -> m.getAccessId() != null)
-              .filter(m -> m.getAccessId().startsWith("az"))
-              .findFirst();
+      filter = m -> m.getAccessId() != null && m.getAccessId().startsWith("az");
     } else {
-      accessMethod =
-          accessMethods.stream()
-              .filter(m -> m.getType().toString().equals(resolveFrom.toString()))
-              .findFirst();
+      filter = m -> m.getType().toString().equals(resolveFrom.toString());
     }
-    return accessMethod;
+    return accessMethods.stream().filter(filter).findFirst();
   }
 
   private List<AccessMethod> getAccessMethods(DrsObject drsResponse, DrsProvider drsProvider) {
-    ArrayList<AccessMethod> accessMethods = new ArrayList<>();
     if (!isEmpty(drsResponse)) {
-      for (var methodConfig : drsProvider.getAccessMethodConfigs()) {
-        var matchingMethod =
-            drsResponse.getAccessMethods().stream()
-                .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType())
-                .toList();
-        accessMethods.addAll(matchingMethod);
-      }
+      return List.of();
     }
-    return accessMethods;
+    return drsProvider.getAccessMethodConfigs().stream()
+        .flatMap(methodConfig -> drsResponse.getAccessMethods().stream()
+            .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType()))
+        .toList();
   }
 
   /**
