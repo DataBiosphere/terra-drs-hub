@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Spy;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -24,7 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @ExtendWith(MockitoExtension.class)
 public class DrsApiFactoryTest {
 
-  @Spy private RestTemplateFactory restTemplateFactory;
+  @Mock private RestTemplateFactory restTemplateFactory;
   private DrsApiFactory drsApiFactory;
   private static final UriComponents URI_COMPONENTS =
       UriComponentsBuilder.newInstance().host("test").build();
