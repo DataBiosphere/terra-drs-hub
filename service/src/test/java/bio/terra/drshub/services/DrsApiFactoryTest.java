@@ -80,7 +80,8 @@ class DrsApiFactoryTest {
     // If there was a cache miss, this would fail as the API would be called twice.
     verify(restTemplateFactory).makeRestTemplateWithPooling();
 
-    // Force a cache miss by using a different provider name. Now we should see two calls to the rest template factory.
+    // Force a cache miss by using a different provider name. Now we should see two calls to the
+    // rest template factory.
     drsProvider.setName("another name");
     drsApiFactory.getApiFromUriComponents(URI_COMPONENTS, drsProvider);
     verify(restTemplateFactory, times(2)).makeRestTemplateWithPooling();
