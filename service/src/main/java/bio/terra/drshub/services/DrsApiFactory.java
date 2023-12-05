@@ -22,7 +22,7 @@ public class DrsApiFactory {
    * We create a new ApiClient for each call so that headers and tokens are not shared between
    * calls, but each DRS provider can safely share one RestTemplate among its ApiClients.
    */
-  private static final Map<String, RestTemplate> REST_TEMPLATE_CACHE =
+  private final Map<String, RestTemplate> restTemplateCache =
       Collections.synchronizedMap(new HashMap<>());
 
   public DrsApiFactory(
@@ -51,12 +51,12 @@ public class DrsApiFactory {
     if (log.isDebugEnabled()) {
       // Normally checking for the presence of a key in a map is a lightweight operation, but we
       // don't want to obtain an unnecessary mutex lock on the backing synchronized map.
-      if (REST_TEMPLATE_CACHE.containsKey(name)) {
+      if (restTemplateCache.containsKey(name)) {
         log.debug("Cache hit. Reusing RestTemplate for DRS Provider '{}'", name);
       }
     }
 
-    return REST_TEMPLATE_CACHE.computeIfAbsent(
+    return restTemplateCache.computeIfAbsent(
         name,
         n -> {
           log.info("Cache miss. Creating RestTemplate for DRS Provider '{}'", name);
