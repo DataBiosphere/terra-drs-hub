@@ -7,8 +7,8 @@
   "testScripts": [
     {
       "name": "ResolveTdrDrs",
-      "numberOfUserJourneyThreadsToRun": 110,
-      "userJourneyThreadPoolSize": 100,
+      "numberOfUserJourneyThreadsToRun": 100,
+      "userJourneyThreadPoolSize": 110,
       "expectedTimeForEach": 10,
       "expectedTimeForEachUnit": "SECONDS"
     }
