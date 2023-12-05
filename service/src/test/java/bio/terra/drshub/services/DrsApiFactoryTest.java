@@ -20,7 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Tag("Unit")
 @ExtendWith(MockitoExtension.class)
-public class DrsApiFactoryTest {
+class DrsApiFactoryTest {
 
   @Spy private RestTemplateFactory restTemplateFactory;
   private DrsApiFactory drsApiFactory;
