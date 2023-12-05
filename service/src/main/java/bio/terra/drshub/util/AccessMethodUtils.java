@@ -24,7 +24,7 @@ public class AccessMethodUtils {
         accessMethod = getAccessMethodForCloud(accessMethods, cloudPlatform);
       }
       // if there is no access method matching the cloudPlatform, or
-      // if the cloudPlatform was not specified, return a different access method
+      // if the cloudPlatform was not specified, return the first access method
       if (accessMethod.isEmpty() && !accessMethods.isEmpty()) {
         accessMethod = Optional.of(accessMethods.get(0));
       }
