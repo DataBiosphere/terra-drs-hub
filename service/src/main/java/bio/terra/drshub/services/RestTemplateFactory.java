@@ -1,7 +1,7 @@
 package bio.terra.drshub.services;
 
+import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.MTlsConfig;
-import lombok.extern.slf4j.Slf4j;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.util.Apache4SslUtils;
 import nl.altindag.ssl.util.PemUtils;
@@ -16,17 +16,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-@Slf4j
 public class RestTemplateFactory {
 
-  private static final Integer CONNECTION_POOL_SIZE = 500;
+  private final int connectionPoolSize;
+
+  public RestTemplateFactory(DrsHubConfig drsHubConfig) {
+    connectionPoolSize = drsHubConfig.restTemplateConnectionPoolSize();
+  }
 
   /** @return a new RestTemplate backed by a pooling connection manager */
   public RestTemplate makeRestTemplateWithPooling() {
     PoolingHttpClientConnectionManager poolingConnManager =
         new PoolingHttpClientConnectionManager();
-    poolingConnManager.setMaxTotal(CONNECTION_POOL_SIZE);
-    poolingConnManager.setDefaultMaxPerRoute(CONNECTION_POOL_SIZE);
+    poolingConnManager.setMaxTotal(connectionPoolSize);
+    poolingConnManager.setDefaultMaxPerRoute(connectionPoolSize);
     CloseableHttpClient httpClient =
         HttpClients.custom().setConnectionManager(poolingConnManager).build();
     HttpComponentsClientHttpRequestFactory factory =
@@ -48,8 +51,8 @@ public class RestTemplateFactory {
 
     PoolingHttpClientConnectionManager poolingConnManager =
         new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-    poolingConnManager.setMaxTotal(CONNECTION_POOL_SIZE);
-    poolingConnManager.setDefaultMaxPerRoute(CONNECTION_POOL_SIZE);
+    poolingConnManager.setMaxTotal(connectionPoolSize);
+    poolingConnManager.setDefaultMaxPerRoute(connectionPoolSize);
     CloseableHttpClient httpClient =
         HttpClients.custom()
             .setSSLSocketFactory(socketFactory)

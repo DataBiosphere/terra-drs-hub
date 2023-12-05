@@ -33,6 +33,8 @@ public interface DrsHubConfigInterface {
 
   Integer asyncThreads();
 
+  int restTemplateConnectionPoolSize();
+
   // If this is true, then we will track calls to the Bard API in MixPanel in addition to the
   // BigQuery Data warehouse.
   Boolean trackInMixPanel();
