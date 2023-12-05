@@ -35,6 +35,7 @@ Request bodies should look like
 ```json
 {
   "url": "string",
+  "cloudPlatform": ["gs", "azure","s3", null],
   "fields": ["string"]
 }
 ```
