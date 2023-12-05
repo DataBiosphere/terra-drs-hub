@@ -2,7 +2,6 @@ package bio.terra.drshub.services;
 
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.DrsApi;
-import io.github.ga4gh.drs.client.ApiClient;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +16,7 @@ import org.springframework.web.util.UriComponents;
 public class DrsApiFactory {
 
   private final RestTemplateFactory restTemplateFactory;
+  private final DrsApiClientFactory drsApiClientFactory;
 
   /**
    * We create a new ApiClient for each call so that headers and tokens are not shared between
@@ -25,8 +25,10 @@ public class DrsApiFactory {
   private final Map<String, RestTemplate> restTemplateCache =
       Collections.synchronizedMap(new HashMap<>());
 
-  public DrsApiFactory(RestTemplateFactory restTemplateFactory) {
+  public DrsApiFactory(
+      RestTemplateFactory restTemplateFactory, DrsApiClientFactory drsApiClientFactory) {
     this.restTemplateFactory = restTemplateFactory;
+    this.drsApiClientFactory = drsApiClientFactory;
   }
 
   public DrsApi getApiFromUriComponents(UriComponents uriComponents, DrsProvider drsProvider) {
@@ -34,7 +36,7 @@ public class DrsApiFactory {
         "Creating new DrsApi client for host '{}', for DRS Provider '{}'",
         uriComponents.getHost(),
         drsProvider.getName());
-    var drsClient = new ApiClient(getOrCreateRestTemplate(drsProvider));
+    var drsClient = drsApiClientFactory.createClient(getOrCreateRestTemplate(drsProvider));
 
     drsClient.setBasePath(
         drsClient
