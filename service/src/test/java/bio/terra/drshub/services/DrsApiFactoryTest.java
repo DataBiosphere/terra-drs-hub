@@ -67,7 +67,7 @@ class DrsApiFactoryTest {
   }
 
   @Test
-  void testIndependentApiClients() {
+  void testRestTemplateCache() {
     var drsProvider = createDrsProvider();
 
     // The first ApiClient created for a DrsProvider will populate the RestTemplate cache
