@@ -36,6 +36,7 @@ public class AccessMethodUtils {
       List<AccessMethod> accessMethods, CloudPlatformEnum cloudPlatform) {
     Predicate<AccessMethod> filter;
     if (cloudPlatform.equals(CloudPlatformEnum.AZURE)) {
+      // Note: Only the Terra Data Repo drs provider prefixes Azure access ids with "az"
       filter = m -> m.getAccessId() != null && m.getAccessId().startsWith("az");
     } else {
       filter = m -> m.getType().toString().equals(cloudPlatform.toString());

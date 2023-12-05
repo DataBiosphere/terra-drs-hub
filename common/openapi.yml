@@ -188,12 +188,19 @@ components:
       required: [url]
       properties:
         url:
+          description: The DRS URL to resolve
           type: string
         cloudPlatform:
+          description: Which cloud platform to prefer when resolving a DRS URL (options include "gs", "azure", and "s3").
+           If an access url does not exist in that cloud platform, an alternative will be returned if one exists. If
+           this field is not specified, the first access url found will be returned.
           type: string
           nullable: true
           enum: [azure, gs, s3]
         fields:
+          description: Which information to include about the Drs Object. By default the response includes
+           bucket, contentType, fileName, gsUri, hashes, localizationPath, name, size, timeCreated, timeUpdated
+           and googleServiceAccount. The accessUrl and bondProvider will only be included if specified.
           type: array
           items:
             type: string
