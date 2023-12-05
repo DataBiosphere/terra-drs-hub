@@ -14,6 +14,7 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.util.AccessMethodUtils;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -141,7 +141,7 @@ public class DrsResolutionService {
     var drsMetadataBuilder = new DrsMetadata.Builder();
     drsMetadataBuilder.drsResponse(drsResponse);
 
-    var accessMethod = getAccessMethod(drsResponse, drsProvider, cloudPlatform);
+    var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
@@ -309,46 +309,6 @@ public class DrsResolutionService {
     // TODO: is there a reason we need query params? it breaks getAccessUrl.
     return URLDecoder.decode(
         Optional.ofNullable(uriComponents.getPath()).orElse(""), StandardCharsets.UTF_8);
-  }
-
-  private Optional<AccessMethod> getAccessMethod(
-      DrsObject drsResponse, DrsProvider drsProvider, CloudPlatformEnum cloudPlatform) {
-    Optional<AccessMethod> accessMethod = Optional.empty();
-    if (!isEmpty(drsResponse)) {
-      List<AccessMethod> accessMethods = getAccessMethods(drsResponse, drsProvider);
-      if (cloudPlatform != null) {
-        accessMethod = getAccessMethodForCloud(accessMethods, cloudPlatform);
-      }
-      // if there is no access method matching the cloudPlatform, or
-      // if the cloudPlatform was not specified, return a different access method
-      if (accessMethod.isEmpty() && !accessMethods.isEmpty()) {
-        accessMethod = Optional.of(accessMethods.get(0));
-      }
-    }
-    return accessMethod;
-  }
-
-  private Optional<AccessMethod> getAccessMethodForCloud(
-      List<AccessMethod> accessMethods, CloudPlatformEnum cloudPlatform) {
-    Predicate<AccessMethod> filter;
-    if (cloudPlatform.equals(CloudPlatformEnum.AZURE)) {
-      filter = m -> m.getAccessId() != null && m.getAccessId().startsWith("az");
-    } else {
-      filter = m -> m.getType().toString().equals(cloudPlatform.toString());
-    }
-    return accessMethods.stream().filter(filter).findFirst();
-  }
-
-  private List<AccessMethod> getAccessMethods(DrsObject drsResponse, DrsProvider drsProvider) {
-    if (!isEmpty(drsResponse)) {
-      return List.of();
-    }
-    return drsProvider.getAccessMethodConfigs().stream()
-        .flatMap(
-            methodConfig ->
-                drsResponse.getAccessMethods().stream()
-                    .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType()))
-        .toList();
   }
 
   /**
