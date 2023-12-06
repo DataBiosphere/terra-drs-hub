@@ -15,10 +15,10 @@ dependencies {
 	// allows mocking final classes
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
 
-	// ID-645 Fixes a vulnerability
+	// See https://nvd.nist.gov/vuln/detail/CVE-2023-46589
 	implementation('org.apache.tomcat.embed:tomcat-embed-core') {
 		version{
-			strictly('9.0.76')
+			strictly('9.0.83')
 		}
 	}
 
