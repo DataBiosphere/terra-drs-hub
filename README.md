@@ -100,12 +100,20 @@ DrsHub uses Gradle as a build tool. Some common Gradle commands you may want to 
 ./gradlew jib # Build the DrsHub Docker image
 ```
 
-### Run Integration Tests
-DrsHub uses [TestRunner](https://github.com/DataBiosphere/terra-test-runner) to run its integration tests.
+### Run Integration or Performance Tests
+DrsHub uses [TestRunner](https://github.com/DataBiosphere/terra-test-runner) to run its integration
+and performance tests.
+
 To run the integration test suite, run
 ```shell
 ./gradlew runTest --args="suites/FullIntegration.json /tmp/test-results"
 ```
+
+To run the performance test suite, run
+```shell
+./gradlew runTest --args="suites/FullPerf.json /tmp/test-results"
+```
+
 Adding `--stacktrace` can give you more debugging information, if needed.
 
 ### Run Pact Tests
@@ -133,9 +141,6 @@ DrsHub runs in Kubernetes in GCP. Current deployments for each env can be found 
 - Alpha
   - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-alpha/terra-alpha/drshub-deployment/overview?project=broad-dsde-alpha)
   - [Swagger UI](https://drshub.dsde-alpha.broadinstitute.org/)
-- Perf
-  - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-perf/terra-perf/drshub-deployment/overview?project=broad-dsde-perf)
-  - [Swagger UI](https://drshub.dsde-perf.broadinstitute.org/)
 - Staging
   - [Kubernetes Deployment](https://console.cloud.google.com/kubernetes/deployment/us-central1-a/terra-staging/terra-staging/drshub-deployment/overview?project=broad-dsde-staging)
   - [Swagger UI](https://drshub.dsde-staging.broadinstitute.org/)
