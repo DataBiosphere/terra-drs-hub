@@ -692,10 +692,10 @@ public class DrsHubApiControllerTest extends BaseTest {
   private void postDrsHubRequestAccessUrlSuccess(ProviderHosts cidProviderHost, String drsObjectId)
       throws Exception {
     postDrsHubRequest(
-        TEST_ACCESS_TOKEN,
-        cidProviderHost.compactUriPrefix(),
-        drsObjectId,
-        List.of(Fields.ACCESS_URL))
+            TEST_ACCESS_TOKEN,
+            cidProviderHost.compactUriPrefix(),
+            drsObjectId,
+            List.of(Fields.ACCESS_URL))
         .andExpect(status().isOk())
         .andExpect(
             content()

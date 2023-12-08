@@ -6,6 +6,7 @@ import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
+import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -13,6 +14,7 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.util.AccessMethodUtils;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
@@ -67,6 +69,7 @@ public class DrsResolutionService {
   @Async("asyncExecutor")
   public CompletableFuture<AnnotatedResourceMetadata> resolveDrsObject(
       String drsUri,
+      CloudPlatformEnum cloudPlatform,
       List<String> rawRequestedFields,
       BearerToken bearerToken,
       Boolean forceAccessUrl,
@@ -87,6 +90,7 @@ public class DrsResolutionService {
     var metadata =
         fetchObject(
             provider,
+            cloudPlatform,
             requestedFields,
             uriComponents,
             drsUri,
@@ -102,6 +106,7 @@ public class DrsResolutionService {
 
   private DrsMetadata fetchObject(
       DrsProvider drsProvider,
+      CloudPlatformEnum cloudPlatform,
       List<String> requestedFields,
       UriComponents uriComponents,
       String drsUri,
@@ -136,7 +141,7 @@ public class DrsResolutionService {
     var drsMetadataBuilder = new DrsMetadata.Builder();
     drsMetadataBuilder.drsResponse(drsResponse);
 
-    var accessMethod = getAccessMethod(drsResponse, drsProvider);
+    var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
@@ -244,7 +249,8 @@ public class DrsResolutionService {
     return drsApi.getObject(objectId, null);
   }
 
-  private AccessURL fetchDrsObjectAccessUrl(
+  @VisibleForTesting
+  AccessURL fetchDrsObjectAccessUrl(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String accessId,
@@ -304,21 +310,6 @@ public class DrsResolutionService {
     // TODO: is there a reason we need query params? it breaks getAccessUrl.
     return URLDecoder.decode(
         Optional.ofNullable(uriComponents.getPath()).orElse(""), StandardCharsets.UTF_8);
-  }
-
-  private Optional<AccessMethod> getAccessMethod(DrsObject drsResponse, DrsProvider drsProvider) {
-    if (!isEmpty(drsResponse)) {
-      for (var methodConfig : drsProvider.getAccessMethodConfigs()) {
-        var matchingMethod =
-            drsResponse.getAccessMethods().stream()
-                .filter(m -> methodConfig.getType().getReturnedEquivalent() == m.getType())
-                .findFirst();
-        if (matchingMethod.isPresent()) {
-          return matchingMethod;
-        }
-      }
-    }
-    return Optional.empty();
   }
 
   /**

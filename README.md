@@ -35,6 +35,7 @@ Request bodies should look like
 ```json
 {
   "url": "string",
+  "cloudPlatform": ["gs", "azure","s3", null],
   "fields": ["string"]
 }
 ```
@@ -69,6 +70,9 @@ timeCreated
 timeUpdated
 googleServiceAccount
 ```
+
+The `cloudPlatform` field is optional and can be used to specify the preferred cloud platform to use for returning a signed URL.
+If no option is found for the specified cloud platform, an attempt will be made to return a signed URL from a fall-back cloud platform.
 
 ## Architecture
 DrsHub is a Java 17 Spring Boot application running in Kubernetes. As it simply resolves urls and doesn't have any state, it has no database. For developer convenience, a Swagger UI is provided.

@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubApplication;
 import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.util.SignedUrlTestUtils;
@@ -60,20 +61,36 @@ class TrackingInterceptorTest {
     mockBardEmissionsEnabled();
 
     String url = "/api/v4/drs/resolve";
-    postRequest(url, objectMapper.writeValueAsString(Map.of("url", DRS_URI, "fields", List.of())))
+    postRequest(
+            url,
+            objectMapper.writeValueAsString(
+                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
 
     verify(trackingService)
         .logEvent(
             TEST_BEARER_TOKEN,
             EVENT_NAME,
-            Map.of("statusCode", 200, "requestUrl", url, "url", DRS_URI, "fields", List.of()));
+            Map.of(
+                "statusCode",
+                200,
+                "requestUrl",
+                url,
+                "url",
+                DRS_URI,
+                "cloudPlatform",
+                CloudPlatformEnum.GS.toString(),
+                "fields",
+                List.of()));
   }
 
   @Test
   void testDoesNotLogWhenBardEmissionsDisabled() throws Exception {
     String url = "/api/v4/drs/resolve";
-    postRequest(url, objectMapper.writeValueAsString(Map.of("url", DRS_URI, "fields", List.of())))
+    postRequest(
+            url,
+            objectMapper.writeValueAsString(
+                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
 
     verifyNoInteractions(trackingService);

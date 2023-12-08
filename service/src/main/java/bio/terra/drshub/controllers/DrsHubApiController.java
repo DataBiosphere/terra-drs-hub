@@ -39,7 +39,13 @@ public record DrsHubApiController(
     log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
     return asyncUtils.runAndCatch(
         drsResolutionService.resolveDrsObject(
-            body.getUrl(), body.getFields(), bearerToken, forceAccessUrl, ip, googleProject),
+            body.getUrl(),
+            body.getCloudPlatform(),
+            body.getFields(),
+            bearerToken,
+            forceAccessUrl,
+            ip,
+            googleProject),
         ResponseEntity::ok);
   }
 

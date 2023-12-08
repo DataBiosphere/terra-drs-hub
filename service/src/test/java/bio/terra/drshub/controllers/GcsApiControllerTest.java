@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsResolutionService;
@@ -69,6 +70,7 @@ public class GcsApiControllerTest extends BaseTest {
     verify(drsResolutionService)
         .resolveDrsObject(
             eq(drsUri),
+            eq(CloudPlatformEnum.GS),
             eq(Fields.CORE_FIELDS),
             eq(new BearerToken(TEST_ACCESS_TOKEN)),
             eq(true),
