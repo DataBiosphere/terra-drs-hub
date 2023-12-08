@@ -249,7 +249,8 @@ public class DrsResolutionService {
     return drsApi.getObject(objectId, null);
   }
 
-  private AccessURL fetchDrsObjectAccessUrl(
+  @VisibleForTesting
+  AccessURL fetchDrsObjectAccessUrl(
       DrsProvider drsProvider,
       UriComponents uriComponents,
       String accessId,
