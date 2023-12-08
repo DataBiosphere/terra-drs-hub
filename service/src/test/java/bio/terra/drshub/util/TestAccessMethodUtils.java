@@ -1,6 +1,7 @@
 package bio.terra.drshub.util;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
 import bio.terra.drshub.config.DrsProvider;
@@ -10,6 +11,7 @@ import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
+import io.github.ga4gh.drs.model.AllOfAccessMethodAccessUrl;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +31,15 @@ public class TestAccessMethodUtils {
       new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
   static AccessMethod s3AccessMethod =
       new AccessMethod().accessId(UUID.randomUUID().toString()).type(TypeEnum.S3);
+  // This case can happen when there is a URL in te accessMethod
+  static AccessMethod accessMethodWithNoAccessId =
+      new AccessMethod()
+          .accessId(null)
+          .type(TypeEnum.GS)
+          .accessUrl(
+              (AllOfAccessMethodAccessUrl) new AllOfAccessMethodAccessUrl().url("https://foo.com"));
   static List<AccessMethod> accessMethods =
-      List.of(gsAccessMethod, azureAccessMethod, s3AccessMethod);
+      List.of(gsAccessMethod, azureAccessMethod, s3AccessMethod, accessMethodWithNoAccessId);
 
   ProviderAccessMethodConfig gsAccessMethodConfig =
       createTestAccessMethodConfig(AccessMethodConfigTypeEnum.gs);
@@ -85,7 +94,7 @@ public class TestAccessMethodUtils {
   void testGetAccessMethods() {
     assertThat(
         AccessMethodUtils.getAccessMethods(drsObject, drsProvider),
-        equalTo(List.of(gsAccessMethod, azureAccessMethod)));
+        containsInAnyOrder(gsAccessMethod, azureAccessMethod, accessMethodWithNoAccessId));
   }
 
   @Test
