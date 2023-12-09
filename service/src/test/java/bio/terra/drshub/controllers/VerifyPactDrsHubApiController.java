@@ -56,6 +56,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @PactBroker()
 class VerifyPactsDrsHubApiController {
   private static final String CONSUMER_BRANCH = System.getenv("CONSUMER_BRANCH");
+  private static final String CONSUMER_NAME = System.getenv("CONSUMER_NAME");
 
   @MockBean private DrsHubConfig drsHubConfig;
   @MockBean private BearerTokenFactory tokenFactory;
@@ -83,10 +84,9 @@ class VerifyPactsDrsHubApiController {
     // tag (e.g. dev, alpha).
     if (StringUtils.isBlank(CONSUMER_BRANCH)) {
       return new SelectorBuilder().mainBranch()
-          .deployedOrReleased()
-          .branch("aen_fix_contract_tests", "cromwell");
+          .deployedOrReleased();
     } else {
-      return new SelectorBuilder().branch(CONSUMER_BRANCH);
+      return new SelectorBuilder().branch(CONSUMER_BRANCH, CONSUMER_NAME);
     }
   }
 

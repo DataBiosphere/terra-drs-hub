@@ -185,6 +185,9 @@ jobs:
             git checkout ${{ env.CURRENT_BRANCH }}
           fi
 
+          # test webhook
+          git checkout QA-2193
+
           # Echo the HEAD commit of the provider branch that has been switched to.
           echo "git rev-parse HEAD"
           git rev-parse HEAD
