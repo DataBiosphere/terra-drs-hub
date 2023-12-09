@@ -175,8 +175,8 @@ jobs:
           # If the PROVIDER_TAG envvar exists, switch to the corresponding tag.
           # This condition is true when the workflow is triggered by a Pact Broker webhook event.
           if [[ -n "${{ env.PROVIDER_TAG }}" ]]; then
-            echo "git checkout tags/${{ env.PROVIDER_TAG }}"
-            git checkout tags/${{ env.PROVIDER_TAG }}
+            echo "git checkout tags/${{ env.PROVIDER_TAG }} || git checkout ${{ env.PROVIDER_BRANCH }}"
+            git checkout tags/${{ env.PROVIDER_TAG }} || git checkout ${{ env.PROVIDER_BRANCH }}
 
           # Otherwise, switch to CURRENT_BRANCH if the workflow has been triggered by a
           # PR commit or merge onto the main branch.
