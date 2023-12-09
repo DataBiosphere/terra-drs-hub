@@ -7,6 +7,8 @@ import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
+import au.com.dius.pact.provider.junitsupport.loader.PactBrokerConsumerVersionSelectors;
+import au.com.dius.pact.provider.junitsupport.loader.SelectorBuilder;
 import au.com.dius.pact.provider.spring.junit5.MockMvcTestTarget;
 import au.com.dius.pact.provider.spring.junit5.PactVerificationSpringProvider;
 import bio.terra.common.iam.BearerTokenFactory;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -49,9 +52,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @Tag("Pact")
 @WebMvcTest
 @ContextConfiguration(classes = {DrsHubApiController.class, PublicApiController.class})
-@Provider("drshub-provider")
+@Provider("drshub")
 @PactBroker()
 class VerifyPactsDrsHubApiController {
+  private static final String CONSUMER_BRANCH = System.getenv("CONSUMER_BRANCH");
 
   @MockBean private DrsHubConfig drsHubConfig;
   @MockBean private BearerTokenFactory tokenFactory;
@@ -69,6 +73,22 @@ class VerifyPactsDrsHubApiController {
   @Autowired private MockMvc mockMvc;
 
   SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+  @PactBrokerConsumerVersionSelectors
+  public static SelectorBuilder consumerVersionSelectors() {
+    // The following match condition basically says
+    // If verification is triggered by Pact Broker webhook due to consumer pact change, verify only
+    // the changed pact.
+    // Otherwise, this is a PR, verify all consumer pacts in Pact Broker marked with a deployment
+    // tag (e.g. dev, alpha).
+    if (StringUtils.isBlank(CONSUMER_BRANCH)) {
+      return new SelectorBuilder().mainBranch()
+          .deployedOrReleased()
+          .branch("aen_fix_contract_tests", "cromwell");
+    } else {
+      return new SelectorBuilder().branch(CONSUMER_BRANCH);
+    }
+  }
 
   @TestTemplate
   @ExtendWith(PactVerificationSpringProvider.class)
