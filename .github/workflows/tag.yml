@@ -59,7 +59,7 @@ jobs:
           VERSION_LINE_MATCH: "^\\s*version\\s*=\\s*'.*'"
           VERSION_SUFFIX: SNAPSHOT
       - name: Echo tag to console
-        if: ${{ inputs.print-tag == 'true' }}
+        if: ${{ (inputs.print-tag == 'true') || (github.event_name == 'workflow_dispatch') }}
         run: |
           echo "Newly created version tag: '${{ steps.tag.outputs.new_tag }}'"
           echo "build.gradle"
