@@ -1,8 +1,8 @@
 package bio.terra.drshub.config;
 
+import jakarta.annotation.Nullable;
 import java.time.Duration;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 @Value.Modifiable

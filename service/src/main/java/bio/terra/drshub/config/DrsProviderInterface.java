@@ -5,10 +5,10 @@ import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.BondProviderEnum;
 import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
+import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 
