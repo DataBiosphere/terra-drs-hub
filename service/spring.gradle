@@ -16,8 +16,9 @@ dependencies {
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
 
 	// See https://nvd.nist.gov/vuln/detail/CVE-2023-46589
+	// TODO DR-3393: remove this pin when upgrading Spring Boot, TCL
 	implementation('org.apache.tomcat.embed:tomcat-embed-core') {
-		version{
+		version {
 			strictly('9.0.83')
 		}
 	}
