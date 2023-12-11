@@ -2,7 +2,7 @@ package bio.terra.drshub.controllers;
 
 import bio.terra.common.exception.ErrorReportException;
 import bio.terra.drshub.generated.model.ErrorReport;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpStatusCodeException.class)
   public ResponseEntity<ErrorReport> HttpStatusCodeExceptionReportHandler(
       HttpStatusCodeException ex) {
-    return buildErrorReport(ex, ex.getStatusCode());
+    return buildErrorReport(ex, HttpStatus.valueOf(ex.getStatusCode().value()));
   }
 
   // -- catchall - log so we can understand what we have missed in the handlers above

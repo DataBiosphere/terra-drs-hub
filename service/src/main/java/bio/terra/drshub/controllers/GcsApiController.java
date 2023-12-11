@@ -5,7 +5,7 @@ import bio.terra.drshub.generated.api.GcsApi;
 import bio.terra.drshub.generated.model.GetSignedUrlRequest;
 import bio.terra.drshub.services.SignedUrlService;
 import bio.terra.drshub.tracking.TrackCall;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
