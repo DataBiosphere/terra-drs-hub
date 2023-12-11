@@ -12,4 +12,5 @@ repositories { mavenCentral() }
 apply from: 'artifactory.gradle'
 apply from: 'swagger.gradle'
 
-sourceCompatibility = JavaLanguageVersion.of(11)
+// In the future when pursuing a Java upgrade, source and target compatibility may differ:
+// sourceCompatibility = JavaLanguageVersion.of(<currentJavaVersion>)
