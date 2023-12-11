@@ -33,19 +33,19 @@ apply from: 'analysis.gradle'
 
 dependencyManagement {
 	dependencies {
-		dependencySet(group:'io.github.hakky54', version: '7.3.0') {
-			entry 'sslcontext-kickstart-for-apache4'
+		dependencySet(group:'io.github.hakky54', version: '8.2.0') {
+			entry 'sslcontext-kickstart-for-apache5'
 			entry 'sslcontext-kickstart-for-pem'
 		}
 	}
 }
 
 dependencies {
-	annotationProcessor 'org.immutables:value:2.9.0'
-	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache4'
+	annotationProcessor 'org.immutables:value:2.9.2'
+	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache5'
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
 
-	implementation('bio.terra:terra-common-lib:0.0.75-SNAPSHOT') {
+	implementation('bio.terra:terra-common-lib:0.1.7-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
 		exclude group: 'org.liquibase', module: 'liquibase-core'
 		exclude group: 'bio.terra', module: 'stairway-gcp'
@@ -55,8 +55,8 @@ dependencies {
 	}
 	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-1b67d8b'
 	implementation 'bio.terra:externalcreds-client-resttemplate:0.72.0-SNAPSHOT'
-	implementation 'io.sentry:sentry-logback:6.1.4'
-	implementation 'org.codehaus.janino:janino:3.1.7' // Provides if/else xml parsing for logback config
+	implementation 'io.sentry:sentry-logback:6.19.0'
+	implementation 'org.codehaus.janino:janino:3.1.9' // Provides if/else xml parsing for logback config
 	implementation('org.springframework.cloud:spring-cloud-gcp-starter-logging:1.2.8.RELEASE') {
 		exclude group: 'org.springframework', module: 'spring-jcl'
 	}
@@ -64,14 +64,8 @@ dependencies {
 	implementation platform('com.google.cloud:libraries-bom:26.14.0')
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'io.sentry:sentry-spring-boot-starter:6.18.1'
-	implementation('org.yaml:snakeyaml') {
-		version {
-			strictly('1.33')
-		}
-	}
 
 	// For Micrometer metrics gathering
-	implementation 'org.springframework.boot:spring-boot-starter-actuator:2.7.17'
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
@@ -79,8 +73,8 @@ dependencies {
 		exclude group: 'com.vaadin.external.google', module: 'android-json'
 	}
 
-	testImplementation('au.com.dius.pact.provider:junit5:4.1.7')
-	testImplementation('au.com.dius.pact.provider:junit5spring:4.1.7')
+	testImplementation('au.com.dius.pact.provider:junit5:4.5.3')
+	testImplementation('au.com.dius.pact.provider:junit5spring:4.5.3')
 	testImplementation('org.awaitility:awaitility:4.2.0')
 }
 
