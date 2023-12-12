@@ -5,6 +5,7 @@ import bio.terra.drshub.generated.model.ErrorReport;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -55,7 +56,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpStatusCodeException.class)
   public ResponseEntity<ErrorReport> HttpStatusCodeExceptionReportHandler(
       HttpStatusCodeException ex) {
-    return buildErrorReport(ex, HttpStatus.valueOf(ex.getStatusCode().value()));
+    return buildErrorReport(ex, ex.getStatusCode());
   }
 
   // -- catchall - log so we can understand what we have missed in the handlers above
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
   }
 
   private ResponseEntity<ErrorReport> buildErrorReport(
-      @NotNull Throwable ex, HttpStatus statusCode) {
+      @NotNull Throwable ex, HttpStatusCode statusCode) {
     log.error("Global exception handler:", ex);
 
     var errorReport = new ErrorReport().message(ex.getMessage()).statusCode(statusCode.value());
