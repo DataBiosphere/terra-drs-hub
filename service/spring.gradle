@@ -2,13 +2,13 @@ configurations { compileOnly { extendsFrom annotationProcessor } }
 
 // All version controlled by dependency management plugin
 dependencies {
-	implementation "org.springframework.boot:spring-boot-starter-actuator"
-	implementation "org.springframework.boot:spring-boot-starter-web"
-	developmentOnly "org.springframework.boot:spring-boot-devtools"
-	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
-	testImplementation "org.springframework.boot:spring-boot-starter-test"
-	implementation "org.springframework.boot:spring-boot-starter-thymeleaf"
-	implementation "org.springframework.data:spring-data-commons"
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.data:spring-data-commons'
 
 	implementation 'org.apache.httpcomponents.client5:httpclient5'
 	implementation 'org.apache.commons:commons-collections4:4.4'
