@@ -139,7 +139,6 @@ public class DrsResolutionService {
     }
 
     var drsMetadataBuilder = new DrsMetadata.Builder();
-    drsMetadataBuilder.drsResponse(drsResponse);
 
     var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
@@ -150,6 +149,7 @@ public class DrsResolutionService {
     }
 
     if (drsResponse != null) {
+      drsMetadataBuilder.drsResponse(drsResponse);
       setDrsResponseValues(
           drsMetadataBuilder,
           drsResponse,
