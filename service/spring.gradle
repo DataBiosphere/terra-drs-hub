@@ -9,6 +9,8 @@ dependencies {
 	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion"
 	testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
 	implementation "org.springframework.boot:spring-boot-starter-thymeleaf:$springBootVersion"
+	// Needed for OpenTelemetry
+	implementation "org.springframework.data:spring-data-commons:$springBootVersion"
 
 	implementation 'org.apache.httpcomponents.client5:httpclient5'
 	implementation 'org.apache.commons:commons-collections4:4.4'
