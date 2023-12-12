@@ -121,6 +121,11 @@ drshub:
           fetchAccessUrl: true
           fallbackAuth: fence_token
 
+otel:
+  instrumentation:
+    spring-webmvc:
+      enabled: false
+
 server:
   compression:
     enabled: true
@@ -147,6 +152,6 @@ spring:
         use-last-modified: false
 
 terra.common:
-  tracing:
-    stackdriverExportEnabled: false
-    samplingRate: 0
+  google:
+    tracing:
+      enabled: false
