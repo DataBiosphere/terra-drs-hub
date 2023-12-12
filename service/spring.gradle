@@ -1,6 +1,6 @@
 configurations { compileOnly { extendsFrom annotationProcessor } }
 
-var springBootVersion = '3.1.2'
+var springBootVersion = '3.1.6'
 
 dependencies {
 	implementation "org.springframework.boot:spring-boot-starter-actuator:$springBootVersion"
@@ -17,6 +17,13 @@ dependencies {
 
 	// allows mocking final classes
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+	// See https://nvd.nist.gov/vuln/detail/cve-2023-6378
+	// TODO: when latest versions of Spring are released on 2023-12-21, see if upgrading also brings
+	// its logback versions >= 1.4.14, which would allow us to stop explicitly pulling them in.
+	var logbackVersion = '1.4.14'
+	implementation "ch.qos.logback:logback-classic:$logbackVersion"
+	implementation "ch.qos.logback:logback-core:$logbackVersion"
 }
 
 
