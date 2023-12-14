@@ -85,9 +85,6 @@ management:
 otel:
   sdk:
     disabled: false # set to true to disable all open telemetry features
-  traces:
-    sampler:
-      probability: ${SAMPLING_PROBABILITY:0}
 
   springboot:
     resource:
@@ -133,6 +130,8 @@ terra.common:
   google:
     tracing:
       enabled: ${CLOUD_TRACE_ENABLED:false}
+  tracing:
+    samplingRatio: ${SAMPLING_PROBABILITY:0}
 
 ---
 # not-prod
