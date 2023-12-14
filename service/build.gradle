@@ -86,8 +86,8 @@ dependencies {
 		exclude group: 'com.vaadin.external.google', module: 'android-json'
 	}
 
-	testImplementation('au.com.dius.pact.provider:junit5:4.5.3')
-	testImplementation('au.com.dius.pact.provider:junit5spring:4.5.3')
+	testImplementation('au.com.dius.pact.provider:junit5:4.5.8')
+	testImplementation('au.com.dius.pact.provider:junit5spring:4.5.8')
 	testImplementation('org.awaitility:awaitility:4.2.0')
 }
 
