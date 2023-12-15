@@ -2,9 +2,10 @@ package bio.terra.drshub.controllers;
 
 import bio.terra.common.exception.ErrorReportException;
 import bio.terra.drshub.generated.model.ErrorReport;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
   }
 
   private ResponseEntity<ErrorReport> buildErrorReport(
-      @NotNull Throwable ex, HttpStatus statusCode) {
+      @NotNull Throwable ex, HttpStatusCode statusCode) {
     log.error("Global exception handler:", ex);
 
     var errorReport = new ErrorReport().message(ex.getMessage()).statusCode(statusCode.value());

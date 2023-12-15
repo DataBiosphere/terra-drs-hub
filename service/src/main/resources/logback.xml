@@ -18,7 +18,7 @@
 
     <appender name="Console-Stackdriver" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.springframework.cloud.gcp.logging.StackdriverJsonLayout">
+            <layout class="com.google.cloud.spring.logging.StackdriverJsonLayout">
                 <includeTraceId>true</includeTraceId>
                 <includeSpanId>true</includeSpanId>
             </layout>
@@ -28,6 +28,9 @@
     <if condition='isDefined("SENTRY_DSN")'>
         <then>
             <appender name="Sentry" class="io.sentry.logback.SentryAppender"/>
+            <root level="INFO">
+              <appender-ref ref="Sentry"/>
+            </root>
         </then>
     </if>
 
@@ -35,10 +38,5 @@
 
     <root level="INFO">
         <appender-ref ref="${DRSHUB_LOG_APPENDER}"/>
-        <if condition='isDefined("SENTRY_DSN")'>
-            <then>
-                <appender-ref ref="Sentry"/>
-            </then>
-        </if>
     </root>
 </configuration>

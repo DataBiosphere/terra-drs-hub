@@ -82,6 +82,16 @@ management:
     # Expose metrics on a different port than our app so that they aren't exposed with other endpoints
     port: 9098
 
+otel:
+  sdk:
+    disabled: false # set to true to disable all open telemetry features
+
+  springboot:
+    resource:
+      attributes:
+        service:
+          name: ${spring.application.name}
+
 server:
   compression:
     enabled: true
@@ -117,9 +127,11 @@ spring:
         use-last-modified: false
 
 terra.common:
+  google:
+    tracing:
+      enabled: ${CLOUD_TRACE_ENABLED:false}
   tracing:
-    stackdriverExportEnabled: ${CLOUD_TRACE_ENABLED:false}
-    samplingRate: ${SAMPLING_PROBABILITY:0}
+    samplingRatio: ${SAMPLING_PROBABILITY:0}
 
 ---
 # not-prod

@@ -1,28 +1,27 @@
 configurations { compileOnly { extendsFrom annotationProcessor } }
 
-var springBootVersion = '2.7.4'
-
+// All version controlled by dependency management plugin
 dependencies {
-	implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
-	developmentOnly "org.springframework.boot:spring-boot-devtools:$springBootVersion"
-	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion"
-	testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
-	implementation "org.springframework.boot:spring-boot-starter-thymeleaf:$springBootVersion"
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.data:spring-data-commons'
 
-	implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+	implementation 'org.apache.httpcomponents.client5:httpclient5'
 	implementation 'org.apache.commons:commons-collections4:4.4'
 
 	// allows mocking final classes
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
 
-	// See https://nvd.nist.gov/vuln/detail/CVE-2023-46589
-	// TODO DR-3393: remove this pin when upgrading Spring Boot, TCL
-	implementation('org.apache.tomcat.embed:tomcat-embed-core') {
-		version {
-			strictly('9.0.83')
-		}
-	}
-
+	// See https://nvd.nist.gov/vuln/detail/cve-2023-6378
+	// TODO: when latest versions of Spring are released on 2023-12-21, see if upgrading also brings
+	// its logback versions >= 1.4.14, which would allow us to stop explicitly pulling them in.
+	var logbackVersion = '1.4.14'
+	implementation "ch.qos.logback:logback-classic:$logbackVersion"
+	implementation "ch.qos.logback:logback-core:$logbackVersion"
 }
 
 
