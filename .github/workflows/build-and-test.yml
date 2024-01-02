@@ -183,14 +183,10 @@ jobs:
 
     steps:
       - name: Notify slack on failure
-        uses: 8398a7/action-slack@v3
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.POLICY_INT_WEBHOOK_URL }}
-        with:
-          status: failure
-          author_name: Build on dev (drs-hub)
-          fields: workflow,message
-          text: 'Build failed :sadpanda:'
+          SLACK_WEBHOOK_URL: ${{ secrets.TEST_JADE_ALERTS_SLACK_WEBHOOK }}
 
   dispatch-tag:
     needs: [ build, jib, unit-tests, integration-tests ]
