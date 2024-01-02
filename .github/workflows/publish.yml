@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify slack on failure
-        uses: 8398a7/action-slack@v3
+        uses: broadinstitute/action-slack@v3
         if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.POLICY_INT_WEBHOOK_URL }}
