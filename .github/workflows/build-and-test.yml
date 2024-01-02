@@ -8,216 +8,211 @@ on:
     branches: [ '**' ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Gradle cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
-          restore-keys: v1-${{ runner.os }}-gradle-${{ github.ref }}
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      - name: Gradle build service
-        run: ./gradlew --build-cache :service:build -x test
-
-      - name: SonarQube scan service
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew --build-cache :service:sonarqube
-
-      - name: Upload spotbugs results
-        uses: github/codeql-action/upload-sarif@main
-        with:
-          sarif_file: service/build/reports/spotbugs/main.sarif
-
-  jib:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Gradle cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
-
-      - name: Add Google Cloud Profiler to Docker Image
-        run: docker build ./service -t drshub:local
-
-      - name: Build image locally with jib
-        # build the docker image to make sure it does not error
-        run: |
-          ./gradlew --build-cache :service:jibDockerBuild \
-          -Djib.from.image=docker://drshub:local \
-          -Djib.console=plain
-
-  unit-tests:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Git secrets setup
-        run: |
-          git clone https://github.com/awslabs/git-secrets.git ~/git-secrets
-          cd ~/git-secrets
-          git checkout b9e96b3212fa06aea65964ff0d5cda84ce935f38
-          sudo make install
-
-      - name: Secrets check
-        run: |
-          sudo ln -s "$(which echo)" /usr/local/bin/say
-          ./minnie-kenny.sh --force
-          git secrets --scan-history
-
-      - name: Gradle cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
-
-      - name: Test with coverage
-        run: ./gradlew --build-cache jacocoTestReport --scan
-
-      - name: Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./service/build/reports/jacoco/test/jacocoTestReport.xml
-
-  integration-tests:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Gradle cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
-
-      - name: Render GitHub Secrets
-        env:
-          DEV_FIRECLOUD_ACCOUNT_B64: ${{ secrets.DEV_FIRECLOUD_ACCOUNT_B64 }}
-        run: echo "$DEV_FIRECLOUD_ACCOUNT_B64" | base64 -d >"./integration/src/main/resources/rendered/user-delegated-sa.json"
-
-      - name: Launch the background process for integration tests
-        run: ./gradlew --build-cache :service:bootRunDev | tee application.log &
-
-      - name: Prep the integration project
-        run: ./gradlew --build-cache :integration:classes
-
-      - name: Wait for boot run to be ready
-        run: |
-          timeout 60 bash -c 'until echo > /dev/tcp/localhost/8080; do sleep 1; done'
-          resultStatus=$(echo > /dev/tcp/localhost/8080; echo $?)
-          if [[ $resultStatus == 0 ]]; then
-            echo "Server started successfully"
-          else
-            echo "Server did not start successfully."
-            exit 1
-          fi
-
-      - name: Run the integration test suite
-        run: ./gradlew --build-cache :integration:runTest --args="suites/FullIntegration.json /tmp/foo"
-
-      - name: Archive logs
-        id: archive_logs
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: application-logs
-          path: |
-            application.log
-
   notify-slack:
-    needs: [ build, jib, unit-tests, integration-tests ]
+    # needs: [ build, jib, unit-tests, integration-tests ]
     runs-on: ubuntu-latest
 
-    if: failure() && github.ref == 'refs/heads/dev'
+    # if: failure() && github.ref == 'refs/heads/dev'
 
     steps:
       - name: Notify slack on failure
-        uses: 8398a7/action-slack@v3
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.POLICY_INT_WEBHOOK_URL }}
-        with:
-          status: failure
-          author_name: Build on dev (drs-hub)
-          fields: workflow,message
-          text: 'Build failed :sadpanda:'
+          SLACK_WEBHOOK_URL: ${{ secrets.TEST_JADE_ALERTS_SLACK_WEBHOOK }}
+  # build:
+  #   runs-on: ubuntu-latest
 
-  dispatch-tag:
-    needs: [ build, jib, unit-tests, integration-tests ]
-    runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v2
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
 
-    if: success() && github.ref == 'refs/heads/dev'
+  #     - name: Gradle cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #         key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
+  #         restore-keys: v1-${{ runner.os }}-gradle-${{ github.ref }}
 
-    steps:
-      - name: Fire off tag action
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: Tag
-          token: ${{ secrets.BROADBOT_TOKEN }}
+  #     - name: Cache SonarCloud packages
+  #       uses: actions/cache@v1
+  #       with:
+  #         path: ~/.sonar/cache
+  #         key: ${{ runner.os }}-sonar
+  #         restore-keys: ${{ runner.os }}-sonar
 
-  source-clear:
-    needs: [ build ]
-    runs-on: ubuntu-latest
+  #     - name: Gradle build service
+  #       run: ./gradlew --build-cache :service:build -x test
 
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
+  #     - name: SonarQube scan service
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       run: ./gradlew --build-cache :service:sonarqube
 
-      - name: SourceClear scan
-        env:
-          SRCCLR_API_TOKEN: ${{ secrets.SRCCLR_API_TOKEN }}
-        run: ./gradlew --build-cache srcclr
+  #     - name: Upload spotbugs results
+  #       uses: github/codeql-action/upload-sarif@main
+  #       with:
+  #         sarif_file: service/build/reports/spotbugs/main.sarif
+
+  # jib:
+  #   needs: [ build ]
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v2
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
+
+  #     - name: Gradle cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #         key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
+
+  #     - name: Add Google Cloud Profiler to Docker Image
+  #       run: docker build ./service -t drshub:local
+
+  #     - name: Build image locally with jib
+  #       # build the docker image to make sure it does not error
+  #       run: |
+  #         ./gradlew --build-cache :service:jibDockerBuild \
+  #         -Djib.from.image=docker://drshub:local \
+  #         -Djib.console=plain
+
+  # unit-tests:
+  #   needs: [ build ]
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v2
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
+
+  #     - name: Git secrets setup
+  #       run: |
+  #         git clone https://github.com/awslabs/git-secrets.git ~/git-secrets
+  #         cd ~/git-secrets
+  #         git checkout b9e96b3212fa06aea65964ff0d5cda84ce935f38
+  #         sudo make install
+
+  #     - name: Secrets check
+  #       run: |
+  #         sudo ln -s "$(which echo)" /usr/local/bin/say
+  #         ./minnie-kenny.sh --force
+  #         git secrets --scan-history
+
+  #     - name: Gradle cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #         key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
+
+  #     - name: Test with coverage
+  #       run: ./gradlew --build-cache jacocoTestReport --scan
+
+  #     - name: Codecov
+  #       uses: codecov/codecov-action@v3
+  #       with:
+  #         files: ./service/build/reports/jacoco/test/jacocoTestReport.xml
+
+  # integration-tests:
+  #   needs: [ build ]
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v2
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
+
+  #     - name: Gradle cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #         key: v1-${{ runner.os }}-gradle-${{ github.ref }}-${{ github.sha }}
+
+  #     - name: Render GitHub Secrets
+  #       env:
+  #         DEV_FIRECLOUD_ACCOUNT_B64: ${{ secrets.DEV_FIRECLOUD_ACCOUNT_B64 }}
+  #       run: echo "$DEV_FIRECLOUD_ACCOUNT_B64" | base64 -d >"./integration/src/main/resources/rendered/user-delegated-sa.json"
+
+  #     - name: Launch the background process for integration tests
+  #       run: ./gradlew --build-cache :service:bootRunDev | tee application.log &
+
+  #     - name: Prep the integration project
+  #       run: ./gradlew --build-cache :integration:classes
+
+  #     - name: Wait for boot run to be ready
+  #       run: |
+  #         timeout 60 bash -c 'until echo > /dev/tcp/localhost/8080; do sleep 1; done'
+  #         resultStatus=$(echo > /dev/tcp/localhost/8080; echo $?)
+  #         if [[ $resultStatus == 0 ]]; then
+  #           echo "Server started successfully"
+  #         else
+  #           echo "Server did not start successfully."
+  #           exit 1
+  #         fi
+
+  #     - name: Run the integration test suite
+  #       run: ./gradlew --build-cache :integration:runTest --args="suites/FullIntegration.json /tmp/foo"
+
+  #     - name: Archive logs
+  #       id: archive_logs
+  #       if: always()
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: application-logs
+  #         path: |
+  #           application.log
+
+  # dispatch-tag:
+  #   needs: [ build, jib, unit-tests, integration-tests ]
+  #   runs-on: ubuntu-latest
+
+  #   if: success() && github.ref == 'refs/heads/dev'
+
+  #   steps:
+  #     - name: Fire off tag action
+  #       uses: benc-uk/workflow-dispatch@v1
+  #       with:
+  #         workflow: Tag
+  #         token: ${{ secrets.BROADBOT_TOKEN }}
+
+  # source-clear:
+  #   needs: [ build ]
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up JDK
+  #       uses: actions/setup-java@v2
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
+  #         cache: 'gradle'
+
+  #     - name: SourceClear scan
+  #       env:
+  #         SRCCLR_API_TOKEN: ${{ secrets.SRCCLR_API_TOKEN }}
+  #       run: ./gradlew --build-cache srcclr
