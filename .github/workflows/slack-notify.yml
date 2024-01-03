@@ -20,7 +20,7 @@ jobs:
                   "attachments": [
                     {
                       "title": "${{ inputs.workflow_name }} Failed",
-                      "title_link" : "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      "title_link" : "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
                       "color": "e51313",
                       "fields": [
                         {
