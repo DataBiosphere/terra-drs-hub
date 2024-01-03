@@ -92,10 +92,9 @@ jobs:
     permissions:
       id-token: 'write'
 
-  notify-slack-failures:
+  notify-slack-on-failure:
     needs: [publish-job, report-to-sherlock, set-version-in-dev]
-    if: failure()
-    uses: ./.github/workflows/slack-notify.yml
+    uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
     with:
       workflow_name: Publish

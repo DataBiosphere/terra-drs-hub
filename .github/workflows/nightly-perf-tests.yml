@@ -76,10 +76,9 @@ jobs:
       - name: Upload results to Google Bucket
         run: ./gradlew uploadResults --args="CompressDirectoryToTerraKernelK8S.json /tmp/test-results"
 
-  notify-slack:
+  notify-slack-on-failure:
     needs: [ performance-tests ]
-    uses: ./.github/workflows/slack-notify.yml
-    if: failure()
+    uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
     with:
       workflow_name: Nightly Perf Tests

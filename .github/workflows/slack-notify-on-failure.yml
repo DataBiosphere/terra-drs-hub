@@ -1,4 +1,4 @@
-name: slack-notify
+name: slack-notify-on-failure
 on:
     workflow_call:
       inputs:
@@ -8,6 +8,7 @@ on:
 jobs:
     notify-slack:
         runs-on: ubuntu-latest
+        if: failure()
         steps:
           - name: Notify slack on failure
             id: slack

@@ -175,11 +175,11 @@ jobs:
           path: |
             application.log
 
-  notify-slack:
+  notify-slack-on-failure:
     needs: [ build, jib, unit-tests, integration-tests ]
-    #TODO - uncomment before merging
-    #if: failure() && github.ref == 'refs/heads/dev'
-    uses: ./.github/workflows/slack-notify.yml
+    # TODO - uncomment before merging
+    # if:  github.ref == 'refs/heads/dev'
+    uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
     with:
       workflow_name: Build and Test
