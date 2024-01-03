@@ -177,23 +177,12 @@ jobs:
 
   notify-slack:
     needs: [ build, jib, unit-tests, integration-tests ]
-    runs-on: ubuntu-latest
-
-    if: failure() && github.ref == 'refs/heads/dev'
-
-    steps:
-      - name: Notify slack on failure
-        id: slack
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "workflow_name": "Build and Test",
-              "branch" : "${{ github.ref }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.TEST_JADE_ALERTS_SLACK_WEBHOOK }}
+    #TODO - uncomment before merging
+    #if: failure() && github.ref == 'refs/heads/dev'
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      workflow_name: DRShub Build and Test
 
   dispatch-tag:
     needs: [ build, jib, unit-tests, integration-tests ]

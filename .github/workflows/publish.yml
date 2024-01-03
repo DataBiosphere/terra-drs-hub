@@ -94,18 +94,8 @@ jobs:
 
   notify-slack-failures:
     needs: [publish-job, report-to-sherlock, set-version-in-dev]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify slack on failure
-        id: slack
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "workflow_name": "Publish to Dev",
-              "branch" : "${{ github.ref }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.TEST_JADE_ALERTS_SLACK_WEBHOOK }}
+    if: failure()
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      workflow_name: DRShub Publish

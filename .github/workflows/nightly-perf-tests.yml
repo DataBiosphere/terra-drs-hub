@@ -77,21 +77,9 @@ jobs:
         run: ./gradlew uploadResults --args="CompressDirectoryToTerraKernelK8S.json /tmp/test-results"
 
   notify-slack:
-   needs: [ performance-tests ]
-   runs-on: ubuntu-latest
-
-   if: failure()
-
-   steps:
-    - name: Notify slack on failure
-      id: slack
-      uses: slackapi/slack-github-action@v1.24.0
-      with:
-        payload: |
-          {
-            "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "workflow_name": "Nightly Perf Tests",
-            "branch" : "${{ github.ref }}"
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.TEST_JADE_ALERTS_SLACK_WEBHOOK }}
+    needs: [ performance-tests ]
+    uses: ./.github/workflows/slack-notify.yml
+    if: failure()
+    secrets: inherit
+    with:
+      workflow_name: DRShub Nightly Perf Tests
