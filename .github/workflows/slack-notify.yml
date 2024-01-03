@@ -16,7 +16,7 @@ jobs:
               channel-id: "CMYTGJVFY"
               payload: |
                 {
-                  "text": "DRSHub Github Action",
+                  "text": "DRS Hub ${{ inputs.workflow_name }}",
                   "attachments": [
                     {
                       "title": "${{ inputs.workflow_name }} Failed",
