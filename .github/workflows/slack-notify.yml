@@ -1,0 +1,36 @@
+name: slack-notify
+on:
+    workflow_call:
+      inputs:
+        workflow_name:
+          required: true
+          type: string
+jobs:
+    notify-slack:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Notify slack on failure
+            id: slack
+            uses: slackapi/slack-github-action@v1.24.0
+            with:
+              channel-id: "CMYTGJVFY"
+              payload: |
+                {
+                  "text": "DRSHub Github Action",
+                  "attachments": [
+                    {
+                      "title": "${{ inputs.workflow_name }} Failed",
+                      "title_link" : "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      "color": "e51313",
+                      "fields": [
+                        {
+                          "title": "Status",
+                          "short": true,
+                          "value": "Failed"
+                        }
+                      ]
+                    }
+                  ]
+                }
+            env:
+              SLACK_BOT_TOKEN: ${{ secrets.TEST_SLACK_BOT_TOKEN}}
