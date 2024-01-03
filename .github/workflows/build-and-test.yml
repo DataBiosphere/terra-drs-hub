@@ -182,7 +182,7 @@ jobs:
     uses: ./.github/workflows/slack-notify.yml
     secrets: inherit
     with:
-      workflow_name: DRShub Build and Test
+      workflow_name: Build and Test
 
   dispatch-tag:
     needs: [ build, jib, unit-tests, integration-tests ]

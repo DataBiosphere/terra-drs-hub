@@ -82,4 +82,4 @@ jobs:
     if: failure()
     secrets: inherit
     with:
-      workflow_name: DRShub Nightly Perf Tests
+      workflow_name: Nightly Perf Tests
