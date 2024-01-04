@@ -177,7 +177,6 @@ jobs:
 
   notify-slack-on-failure:
     needs: [ build, jib, unit-tests, integration-tests ]
-    if:  github.ref == 'refs/heads/dev'
     uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
     with:
