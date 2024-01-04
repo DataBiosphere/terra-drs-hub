@@ -8,8 +8,7 @@ on:
 jobs:
     notify-slack:
         runs-on: ubuntu-latest
-        #Uncomment before merge
-        #if: failure()
+        if: failure()
         steps:
           - name: Notify slack on failure
             id: slack
