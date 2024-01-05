@@ -45,23 +45,17 @@ public class TrackingService {
    */
   private void syncUser(BardApi bardApi, BearerToken bearerToken) {
     String key = bearerToken.getToken();
-    bearerTokenCache.computeIfAbsent(key, k -> syncProfile(bardApi) ? "" : null);
-  }
-
-  /**
-   * Syncs profile info from orchestration to mixpanel to improve querying/reporting capabilities in
-   * the mixpanel reports.
-   *
-   * @return boolean - if the sync request was successful.
-   */
-  private boolean syncProfile(BardApi bardApi) {
-    try {
-      bardApi.syncProfile();
-      return true;
-    } catch (Exception ex) {
-      log.warn("Error syncing user profile in bard", ex);
-      return false;
-    }
+    bearerTokenCache.computeIfAbsent(
+        key,
+        k -> {
+          try {
+            bardApi.syncProfile();
+            return "";
+          } catch (Exception ex) {
+            log.warn("Error syncing user profile in bard", ex);
+            return null;
+          }
+        });
   }
 
   private void logEvent(BardApi bardApi, String eventName, Map<String, ?> properties) {
