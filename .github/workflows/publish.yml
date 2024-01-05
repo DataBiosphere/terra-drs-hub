@@ -92,17 +92,9 @@ jobs:
     permissions:
       id-token: 'write'
 
-  notify-slack-failures:
+  notify-slack-on-failure:
     needs: [publish-job, report-to-sherlock, set-version-in-dev]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify slack on failure
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.POLICY_INT_WEBHOOK_URL }}
-        with:
-          status: ${{ job.status }}
-          author_name: Publish to dev
-          fields: job
-          text: 'Publish failed :sadpanda:'
+    uses: ./.github/workflows/slack-notify-on-failure.yml
+    secrets: inherit
+    with:
+      workflow_name: Publish

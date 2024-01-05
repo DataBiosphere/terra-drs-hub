@@ -6,6 +6,7 @@ on:
     paths-ignore: [ '*.md' ]
   pull_request:
     branches: [ '**' ]
+  workflow_dispatch: {}
 
 jobs:
   build:
@@ -174,22 +175,12 @@ jobs:
           path: |
             application.log
 
-  notify-slack:
+  notify-slack-on-failure:
     needs: [ build, jib, unit-tests, integration-tests ]
-    runs-on: ubuntu-latest
-
-    if: failure() && github.ref == 'refs/heads/dev'
-
-    steps:
-      - name: Notify slack on failure
-        uses: 8398a7/action-slack@v3
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.POLICY_INT_WEBHOOK_URL }}
-        with:
-          status: failure
-          author_name: Build on dev (drs-hub)
-          fields: workflow,message
-          text: 'Build failed :sadpanda:'
+    uses: ./.github/workflows/slack-notify-on-failure.yml
+    secrets: inherit
+    with:
+      workflow_name: Build and Test
 
   dispatch-tag:
     needs: [ build, jib, unit-tests, integration-tests ]

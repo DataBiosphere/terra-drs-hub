@@ -76,19 +76,9 @@ jobs:
       - name: Upload results to Google Bucket
         run: ./gradlew uploadResults --args="CompressDirectoryToTerraKernelK8S.json /tmp/test-results"
 
-  notify-slack:
-   needs: [ performance-tests ]
-   runs-on: ubuntu-latest
-
-   if: failure()
-
-   steps:
-     - name: Notify slack on failure
-       uses: 8398a7/action-slack@v3
-       env:
-         SLACK_WEBHOOK_URL: ${{ secrets.POLICY_INT_WEBHOOK_URL }}
-       with:
-         status: failure
-         author_name: Test Runner
-         fields: workflow,message
-         text: 'DrsHub nightly perf tests failed :sadpanda:'
+  notify-slack-on-failure:
+    needs: [ performance-tests ]
+    uses: ./.github/workflows/slack-notify-on-failure.yml
+    secrets: inherit
+    with:
+      workflow_name: Nightly Perf Tests
