@@ -46,8 +46,22 @@ public class TrackingService {
    */
   private void syncUser(BardApi bardApi, BearerToken bearerToken) {
     String key = bearerToken.getToken();
-    bearerTokenCache.computeIfAbsent(
-        key, k -> bardApi.syncProfileWithHttpInfo().getStatusCode().is2xxSuccessful() ? "" : null);
+    bearerTokenCache.computeIfAbsent(key, k -> syncProfile(bardApi) ? "" : null);
+  }
+
+  /**
+   * Syncs profile info from orchestration to mixpanel to improve querying/reporting capabilities in
+   * the mixpanel reports.
+   *
+   * @return boolean - if the sync request was successful.
+   */
+  private boolean syncProfile(BardApi bardApi) {
+    try {
+      return bardApi.syncProfileWithHttpInfo().getStatusCode().is2xxSuccessful();
+    } catch (Exception ex) {
+      log.warn("Error syncing user profile in bard", ex);
+      return false;
+    }
   }
 
   private void logEvent(BardApi bardApi, String eventName, Map<String, ?> properties) {
@@ -57,10 +71,13 @@ public class TrackingService {
 
     Event event = new Event().event(eventName).properties(eventProperties);
 
-    ResponseEntity<Void> response = bardApi.eventWithHttpInfo(event);
-
-    if (!response.getStatusCode().is2xxSuccessful()) {
-      log.warn("Error sending event to bard: {}", response.getStatusCode());
+    try {
+      ResponseEntity<Void> response = bardApi.eventWithHttpInfo(event);
+      if (!response.getStatusCode().is2xxSuccessful()) {
+        log.warn("Error sending event to bard: {}", response.getStatusCode());
+      }
+    } catch (Exception ex) {
+      log.warn("Error sending event to bard", ex);
     }
   }
 

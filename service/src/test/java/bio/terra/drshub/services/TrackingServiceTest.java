@@ -3,8 +3,8 @@ package bio.terra.drshub.services;
 import static bio.terra.drshub.services.TrackingService.APP_ID;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 
 @Tag("Unit")
 class TrackingServiceTest extends BaseTest {
@@ -54,7 +55,7 @@ class TrackingServiceTest extends BaseTest {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                verify(bardApi, times(1))
+                verify(bardApi)
                     .eventWithHttpInfo(
                         new Event().event("foo").properties(expectedEventProperties)));
   }
@@ -63,7 +64,7 @@ class TrackingServiceTest extends BaseTest {
   void testLogEventWhenBardIsDown() {
     when(bardApi.syncProfileWithHttpInfo())
         .thenReturn(ResponseEntity.internalServerError().build());
-    when(bardApi.eventWithHttpInfo(any())).thenReturn(ResponseEntity.internalServerError().build());
+    doThrow(new RestClientException("FUBAR")).when(bardApi).eventWithHttpInfo(any());
     trackingService.logEvent(TEST_BEARER_TOKEN, "foo", Map.of("bar", "baz"));
 
     await()
@@ -76,7 +77,7 @@ class TrackingServiceTest extends BaseTest {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                verify(bardApi, times(1))
+                verify(bardApi)
                     .eventWithHttpInfo(
                         new Event().event("foo").properties(expectedEventProperties)));
   }
