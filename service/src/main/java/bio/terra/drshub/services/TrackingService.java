@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +56,8 @@ public class TrackingService {
    */
   private boolean syncProfile(BardApi bardApi) {
     try {
-      return bardApi.syncProfileWithHttpInfo().getStatusCode().is2xxSuccessful();
+      bardApi.syncProfile();
+      return true;
     } catch (Exception ex) {
       log.warn("Error syncing user profile in bard", ex);
       return false;
@@ -72,10 +72,7 @@ public class TrackingService {
     Event event = new Event().event(eventName).properties(eventProperties);
 
     try {
-      ResponseEntity<Void> response = bardApi.eventWithHttpInfo(event);
-      if (!response.getStatusCode().is2xxSuccessful()) {
-        log.warn("Error sending event to bard: {}", response.getStatusCode());
-      }
+      bardApi.event(event);
     } catch (Exception ex) {
       log.warn("Error sending event to bard", ex);
     }

@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 
 @Tag("Unit")
@@ -41,13 +40,9 @@ class TrackingServiceTest extends BaseTest {
 
   @Test
   void testLogEventHappyPath() {
-    when(bardApi.syncProfileWithHttpInfo()).thenReturn(ResponseEntity.ok(null));
-    when(bardApi.eventWithHttpInfo(any())).thenReturn(ResponseEntity.ok(null));
     trackingService.logEvent(TEST_BEARER_TOKEN, "foo", Map.of("bar", "baz"));
 
-    await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> verify(bardApi).syncProfileWithHttpInfo());
+    await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> verify(bardApi).syncProfile());
 
     var expectedEventProperties = new EventProperties().appId(APP_ID).pushToMixpanel(false);
     expectedEventProperties.put("bar", "baz");
@@ -56,20 +51,17 @@ class TrackingServiceTest extends BaseTest {
         .untilAsserted(
             () ->
                 verify(bardApi)
-                    .eventWithHttpInfo(
-                        new Event().event("foo").properties(expectedEventProperties)));
+                    .event(new Event().event("foo").properties(expectedEventProperties)));
   }
 
   @Test
   void testLogEventWhenBardIsDown() {
-    when(bardApi.syncProfileWithHttpInfo())
-        .thenReturn(ResponseEntity.internalServerError().build());
-    doThrow(new RestClientException("FUBAR")).when(bardApi).eventWithHttpInfo(any());
+    var exception = new RestClientException("FUBAR");
+    doThrow(exception).when(bardApi).syncProfile();
+    doThrow(exception).when(bardApi).event(any());
     trackingService.logEvent(TEST_BEARER_TOKEN, "foo", Map.of("bar", "baz"));
 
-    await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> verify(bardApi).syncProfileWithHttpInfo());
+    await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> verify(bardApi).syncProfile());
 
     var expectedEventProperties = new EventProperties().appId(APP_ID).pushToMixpanel(false);
     expectedEventProperties.put("bar", "baz");
@@ -78,7 +70,6 @@ class TrackingServiceTest extends BaseTest {
         .untilAsserted(
             () ->
                 verify(bardApi)
-                    .eventWithHttpInfo(
-                        new Event().event("foo").properties(expectedEventProperties)));
+                    .event(new Event().event("foo").properties(expectedEventProperties)));
   }
 }
