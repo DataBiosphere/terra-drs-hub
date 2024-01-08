@@ -3,8 +3,8 @@ package bio.terra.drshub.services;
 import static bio.terra.drshub.services.TrackingService.APP_ID;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 
 @Tag("Unit")
 class TrackingServiceTest extends BaseTest {
@@ -40,13 +40,9 @@ class TrackingServiceTest extends BaseTest {
 
   @Test
   void testLogEventHappyPath() {
-    when(bardApi.syncProfileWithHttpInfo()).thenReturn(ResponseEntity.ok(null));
-    when(bardApi.eventWithHttpInfo(any())).thenReturn(ResponseEntity.ok(null));
     trackingService.logEvent(TEST_BEARER_TOKEN, "foo", Map.of("bar", "baz"));
 
-    await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> verify(bardApi).syncProfileWithHttpInfo());
+    await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> verify(bardApi).syncProfile());
 
     var expectedEventProperties = new EventProperties().appId(APP_ID).pushToMixpanel(false);
     expectedEventProperties.put("bar", "baz");
@@ -54,21 +50,18 @@ class TrackingServiceTest extends BaseTest {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                verify(bardApi, times(1))
-                    .eventWithHttpInfo(
-                        new Event().event("foo").properties(expectedEventProperties)));
+                verify(bardApi)
+                    .event(new Event().event("foo").properties(expectedEventProperties)));
   }
 
   @Test
   void testLogEventWhenBardIsDown() {
-    when(bardApi.syncProfileWithHttpInfo())
-        .thenReturn(ResponseEntity.internalServerError().build());
-    when(bardApi.eventWithHttpInfo(any())).thenReturn(ResponseEntity.internalServerError().build());
+    var exception = new RestClientException("FUBAR");
+    doThrow(exception).when(bardApi).syncProfile();
+    doThrow(exception).when(bardApi).event(any());
     trackingService.logEvent(TEST_BEARER_TOKEN, "foo", Map.of("bar", "baz"));
 
-    await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> verify(bardApi).syncProfileWithHttpInfo());
+    await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> verify(bardApi).syncProfile());
 
     var expectedEventProperties = new EventProperties().appId(APP_ID).pushToMixpanel(false);
     expectedEventProperties.put("bar", "baz");
@@ -76,8 +69,7 @@ class TrackingServiceTest extends BaseTest {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                verify(bardApi, times(1))
-                    .eventWithHttpInfo(
-                        new Event().event("foo").properties(expectedEventProperties)));
+                verify(bardApi)
+                    .event(new Event().event("foo").properties(expectedEventProperties)));
   }
 }

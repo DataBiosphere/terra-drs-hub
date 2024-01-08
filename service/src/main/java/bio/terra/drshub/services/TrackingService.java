@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.map.PassiveExpiringMap;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +46,16 @@ public class TrackingService {
   private void syncUser(BardApi bardApi, BearerToken bearerToken) {
     String key = bearerToken.getToken();
     bearerTokenCache.computeIfAbsent(
-        key, k -> bardApi.syncProfileWithHttpInfo().getStatusCode().is2xxSuccessful() ? "" : null);
+        key,
+        k -> {
+          try {
+            bardApi.syncProfile();
+            return "";
+          } catch (Exception ex) {
+            log.warn("Error syncing user profile in bard", ex);
+            return null;
+          }
+        });
   }
 
   private void logEvent(BardApi bardApi, String eventName, Map<String, ?> properties) {
@@ -57,10 +65,10 @@ public class TrackingService {
 
     Event event = new Event().event(eventName).properties(eventProperties);
 
-    ResponseEntity<Void> response = bardApi.eventWithHttpInfo(event);
-
-    if (!response.getStatusCode().is2xxSuccessful()) {
-      log.warn("Error sending event to bard: {}", response.getStatusCode());
+    try {
+      bardApi.event(event);
+    } catch (Exception ex) {
+      log.warn("Error sending event to bard", ex);
     }
   }
 
