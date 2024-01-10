@@ -80,5 +80,6 @@ jobs:
     needs: [ performance-tests ]
     uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
+    if: ${{ failure() }}
     with:
       workflow_name: Nightly Perf Tests

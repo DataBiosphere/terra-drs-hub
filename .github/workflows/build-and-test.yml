@@ -181,6 +181,7 @@ jobs:
     needs: [ build, jib, unit-tests, integration-tests ]
     uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
+    if: ${{ failure() }}
     with:
       workflow_name: Build and Test
 
