@@ -96,5 +96,6 @@ jobs:
     needs: [publish-job, report-to-sherlock, set-version-in-dev]
     uses: ./.github/workflows/slack-notify-on-failure.yml
     secrets: inherit
+    if: ${{ failure() }}
     with:
       workflow_name: Publish
