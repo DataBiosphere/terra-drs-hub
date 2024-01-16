@@ -1,6 +1,7 @@
 deploy_env: ${DEPLOY_ENV:dev} # since there's a default, define this once
 
 drshub:
+  bondUrl: https://bond.dsde-${deploy_env}.broadinstitute.org
   bardUrl: https://terra-bard-${deploy_env}.appspot.com
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
@@ -139,7 +140,6 @@ terra.common:
 # TDR is the only host that has specific values for each lower env
 spring.config.activate.on-profile: '!prod'
 drshub:
-  bondUrl: https://bond.dsde-${deploy_env}.broadinstitute.org
   drsProviders:
     passport:
       name: Passport Test Provider
@@ -168,7 +168,6 @@ drshub:
 # prod
 spring.config.activate.on-profile: prod
 drshub:
-  bondUrl: https://broad-bond-prod.appspot.com
   compactIdHosts:
     "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst
     "dg.anv0": data.terra.bio # old anvil (hosted on TDR)
