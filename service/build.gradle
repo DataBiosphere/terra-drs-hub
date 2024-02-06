@@ -12,8 +12,9 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
-  id 'com.srcclr.gradle' version '3.1.12'
+  	id 'com.srcclr.gradle' version '3.1.12'
 	id 'org.sonarqube'
+	id "io.sentry.jvm.gradle" version "4.2.0"
 }
 
 repositories {
@@ -55,7 +56,6 @@ dependencies {
 	}
 	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-6a32c36'
 	implementation 'bio.terra:externalcreds-client-resttemplate:1.0.0-SNAPSHOT'
-	implementation 'io.sentry:sentry-logback:6.19.0'
 	implementation 'org.codehaus.janino:janino:3.1.9' // Provides if/else xml parsing for logback config
 
 	// google
@@ -63,8 +63,6 @@ dependencies {
 	implementation 'com.google.oauth-client:google-oauth-client'
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-logging:4.9.0'
-
-	implementation 'io.sentry:sentry-spring-boot-starter:6.18.1'
 
 	// For Micrometer metrics gathering
 	implementation 'io.micrometer:micrometer-registry-prometheus'
