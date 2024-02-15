@@ -99,9 +99,17 @@ class TrackingInterceptorTest {
   @Test
   void testDoesNotLogOn404() throws Exception {
     mockBardEmissionsEnabled();
+    String url = "/api/v4/drs/resolve";
     postRequest(
-            "/api/v4/foo",
-            objectMapper.writeValueAsString(Map.of("url", DRS_URI, "fields", List.of())))
+            url,
+            objectMapper.writeValueAsString(
+                Map.of(
+                    "url",
+                    DRS_URI + "notfound",
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of())))
         .andExpect(status().isNotFound());
     verify(trackingService, never()).logEvent(any(BearerToken.class), anyString(), any(Map.class));
   }

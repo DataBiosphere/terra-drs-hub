@@ -1,6 +1,7 @@
 package bio.terra.drshub.util;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doReturn;
@@ -41,6 +42,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
 import org.junit.jupiter.api.Tag;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Tag("Unit")
 public class SignedUrlTestUtils {
@@ -94,6 +97,20 @@ public class SignedUrlTestUtils {
         .when(drsResolutionService)
         .resolveDrsObject(
             eq(drsUri),
+            eq(RequestObject.CloudPlatformEnum.GS),
+            any(List.class),
+            any(BearerToken.class),
+            eq(forceAccessUrl),
+            nullable(String.class),
+            nullable(String.class));
+
+    doReturn(
+            CompletableFuture.failedFuture(
+                HttpClientErrorException.NotFound.create(
+                    HttpStatus.NOT_FOUND, "Not found", null, null, null)))
+        .when(drsResolutionService)
+        .resolveDrsObject(
+            argThat(uri -> !uri.equals(drsUri)),
             eq(RequestObject.CloudPlatformEnum.GS),
             any(List.class),
             any(BearerToken.class),
