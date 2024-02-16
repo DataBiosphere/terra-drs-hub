@@ -14,7 +14,7 @@ jobs:
             id: slack
             uses: slackapi/slack-github-action@v1.24.0
             with:
-              channel-id: "CMYTGJVFY"
+              channel-id: "C03HV2AD20N"
               payload: |
                 {
                   "text": "DRS Hub ${{ inputs.workflow_name }}",
