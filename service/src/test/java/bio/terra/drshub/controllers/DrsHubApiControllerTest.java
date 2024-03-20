@@ -24,6 +24,8 @@ import bio.terra.drshub.services.BondApiFactory;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.ExternalCredsApiFactory;
 import bio.terra.externalcreds.api.OidcApi;
+import bio.terra.externalcreds.model.PassportProvider;
+import bio.terra.externalcreds.model.Provider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.client.ApiClient;
 import io.github.ga4gh.drs.model.AccessMethod;
@@ -86,6 +88,8 @@ public class DrsHubApiControllerTest extends BaseTest {
   @MockBean DrsApiFactory drsApiFactory;
   @MockBean ExternalCredsApiFactory externalCredsApiFactory;
 
+  private final PassportProvider rasProvider = PassportProvider.RAS;
+
   @BeforeEach
   void before() {
     authService.clearCaches();
@@ -100,7 +104,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockDrsApiAccessUrlWithPassport(
         cidProviderHost.dnsHost(), drsObject, TEST_PASSPORT, "gs", TEST_ACCESS_URL);
 
-    mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
+    mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
   }
@@ -115,7 +119,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         mockDrsApiAccessUrlWithToken(
             cidProviderHost.dnsHost(), drsObject, accessId, TEST_ACCESS_URL);
 
-    mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.empty());
+    mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.empty());
 
     mockBondLinkAccessTokenApi(
         cidProviderHost.drsProvider().getBondProvider().orElseThrow(),
@@ -144,7 +148,7 @@ public class DrsHubApiControllerTest extends BaseTest {
             Map.of("passports", List.of(TEST_PASSPORT)), drsObject.getId(), accessId))
         .thenThrow(new RestClientException("Failed to retrieve access url with passport"));
 
-    mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
+    mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
     mockBondLinkAccessTokenApi(
         cidProviderHost.drsProvider().getBondProvider().orElseThrow(),
@@ -353,7 +357,7 @@ public class DrsHubApiControllerTest extends BaseTest {
           .getBondProvider()
           .ifPresent(p -> mockBondLinkAccessTokenApi(p, TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
 
-      mockExternalcredsApi("ras", TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
+      mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
       mvc.perform(
               post("/api/v4/drs/resolve")
@@ -751,9 +755,9 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   private OidcApi mockExternalcredsApi(
-      String passportProvider, String accessToken, Optional<String> passport) {
+      PassportProvider passportProvider, String accessToken, Optional<String> passport) {
     var mockExternalCredsApi = mock(OidcApi.class);
-    when(externalCredsApiFactory.getApi(accessToken)).thenReturn(mockExternalCredsApi);
+    when(externalCredsApiFactory.getOidcApi(accessToken)).thenReturn(mockExternalCredsApi);
     if (passport.isPresent()) {
       when(mockExternalCredsApi.getProviderPassport(passportProvider)).thenReturn(passport.get());
     } else {

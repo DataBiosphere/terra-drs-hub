@@ -6,6 +6,7 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
+import bio.terra.externalcreds.model.PassportProvider;
 import bio.terra.sam.model.UserSignedUrlForBlobBody;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
@@ -280,12 +281,12 @@ public class AuthService {
         bearerToken.getToken(),
         token -> {
           log.info("Cache miss. Fetching passports from ECM");
-          var ecmApi = externalCredsApiFactory.getApi(bearerToken.getToken());
+          var ecmOidcApi = externalCredsApiFactory.getOidcApi(bearerToken.getToken());
           try {
             // For now, we are only getting a RAS passport. In the future it may also fetch from
             // other
             // providers.
-            return Optional.of(List.of(ecmApi.getProviderPassport("ras")));
+            return Optional.of(List.of(ecmOidcApi.getProviderPassport(PassportProvider.RAS)));
           } catch (HttpStatusCodeException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
               log.info("User does not have a passport.");

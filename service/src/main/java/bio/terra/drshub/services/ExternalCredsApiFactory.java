@@ -1,6 +1,7 @@
 package bio.terra.drshub.services;
 
 import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.externalcreds.api.OauthApi;
 import bio.terra.externalcreds.api.OidcApi;
 import bio.terra.externalcreds.client.ApiClient;
 import java.util.List;
@@ -12,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 public record ExternalCredsApiFactory(
     DrsHubConfig drsHubConfig, MappingJackson2HttpMessageConverter jacksonConverter) {
 
-  public OidcApi getApi(String accessToken) {
+  public ApiClient getApi(String accessToken) {
     // ECM returns lots of responses as JSON string.
     // By default, these get intercepted by Spring's raw string converter, but they're quoted, so
     // they should be parsed as JSON.
@@ -24,6 +25,16 @@ public record ExternalCredsApiFactory(
     client.setBasePath(drsHubConfig.getExternalcredsUrl());
     client.setAccessToken(accessToken);
 
+    return client;
+  }
+
+  public OauthApi getOauthApi(String accessToken) {
+    var client = getApi(accessToken);
+    return new OauthApi(client);
+  }
+
+  public OidcApi getOidcApi(String accessToken) {
+    var client = getApi(accessToken);
     return new OidcApi(client);
   }
 }
