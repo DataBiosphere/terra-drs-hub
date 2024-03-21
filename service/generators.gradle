@@ -37,11 +37,6 @@ swaggerSources {
 		code(makeClientCodeClosure('bio.terra.bard', false))
 	}
 
-	ecm {
-		inputFile = file('src/main/resources/vendor/ecm.yaml')
-		code(makeClientCodeClosure('bio.terra.ecm', false))
-	}
-
 	sam {
 		inputFile = file('src/main/resources/vendor/sam.yaml')
 		code(makeClientCodeClosure('bio.terra.sam', false))
@@ -80,7 +75,6 @@ def makeClientCodeClosure(String id, boolean useCustomTemplates) {
 Set<String> swaggerSourcePaths = [
 		"${swaggerSources.server.code.outputDir}/src/main/java",
 		"${swaggerSources.ga4gh.code.outputDir}/src/main/java",
-		"${swaggerSources.ecm.code.outputDir}/src/main/java",
 		"${swaggerSources.sam.code.outputDir}/src/main/java",
 		"${swaggerSources.bard.code.outputDir}/src/main/java",
 ]
