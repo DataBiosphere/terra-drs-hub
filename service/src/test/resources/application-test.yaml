@@ -2,7 +2,6 @@
 deploy_env: dev
 
 drshub:
-  bondUrl: https://broad-bond-${deploy_env}.appspot.com
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
 
