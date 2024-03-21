@@ -7,12 +7,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import bio.terra.bond.api.BondApi;
-import bio.terra.bond.model.AccessTokenObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
+import bio.terra.externalcreds.api.OauthApi;
 import bio.terra.externalcreds.api.OidcApi;
 import bio.terra.sam.api.SamApi;
 import bio.terra.sam.model.UserSignedUrlForBlobBody;
@@ -35,9 +34,8 @@ class AuthServiceTest extends BaseTest {
   @Autowired private DrsProviderService drsProviderService;
   @MockBean private DrsApiFactory drsApiFactory;
   @MockBean private DrsApi drsApi;
-  @MockBean private BondApiFactory bondApiFactory;
-  @MockBean private BondApi bondApi;
   @MockBean private ExternalCredsApiFactory externalCredsApiFactory;
+  @MockBean private OauthApi oauthApi;
   @MockBean private OidcApi oidcApi;
   @MockBean private SamApiFactory samApiFactory;
   @MockBean private SamApi samApi;
@@ -100,9 +98,9 @@ class AuthServiceTest extends BaseTest {
     when(drsApiFactory.getApiFromUriComponents(any(), any())).thenReturn(drsApi);
     when(drsApi.optionsObject(any())).thenReturn(expectedAuthorizations);
 
-    when(bondApiFactory.getApi(any())).thenReturn(bondApi);
-    when(bondApi.getLinkAccessToken(any())).thenReturn(new AccessTokenObject().token(fencetoken));
-    when(externalCredsApiFactory.getApi(any())).thenReturn(oidcApi);
+    when(externalCredsApiFactory.getOauthApi(any())).thenReturn(oauthApi);
+    when(oauthApi.getProviderAccessToken(any())).thenReturn(fencetoken);
+    when(externalCredsApiFactory.getOidcApi(any())).thenReturn(oidcApi);
     when(oidcApi.getProviderPassport(any())).thenReturn(passport);
 
     List<DrsHubAuthorization> authorizations =
@@ -120,7 +118,7 @@ class AuthServiceTest extends BaseTest {
     // This time, it should have the fence token, not the bearer token.
     assertEquals(expected, secrets);
 
-    verify(bondApi).getLinkAccessToken(any());
+    verify(oauthApi).getProviderAccessToken(any());
     verify(oidcApi).getProviderPassport(any());
 
     // TDR should result in using the current request bearer token instead of the fence token.

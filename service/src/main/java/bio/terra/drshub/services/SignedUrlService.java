@@ -1,11 +1,11 @@
 package bio.terra.drshub.services;
 
-import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
+import bio.terra.drshub.generated.model.SaKeyObject;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;

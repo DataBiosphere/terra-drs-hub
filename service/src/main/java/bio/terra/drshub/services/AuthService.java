@@ -1,17 +1,21 @@
 package bio.terra.drshub.services;
 
-import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.generated.model.SaKeyObject;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.externalcreds.model.PassportProvider;
+import bio.terra.externalcreds.model.Provider;
 import bio.terra.sam.model.UserSignedUrlForBlobBody;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +34,6 @@ import org.springframework.web.util.UriComponents;
 @Slf4j
 public class AuthService {
 
-  private final BondApiFactory bondApiFactory;
   private final DrsApiFactory drsApiFactory;
   private final SamApiFactory samApiFactory;
   private final ExternalCredsApiFactory externalCredsApiFactory;
@@ -42,14 +45,14 @@ public class AuthService {
   private final Map<String, Optional<List<String>>> passportCache =
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
 
-  // For every DRS Resolution requiring a signed URL using Bond authorization,
-  // we need to reach out to Bond twice:
+  // For every DRS Resolution requiring a signed URL using fence account authorization,
+  // we need to reach out to ECM twice:
   //   1. Get the fence token
   //   2. Get the fence service account.
-  // These two caches, keyed on a combination of the user's bearer token and the Bond provider,
-  // keep the responses from Bond around to keep us from making multiple redundant requests.
-  // The cache entries are per-user and per-Bond provider.
-  // So, if a single user is making requests using two different auth providers from Bond,
+  // These two caches, keyed on a combination of the user's bearer token and the fence provider,
+  // keep the responses from ECM around to keep us from making multiple redundant requests.
+  // The cache entries are per-user and per-ECM provider.
+  // So, if a single user is making requests using two different auth providers from ECM,
   // they will have 2 entries in the cache, one per provider.
   private final Map<Pair<String, String>, SaKeyObject> serviceAccountKeyCache =
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
@@ -58,18 +61,16 @@ public class AuthService {
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
 
   public AuthService(
-      BondApiFactory bondApiFactory,
       DrsApiFactory drsApiFactory,
       SamApiFactory samApiFactory,
       ExternalCredsApiFactory externalCredsApiFactory) {
-    this.bondApiFactory = bondApiFactory;
     this.drsApiFactory = drsApiFactory;
     this.samApiFactory = samApiFactory;
     this.externalCredsApiFactory = externalCredsApiFactory;
   }
 
   /**
-   * Get the SA key for a user from Bond
+   * Get the SA key for a user from ECM
    *
    * @param drsProvider Drs provider to provide the fence to get SA key for
    * @param bearerToken bearer token of the user
@@ -86,10 +87,20 @@ public class AuthService {
         cacheKey,
         pair -> {
           log.info(
-              "Cache miss. Fetching fence service account from Bond for DRS Provider '{}'",
+              "Cache miss. Fetching fence service account from ECM for DRS Provider '{}'",
               drsProvider.getName());
-          var bondApi = bondApiFactory.getApi(bearerToken);
-          return bondApi.getLinkSaKey(pair.getRight());
+          var ecmFenceAccountKeyApi =
+              externalCredsApiFactory.getFenceAccountKeyApi(bearerToken.getToken());
+          var fenceAccountKey =
+              ecmFenceAccountKeyApi.getFenceAccountKey(Provider.fromValue(pair.getRight()));
+          ObjectMapper mapper = new ObjectMapper();
+          Map<String, Object> map = new HashMap<>();
+          try {
+            map = mapper.readValue(fenceAccountKey, HashMap.class);
+          } catch (JsonProcessingException e) {
+            log.info("Error parsing credentials for ECM provider '{}'", drsProvider.getName());
+          }
+          return map.isEmpty() ? null : new SaKeyObject().data(map);
         });
   }
 
@@ -240,14 +251,14 @@ public class AuthService {
     }
   }
 
-  // Reach out to Bond and get the fence token for the user.
+  // Reach out to ECM and get the fence token for the user.
   private Optional<List<String>> getFenceAccessToken(
       String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
         Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
     if (fenceAccessTokenCache.containsKey(cacheKey)) {
       log.info(
-          "Cache hit. Not fetching Bond access token for '{}' from '{}'",
+          "Cache hit. Not fetching fence access token for '{}' from '{}'",
           drsUri,
           drsProvider.getName());
     }
@@ -255,15 +266,14 @@ public class AuthService {
         cacheKey,
         pair -> {
           log.info(
-              "Fetching Bond access token for '{}' from '{}'",
+              "Fetching fence access token for '{}' from '{}'",
               drsUri,
               drsProvider.getBondProvider().orElseThrow());
 
-          var bondApi = bondApiFactory.getApi(bearerToken);
+          var ecmOauthApi = externalCredsApiFactory.getOauthApi(bearerToken.getToken());
+          var response = ecmOauthApi.getProviderAccessToken(Provider.fromValue(pair.getRight()));
 
-          var response = bondApi.getLinkAccessToken(pair.getRight());
-
-          return Optional.ofNullable(response.getToken()).map(List::of);
+          return Optional.ofNullable(response).map(List::of);
         });
   }
 

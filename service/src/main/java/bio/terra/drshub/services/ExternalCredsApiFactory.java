@@ -1,6 +1,7 @@
 package bio.terra.drshub.services;
 
 import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.externalcreds.api.FenceAccountKeyApi;
 import bio.terra.externalcreds.api.OauthApi;
 import bio.terra.externalcreds.api.OidcApi;
 import bio.terra.externalcreds.client.ApiClient;
@@ -36,5 +37,10 @@ public record ExternalCredsApiFactory(
   public OidcApi getOidcApi(String accessToken) {
     var client = getApi(accessToken);
     return new OidcApi(client);
+  }
+
+  public FenceAccountKeyApi getFenceAccountKeyApi(String accessToken) {
+    var client = getApi(accessToken);
+    return new FenceAccountKeyApi(client);
   }
 }
