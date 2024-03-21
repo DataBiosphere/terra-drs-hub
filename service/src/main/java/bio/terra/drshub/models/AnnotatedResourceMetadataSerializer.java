@@ -36,7 +36,7 @@ public class AnnotatedResourceMetadataSerializer extends JsonSerializer<Annotate
       if (f.equals(Fields.BOND_PROVIDER)) {
         jsonGenerator.writeStringField(
             Fields.BOND_PROVIDER,
-            value.getDrsProvider().getBondProvider().map(Enum::toString).orElse(null));
+            value.getDrsProvider().getEcmFenceProvider().map(Enum::toString).orElse(null));
       }
 
       if (f.equals(Fields.FILE_NAME)) {

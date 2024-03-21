@@ -78,7 +78,8 @@ public class AuthService {
    */
   public SaKeyObject fetchUserServiceAccount(DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
-        Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
+        Pair.of(
+            bearerToken.getToken(), drsProvider.getEcmFenceProvider().orElseThrow().getUriValue());
     if (serviceAccountKeyCache.containsKey(cacheKey)) {
       log.info(
           "Cache hit. Not fetching service account from DRS Provider '{}'", drsProvider.getName());
@@ -255,7 +256,8 @@ public class AuthService {
   private Optional<List<String>> getFenceAccessToken(
       String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
-        Pair.of(bearerToken.getToken(), drsProvider.getBondProvider().orElseThrow().getUriValue());
+        Pair.of(
+            bearerToken.getToken(), drsProvider.getEcmFenceProvider().orElseThrow().getUriValue());
     if (fenceAccessTokenCache.containsKey(cacheKey)) {
       log.info(
           "Cache hit. Not fetching fence access token for '{}' from '{}'",
@@ -268,7 +270,7 @@ public class AuthService {
           log.info(
               "Fetching fence access token for '{}' from '{}'",
               drsUri,
-              drsProvider.getBondProvider().orElseThrow());
+              drsProvider.getEcmFenceProvider().orElseThrow());
 
           var ecmOauthApi = externalCredsApiFactory.getOauthApi(bearerToken.getToken());
           var response = ecmOauthApi.getProviderAccessToken(Provider.fromValue(pair.getRight()));

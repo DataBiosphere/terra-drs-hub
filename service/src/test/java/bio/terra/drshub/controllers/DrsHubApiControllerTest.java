@@ -118,7 +118,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.empty());
 
     mockExternalCredsGetProviderAccessToken(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
@@ -147,7 +147,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
     mockExternalCredsGetProviderAccessToken(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
@@ -168,7 +168,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "gs", TEST_ACCESS_URL);
 
     mockExternalCredsGetProviderAccessToken(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
@@ -243,7 +243,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     fenceAccountKey.put("foo", "sa key");
     ObjectMapper mapper = new ObjectMapper();
     mockExternalCredsFenceAccountKeyApi(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         mapper.writeValueAsString(fenceAccountKey));
 
@@ -270,7 +270,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "s3", TEST_ACCESS_URL);
 
     mockExternalCredsGetProviderAccessToken(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 
@@ -289,7 +289,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "s3", TEST_ACCESS_URL);
 
     mockExternalCredsGetProviderAccessTokenError(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         HttpClientErrorException.create(
             HttpStatus.UNAUTHORIZED, "", HttpHeaders.EMPTY, null, null));
@@ -311,7 +311,7 @@ public class DrsHubApiControllerTest extends BaseTest {
         mockDrsApiAccessUrlWithToken(cidProviderHost.dnsHost(), drsObject, "s3", TEST_ACCESS_URL);
 
     mockExternalCredsGetProviderAccessTokenError(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         HttpClientErrorException.create(HttpStatus.NOT_FOUND, "", HttpHeaders.EMPTY, null, null));
 
@@ -353,7 +353,7 @@ public class DrsHubApiControllerTest extends BaseTest {
 
       cidProviderHost
           .drsProvider()
-          .getBondProvider()
+          .getEcmFenceProvider()
           .ifPresent(
               p ->
                   mockExternalCredsGetProviderAccessToken(
@@ -563,7 +563,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     when(mockDrsApi(cidProviderHost.dnsHost(), drsObject).getAccessURL(drsObject.getId(), "s3"))
         .thenThrow(new HttpServerErrorException(HttpStatus.NOT_IMPLEMENTED, "forced sad response"));
     mockExternalCredsGetProviderAccessToken(
-        Provider.fromValue(cidProviderHost.drsProvider().getBondProvider().get().getUriValue()),
+        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
         TEST_BOND_SA_TOKEN);
 

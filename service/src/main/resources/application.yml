@@ -10,7 +10,7 @@ drshub:
       name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
       hostRegex: '.*\.theanvil\.io'
       metadataAuth: false
-      bondProvider: anvil
+      ecmFenceProvider: anvil
       accessMethodConfigs:
         - type: gs
           auth: fence_token
@@ -19,7 +19,7 @@ drshub:
       name: BioData Catalyst (BDC)
       hostRegex: '.*\.biodatacatalyst\.nhlbi\.nih\.gov|wb-mock-drs-dev\.storage\.googleapis\.com'
       metadataAuth: false
-      bondProvider: fence
+      ecmFenceProvider: fence
       accessMethodConfigs:
         - type: gs
           auth: fence_token
@@ -28,7 +28,7 @@ drshub:
       name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
       hostRegex: '.*\.datacommons\.io'
       metadataAuth: false
-      bondProvider: dcf_fence
+      ecmFenceProvider: dcf_fence
       accessMethodConfigs:
         - type: gs
           auth: fence_token
@@ -40,7 +40,7 @@ drshub:
       name: Gabriella Miller Kids First DRC
       hostRegex: '.*\.kidsfirstdrc\.org'
       metadataAuth: false
-      bondProvider: kids_first
+      ecmFenceProvider: kids_first
       accessMethodConfigs:
         - type: s3
           auth: fence_token
@@ -145,7 +145,7 @@ drshub:
       name: Passport Test Provider
       hostRegex: 'ctds-test-env\.planx-pla\.net'
       metadataAuth: false
-      bondProvider: dcf_fence
+      ecmFenceProvider: dcf_fence
       accessMethodConfigs:
         - type: gs
           auth: passport
