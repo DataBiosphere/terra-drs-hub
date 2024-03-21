@@ -124,7 +124,7 @@ class VerifyPactsDrsHubApiController {
     var drsProvider = DrsProvider.create();
     drsProvider.setHostRegex(".*\\.theanvil\\.io");
     drsProvider.setMetadataAuth(false);
-    drsProvider.setBondProvider(ECMFenceProviderEnum.anvil);
+    drsProvider.setEcmFenceProvider(ECMFenceProviderEnum.anvil);
     drsProvider.setUseAliasesForLocalizationPath(true);
     drsProvider.setName("AnVIL");
 

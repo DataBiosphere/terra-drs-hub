@@ -40,7 +40,7 @@ public class DrsProviderTest extends BaseTest {
     var drsProvider =
         createRandomDrsProvider()
             .setAccessMethodConfigs(testAccessMethods)
-            .setBondProvider(Optional.empty());
+            .setEcmFenceProvider(Optional.empty());
 
     assertFalse(drsProvider.shouldFetchFenceAccessToken(TypeEnum.GS, false, false));
   }
@@ -75,7 +75,7 @@ public class DrsProviderTest extends BaseTest {
     return DrsProvider.create()
         .setName(UUID.randomUUID().toString())
         .setHostRegex(UUID.randomUUID().toString())
-        .setBondProvider(ECMFenceProviderEnum.fence)
+        .setEcmFenceProvider(ECMFenceProviderEnum.fence)
         .setAccessMethodConfigs(new ArrayList<>());
   }
 }
