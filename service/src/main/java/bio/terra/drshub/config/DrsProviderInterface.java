@@ -2,7 +2,7 @@ package bio.terra.drshub.config;
 
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
-import bio.terra.drshub.models.BondProviderEnum;
+import bio.terra.drshub.models.ECMFenceProviderEnum;
 import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
 import jakarta.annotation.Nullable;
@@ -22,7 +22,7 @@ public interface DrsProviderInterface {
 
   boolean isMetadataAuth();
 
-  Optional<BondProviderEnum> getBondProvider();
+  Optional<ECMFenceProviderEnum> getBondProvider();
 
   ArrayList<ProviderAccessMethodConfig> getAccessMethodConfigs();
 

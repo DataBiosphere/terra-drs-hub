@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
-import bio.terra.drshub.models.BondProviderEnum;
+import bio.terra.drshub.models.ECMFenceProviderEnum;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +75,7 @@ public class DrsProviderTest extends BaseTest {
     return DrsProvider.create()
         .setName(UUID.randomUUID().toString())
         .setHostRegex(UUID.randomUUID().toString())
-        .setBondProvider(BondProviderEnum.fence)
+        .setBondProvider(ECMFenceProviderEnum.fence)
         .setAccessMethodConfigs(new ArrayList<>());
   }
 }
