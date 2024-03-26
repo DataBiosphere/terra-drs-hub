@@ -73,7 +73,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class DrsHubApiControllerTest extends BaseTest {
 
   public static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
-  public static final String TEST_BOND_SA_TOKEN = "I am a bond SA token";
+  public static final String TEST_FENCE_SA_TOKEN = "I am a fence SA token";
   public static final AccessURL TEST_ACCESS_URL = new AccessURL().url("I am a signed access url");
   public static final String TEST_PASSPORT = "I am a passport";
   public static final String COMPACT_ID_TEST_HOST = "drs.anv0";
@@ -120,12 +120,12 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-        TEST_BOND_SA_TOKEN);
+            TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
-    verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+    verify(drsApi).setBearerToken(TEST_FENCE_SA_TOKEN);
     // verify that the passport postAccessURL method was not called, since there is no passport
     verify(drsApi, never()).postAccessURL(any(), any(), any());
   }
@@ -149,7 +149,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-        TEST_BOND_SA_TOKEN);
+            TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
@@ -157,7 +157,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     verify(drsApi)
         .postAccessURL(Map.of("passports", List.of(TEST_PASSPORT)), drsObject.getId(), accessId);
     // need an extra verify because nothing in the mock cares that bearer token is set or not
-    verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+    verify(drsApi).setBearerToken(TEST_FENCE_SA_TOKEN);
   }
 
   @Test
@@ -170,7 +170,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-        TEST_BOND_SA_TOKEN);
+            TEST_FENCE_SA_TOKEN);
 
     var requestBody =
         objectMapper.writeValueAsString(
@@ -186,7 +186,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test
-  void testDoesNotCallECMWhenOnlyDrsFieldsRequested() throws Exception {
+  void testDoesNotCallEcmWhenOnlyDrsFieldsRequested() throws Exception {
     var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
     var cid = cidList.get(new Random().nextInt(cidList.size()));
     var host = config.getCompactIdHosts().get(cid);
@@ -272,16 +272,16 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-        TEST_BOND_SA_TOKEN);
+            TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
     // need an extra verify because nothing in the mock cares that bearer token is set or not
-    verify(drsApi).setBearerToken(TEST_BOND_SA_TOKEN);
+    verify(drsApi).setBearerToken(TEST_FENCE_SA_TOKEN);
   }
 
   @Test
-  void testBondUnauthorized() throws Exception {
+  void testEcmUnauthorized() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
 
@@ -303,7 +303,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test
-  void testECMNotFound() throws Exception {
+  void testEcmNotFound() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
 
@@ -357,7 +357,7 @@ public class DrsHubApiControllerTest extends BaseTest {
           .ifPresent(
               p ->
                   mockExternalCredsGetProviderAccessToken(
-                      Provider.fromValue(p.toString()), TEST_ACCESS_TOKEN, TEST_BOND_SA_TOKEN));
+                      Provider.fromValue(p.toString()), TEST_ACCESS_TOKEN, TEST_FENCE_SA_TOKEN));
 
       mockExternalcredsApi(rasProvider, TEST_ACCESS_TOKEN, Optional.of(TEST_PASSPORT));
 
@@ -543,7 +543,7 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test
-  void testReturns500IfKeyRetrievalFromBondFails() throws Exception {
+  void testReturns500IfKeyRetrievalFromEcmFails() throws Exception {
     var cidProviderHost = getProviderHosts("kidsFirst");
     var drsObject = drsObjectWithRandomId("s3");
 
@@ -565,7 +565,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-        TEST_BOND_SA_TOKEN);
+            TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
