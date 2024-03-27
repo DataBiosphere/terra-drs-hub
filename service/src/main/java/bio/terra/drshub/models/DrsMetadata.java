@@ -1,6 +1,6 @@
 package bio.terra.drshub.models;
 
-import bio.terra.bond.model.SaKeyObject;
+import bio.terra.drshub.generated.model.SaKeyObject;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.DrsObject;
 import jakarta.annotation.Nullable;

@@ -8,10 +8,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import bio.terra.bond.model.SaKeyObject;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.RequestObject;
+import bio.terra.drshub.generated.model.SaKeyObject;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsResolutionService;
@@ -55,7 +55,7 @@ public class SignedUrlTestUtils {
       URL url) {
 
     var storage = mock(Storage.class);
-    var serviceAccountKey = new SaKeyObject().data("TestServiceAccountKey");
+    var serviceAccountKey = new SaKeyObject().putDataItem("key", "TestServiceAccountKey");
 
     when(authService.fetchUserServiceAccount(any(DrsProvider.class), any(BearerToken.class)))
         .thenReturn(serviceAccountKey);

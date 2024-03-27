@@ -18,9 +18,9 @@ import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
-import bio.terra.drshub.models.BondProviderEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
+import bio.terra.drshub.models.ECMFenceProviderEnum;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.DrsProviderService;
@@ -124,7 +124,7 @@ class VerifyPactsDrsHubApiController {
     var drsProvider = DrsProvider.create();
     drsProvider.setHostRegex(".*\\.theanvil\\.io");
     drsProvider.setMetadataAuth(false);
-    drsProvider.setBondProvider(BondProviderEnum.anvil);
+    drsProvider.setEcmFenceProvider(ECMFenceProviderEnum.anvil);
     drsProvider.setUseAliasesForLocalizationPath(true);
     drsProvider.setName("AnVIL");
 

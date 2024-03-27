@@ -1,7 +1,7 @@
 package bio.terra.drshub.services;
 
-import bio.terra.bond.model.SaKeyObject;
 import bio.terra.drshub.DrsHubException;
+import bio.terra.drshub.generated.model.SaKeyObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.Storage;
@@ -20,7 +20,7 @@ public record GoogleStorageService(ObjectMapper objectMapper) {
             objectMapper.writeValueAsString(saKey.getData()).getBytes(StandardCharsets.UTF_8))) {
       creds = ServiceAccountCredentials.fromStream(saKeyInputStream);
     } catch (Exception ex) {
-      throw new DrsHubException("Could not parse credentials from Bond");
+      throw new DrsHubException("Could not parse credentials from ECM");
     }
     return StorageOptions.newBuilder()
         .setProjectId(googleProject)

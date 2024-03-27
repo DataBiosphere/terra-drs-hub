@@ -11,8 +11,6 @@ public interface DrsHubConfigInterface {
 
   String getBardUrl();
 
-  String getBondUrl();
-
   String getSamUrl();
 
   String getExternalcredsUrl();

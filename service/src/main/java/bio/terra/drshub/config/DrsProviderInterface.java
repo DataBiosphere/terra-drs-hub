@@ -2,7 +2,7 @@ package bio.terra.drshub.config;
 
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
-import bio.terra.drshub.models.BondProviderEnum;
+import bio.terra.drshub.models.ECMFenceProviderEnum;
 import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
 import jakarta.annotation.Nullable;
@@ -22,7 +22,7 @@ public interface DrsProviderInterface {
 
   boolean isMetadataAuth();
 
-  Optional<BondProviderEnum> getBondProvider();
+  Optional<ECMFenceProviderEnum> getEcmFenceProvider();
 
   ArrayList<ProviderAccessMethodConfig> getAccessMethodConfigs();
 
@@ -69,7 +69,7 @@ public interface DrsProviderInterface {
    */
   default boolean shouldFetchFenceAccessToken(
       AccessMethod.TypeEnum accessMethodType, boolean useFallbackAuth, boolean forceAccessUrl) {
-    return getBondProvider().isPresent()
+    return getEcmFenceProvider().isPresent()
         && (forceAccessUrl
             || getAccessMethodConfigs().stream()
                 .anyMatch(
@@ -113,7 +113,7 @@ public interface DrsProviderInterface {
   default boolean shouldFetchUserServiceAccount(
       AccessMethod.TypeEnum accessMethodType, List<String> requestedFields) {
     // This account would be stored in Bond so no Bond means no account.
-    return getBondProvider().isPresent()
+    return getEcmFenceProvider().isPresent()
         // "Not definitely not GCS". A falsy accessMethod is okay because there may not have been a
         // preceding metadata request to determine the accessMethod.
         && (accessMethodType == null
