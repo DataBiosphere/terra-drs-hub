@@ -24,6 +24,7 @@ import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +43,8 @@ public class DrsResolutionService {
   private final DrsApiFactory drsApiFactory;
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
+
+  private final TrackingService trackingService;
   private final AuditLogger auditLogger;
 
   @Autowired
@@ -49,9 +52,11 @@ public class DrsResolutionService {
       DrsApiFactory drsApiFactory,
       DrsProviderService drsProviderService,
       AuthService authService,
+      TrackingService trackingService,
       AuditLogger auditLogger) {
     this.drsApiFactory = drsApiFactory;
     this.drsProviderService = drsProviderService;
+    this.trackingService = trackingService;
     this.authService = authService;
     this.auditLogger = auditLogger;
   }
@@ -142,6 +147,7 @@ public class DrsResolutionService {
 
     var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
+    logResolvedCloud(drsUri, accessMethod, accessMethodType, cloudPlatform, bearerToken);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
@@ -167,6 +173,29 @@ public class DrsResolutionService {
     auditLogger.logEvent(
         auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionSucceeded).build());
     return drsMetadataBuilder.build();
+  }
+
+  public void logResolvedCloud(
+      String drsUri,
+      Optional<AccessMethod> accessMethod,
+      AccessMethod.TypeEnum accessMethodType,
+      CloudPlatformEnum cloudPlatform,
+      BearerToken bearerToken) {
+    if (cloudPlatform != null & accessMethod.isPresent()) {
+      String resolvedCloud = accessMethodType.getValue();
+      if (accessMethodType.equals(TypeEnum.HTTPS)
+          && accessMethod.get().getAccessId().startsWith("az")) {
+        resolvedCloud = "azure";
+      }
+      var properties =
+          new HashMap<String, Object>(
+              Map.of(
+                  "drsURI", drsUri,
+                  "requestedCloud", cloudPlatform.toString(),
+                  "resolvedCloud", resolvedCloud,
+                  "accessMethodType", accessMethodType));
+      trackingService.logEvent(bearerToken, "drshub:api:resolvedCloud", properties);
+    }
   }
 
   private void setDrsResponseValues(

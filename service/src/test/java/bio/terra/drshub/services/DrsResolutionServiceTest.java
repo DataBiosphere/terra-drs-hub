@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.ProviderAccessMethodConfig;
+import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
@@ -20,15 +21,18 @@ import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.util.SignedUrlTestUtils;
+import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -55,6 +59,8 @@ class DrsResolutionServiceTest {
   @Mock private DrsApi drsApi;
   @Mock private UriComponents uriComponents;
   @Mock private AuthService authService;
+
+  @Mock private TrackingService trackingService;
   @Mock private GoogleStorageService googleStorageService;
 
   private static final String PATH = "path";
@@ -79,7 +85,11 @@ class DrsResolutionServiceTest {
 
     drsResolutionService =
         new DrsResolutionService(
-            drsApiFactory, mock(DrsProviderService.class), authService, mock(AuditLogger.class));
+            drsApiFactory,
+            mock(DrsProviderService.class),
+            authService,
+            trackingService,
+            mock(AuditLogger.class));
 
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);
@@ -244,5 +254,40 @@ class DrsResolutionServiceTest {
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("x-user-project", googleProject);
+  }
+
+  @Test
+  void testLogResolvedCloud() {
+    String drsUri = "drs://foo.bar";
+    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.AZURE;
+    AccessMethod accessMethod =
+        new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
+    BearerToken bearerToken = new BearerToken(UUID.randomUUID().toString());
+    String eventName = "drshub:api:resolvedCloud";
+    drsResolutionService.logResolvedCloud(
+        drsUri, Optional.of(accessMethod), accessMethod.getType(), cloudPlatform, bearerToken);
+    var properties =
+        new HashMap<String, Object>(
+            Map.of(
+                "drsURI",
+                drsUri,
+                "requestedCloud",
+                cloudPlatform.toString(),
+                "resolvedCloud",
+                "azure",
+                "accessMethodType",
+                accessMethod.getType()));
+    verify(trackingService).logEvent(bearerToken, eventName, properties);
+  }
+
+  @Test
+  void testLogResolvedCloudWithNoCloudPlatform() {
+    String drsUri = "drs://foo.bar";
+    AccessMethod accessMethod =
+        new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
+    BearerToken bearerToken = new BearerToken(UUID.randomUUID().toString());
+    drsResolutionService.logResolvedCloud(
+        drsUri, Optional.of(accessMethod), accessMethod.getType(), null, bearerToken);
+    verifyNoInteractions(trackingService);
   }
 }
