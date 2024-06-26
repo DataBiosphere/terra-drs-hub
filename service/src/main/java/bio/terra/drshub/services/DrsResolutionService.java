@@ -181,7 +181,7 @@ public class DrsResolutionService {
       AccessMethod.TypeEnum accessMethodType,
       CloudPlatformEnum cloudPlatform,
       BearerToken bearerToken) {
-    if (accessMethod.isPresent()) {
+    if (cloudPlatform != null && accessMethod.isPresent()) {
       // Log when the data is in Azure, but the preferred cloud is not Azure
       // When the non-Azure user downloads the data, it will result in egress charges
       if ((accessMethodType.equals(TypeEnum.HTTPS)
