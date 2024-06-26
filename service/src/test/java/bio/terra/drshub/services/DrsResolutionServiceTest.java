@@ -79,6 +79,12 @@ class DrsResolutionServiceTest {
           SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
   private static final DrsObject DRS_OBJECT = new DrsObject().id("drs.id");
 
+  private static final AccessMethod azureAccessMethod =
+      new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
+
+  private static final AccessMethod gsAccessMethod =
+      new AccessMethod().accessId(UUID.randomUUID().toString()).type(TypeEnum.GS);
+
   @BeforeEach
   void before() {
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
@@ -257,15 +263,11 @@ class DrsResolutionServiceTest {
   }
 
   @Test
-  void testLogResolvedCloud() {
+  void testLogAzureToGSEgress() {
     String drsUri = "drs://foo.bar";
-    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.AZURE;
-    AccessMethod accessMethod =
-        new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
-    BearerToken bearerToken = new BearerToken(UUID.randomUUID().toString());
-    String eventName = "drshub:api:resolvedCloud";
-    drsResolutionService.logResolvedCloud(
-        drsUri, Optional.of(accessMethod), accessMethod.getType(), cloudPlatform, bearerToken);
+    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.GS;
+    drsResolutionService.logAzureEgress(
+        drsUri, Optional.of(azureAccessMethod), azureAccessMethod.getType(), cloudPlatform, TOKEN);
     var properties =
         new HashMap<String, Object>(
             Map.of(
@@ -276,18 +278,42 @@ class DrsResolutionServiceTest {
                 "resolvedCloud",
                 "azure",
                 "accessMethodType",
-                accessMethod.getType()));
-    verify(trackingService).logEvent(bearerToken, eventName, properties);
+                azureAccessMethod.getType()));
+    verify(trackingService).logEvent(TOKEN, "drshub:azureEgress", properties);
   }
 
   @Test
-  void testLogResolvedCloudWithNoCloudPlatform() {
+  void testLogAzureToAzure() {
     String drsUri = "drs://foo.bar";
-    AccessMethod accessMethod =
-        new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
-    BearerToken bearerToken = new BearerToken(UUID.randomUUID().toString());
-    drsResolutionService.logResolvedCloud(
-        drsUri, Optional.of(accessMethod), accessMethod.getType(), null, bearerToken);
+    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.AZURE;
+    drsResolutionService.logAzureEgress(
+        drsUri, Optional.of(azureAccessMethod), azureAccessMethod.getType(), cloudPlatform, TOKEN);
+    verifyNoInteractions(trackingService);
+  }
+
+  @Test
+  void testLogGSToGS() {
+    String drsUri = "drs://foo.bar";
+    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.GS;
+    drsResolutionService.logAzureEgress(
+        drsUri, Optional.of(gsAccessMethod), gsAccessMethod.getType(), cloudPlatform, TOKEN);
+    verifyNoInteractions(trackingService);
+  }
+
+  @Test
+  void testLogGSToAzureEgress() {
+    String drsUri = "drs://foo.bar";
+    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.AZURE;
+    drsResolutionService.logAzureEgress(
+        drsUri, Optional.of(gsAccessMethod), gsAccessMethod.getType(), cloudPlatform, TOKEN);
+    verifyNoInteractions(trackingService);
+  }
+
+  @Test
+  void testLogAzureEgressNoCloudPlatform() {
+    String drsUri = "drs://foo.bar";
+    drsResolutionService.logAzureEgress(
+        drsUri, Optional.of(azureAccessMethod), azureAccessMethod.getType(), null, TOKEN);
     verifyNoInteractions(trackingService);
   }
 }

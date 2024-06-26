@@ -147,7 +147,7 @@ public class DrsResolutionService {
 
     var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
-    logResolvedCloud(drsUri, accessMethod, accessMethodType, cloudPlatform, bearerToken);
+    logAzureEgress(drsUri, accessMethod, accessMethodType, cloudPlatform, bearerToken);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
@@ -175,26 +175,31 @@ public class DrsResolutionService {
     return drsMetadataBuilder.build();
   }
 
-  public void logResolvedCloud(
+  public void logAzureEgress(
       String drsUri,
       Optional<AccessMethod> accessMethod,
       AccessMethod.TypeEnum accessMethodType,
       CloudPlatformEnum cloudPlatform,
       BearerToken bearerToken) {
-    if (cloudPlatform != null & accessMethod.isPresent()) {
-      String resolvedCloud = accessMethodType.getValue();
-      if (accessMethodType.equals(TypeEnum.HTTPS)
-          && accessMethod.get().getAccessId().startsWith("az")) {
-        resolvedCloud = "azure";
+    if (accessMethod.isPresent()) {
+      // Log when the data is in Azure, but the preferred cloud is not Azure
+      // When the non-Azure user downloads the data, it will result in egress charges
+      if ((accessMethodType.equals(TypeEnum.HTTPS)
+              && accessMethod.get().getAccessId().startsWith("az"))
+          && !cloudPlatform.equals(CloudPlatformEnum.AZURE)) {
+        var properties =
+            new HashMap<String, Object>(
+                Map.of(
+                    "drsURI",
+                    drsUri,
+                    "requestedCloud",
+                    cloudPlatform.toString(),
+                    "resolvedCloud",
+                    "azure",
+                    "accessMethodType",
+                    accessMethodType));
+        trackingService.logEvent(bearerToken, "drshub:azureEgress", properties);
       }
-      var properties =
-          new HashMap<String, Object>(
-              Map.of(
-                  "drsURI", drsUri,
-                  "requestedCloud", cloudPlatform.toString(),
-                  "resolvedCloud", resolvedCloud,
-                  "accessMethodType", accessMethodType));
-      trackingService.logEvent(bearerToken, "drshub:api:resolvedCloud", properties);
     }
   }
 
