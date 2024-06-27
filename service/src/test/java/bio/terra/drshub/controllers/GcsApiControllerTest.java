@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +73,7 @@ public class GcsApiControllerTest extends BaseTest {
             eq(drsUri),
             eq(CloudPlatformEnum.GS),
             eq(Fields.CORE_FIELDS),
+            eq(Optional.empty()),
             eq(new BearerToken(TEST_ACCESS_TOKEN)),
             eq(true),
             eq(null),

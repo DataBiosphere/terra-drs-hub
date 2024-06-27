@@ -25,5 +25,8 @@ public interface AuditLogEvent extends WithAuditLogEvent {
 
   AuditLogEventType getAuditLogEventType();
 
+  @JsonInclude(Include.NON_EMPTY)
+  Optional<String> getServiceName();
+
   class Builder extends ImmutableAuditLogEvent.Builder {}
 }

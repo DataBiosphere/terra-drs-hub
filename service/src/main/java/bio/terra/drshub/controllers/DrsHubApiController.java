@@ -12,6 +12,7 @@ import bio.terra.drshub.util.AsyncUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -42,6 +43,7 @@ public record DrsHubApiController(
             body.getUrl(),
             body.getCloudPlatform(),
             body.getFields(),
+            Optional.ofNullable(body.getServiceName()),
             bearerToken,
             forceAccessUrl,
             ip,

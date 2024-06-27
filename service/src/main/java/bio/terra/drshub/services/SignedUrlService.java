@@ -39,6 +39,7 @@ public record SignedUrlService(
       String objectName,
       String dataObjectUri,
       String googleProject,
+      Optional<String> serviceName,
       BearerToken bearerToken,
       String ip) {
 
@@ -106,6 +107,7 @@ public record SignedUrlService(
             dataObjectUri,
             CloudPlatformEnum.GS,
             Fields.CORE_FIELDS,
+            Optional.empty(),
             bearerToken,
             true,
             ip,

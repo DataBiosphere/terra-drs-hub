@@ -34,6 +34,7 @@ import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -99,6 +100,7 @@ public class SignedUrlTestUtils {
             eq(drsUri),
             eq(RequestObject.CloudPlatformEnum.GS),
             any(List.class),
+            eq(Optional.empty()),
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),
@@ -113,6 +115,7 @@ public class SignedUrlTestUtils {
             argThat(uri -> !uri.equals(drsUri)),
             eq(RequestObject.CloudPlatformEnum.GS),
             any(List.class),
+            eq(Optional.empty()),
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),

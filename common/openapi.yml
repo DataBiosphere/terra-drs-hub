@@ -204,6 +204,10 @@ components:
           type: array
           items:
             type: string
+        serviceName:
+          description: The name of the service that is requesting the DRS object.
+          type: string
+          nullable: true
 
     GetSignedUrlRequest:
       type: object
@@ -219,6 +223,9 @@ components:
           type: string
         googleProject:
           type: string
+        serviceName:
+          type: string
+          nullable: true
 
 
     ErrorReport:

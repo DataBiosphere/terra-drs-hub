@@ -71,6 +71,7 @@ public class DrsResolutionService {
       String drsUri,
       CloudPlatformEnum cloudPlatform,
       List<String> rawRequestedFields,
+      Optional<String> serviceName,
       BearerToken bearerToken,
       Boolean forceAccessUrl,
       String ip,
@@ -92,6 +93,7 @@ public class DrsResolutionService {
             provider,
             cloudPlatform,
             requestedFields,
+            serviceName,
             uriComponents,
             drsUri,
             bearerToken,
@@ -108,6 +110,7 @@ public class DrsResolutionService {
       DrsProvider drsProvider,
       CloudPlatformEnum cloudPlatform,
       List<String> requestedFields,
+      Optional<String> serviceName,
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken,
@@ -119,7 +122,8 @@ public class DrsResolutionService {
         new AuditLogEvent.Builder()
             .dRSUrl(uriComponents.toUriString())
             .providerName(drsProvider.getName())
-            .clientIP(Optional.ofNullable(ip));
+            .clientIP(Optional.ofNullable(ip))
+            .serviceName(serviceName);
 
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;
