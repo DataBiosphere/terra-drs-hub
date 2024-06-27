@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.ProviderAccessMethodConfig;
-import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
@@ -28,7 +27,6 @@ import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
 import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -260,60 +258,5 @@ class DrsResolutionServiceTest {
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("x-user-project", googleProject);
-  }
-
-  @Test
-  void testLogAzureToGSEgress() {
-    String drsUri = "drs://foo.bar";
-    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.GS;
-    drsResolutionService.logAzureEgress(
-        drsUri, Optional.of(azureAccessMethod), azureAccessMethod.getType(), cloudPlatform, TOKEN);
-    var properties =
-        new HashMap<String, Object>(
-            Map.of(
-                "drsURI",
-                drsUri,
-                "requestedCloud",
-                cloudPlatform.toString(),
-                "resolvedCloud",
-                "azure",
-                "accessMethodType",
-                azureAccessMethod.getType()));
-    verify(trackingService).logEvent(TOKEN, "drshub:azureEgress", properties);
-  }
-
-  @Test
-  void testLogAzureToAzure() {
-    String drsUri = "drs://foo.bar";
-    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.AZURE;
-    drsResolutionService.logAzureEgress(
-        drsUri, Optional.of(azureAccessMethod), azureAccessMethod.getType(), cloudPlatform, TOKEN);
-    verifyNoInteractions(trackingService);
-  }
-
-  @Test
-  void testLogGSToGS() {
-    String drsUri = "drs://foo.bar";
-    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.GS;
-    drsResolutionService.logAzureEgress(
-        drsUri, Optional.of(gsAccessMethod), gsAccessMethod.getType(), cloudPlatform, TOKEN);
-    verifyNoInteractions(trackingService);
-  }
-
-  @Test
-  void testLogGSToAzureEgress() {
-    String drsUri = "drs://foo.bar";
-    CloudPlatformEnum cloudPlatform = CloudPlatformEnum.AZURE;
-    drsResolutionService.logAzureEgress(
-        drsUri, Optional.of(gsAccessMethod), gsAccessMethod.getType(), cloudPlatform, TOKEN);
-    verifyNoInteractions(trackingService);
-  }
-
-  @Test
-  void testLogAzureEgressNoCloudPlatform() {
-    String drsUri = "drs://foo.bar";
-    drsResolutionService.logAzureEgress(
-        drsUri, Optional.of(azureAccessMethod), azureAccessMethod.getType(), null, TOKEN);
-    verifyNoInteractions(trackingService);
   }
 }

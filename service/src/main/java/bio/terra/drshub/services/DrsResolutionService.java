@@ -24,7 +24,6 @@ import io.github.ga4gh.drs.model.DrsObject;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -147,7 +146,6 @@ public class DrsResolutionService {
 
     var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
-    logAzureEgress(drsUri, accessMethod, accessMethodType, cloudPlatform, bearerToken);
 
     if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
       var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
@@ -173,34 +171,6 @@ public class DrsResolutionService {
     auditLogger.logEvent(
         auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionSucceeded).build());
     return drsMetadataBuilder.build();
-  }
-
-  public void logAzureEgress(
-      String drsUri,
-      Optional<AccessMethod> accessMethod,
-      AccessMethod.TypeEnum accessMethodType,
-      CloudPlatformEnum cloudPlatform,
-      BearerToken bearerToken) {
-    if (cloudPlatform != null && accessMethod.isPresent()) {
-      // Log when the data is in Azure, but the preferred cloud is not Azure
-      // When the non-Azure user downloads the data, it will result in egress charges
-      if ((accessMethodType.equals(TypeEnum.HTTPS)
-              && accessMethod.get().getAccessId().startsWith("az"))
-          && !cloudPlatform.equals(CloudPlatformEnum.AZURE)) {
-        var properties =
-            new HashMap<String, Object>(
-                Map.of(
-                    "drsURI",
-                    drsUri,
-                    "requestedCloud",
-                    cloudPlatform.toString(),
-                    "resolvedCloud",
-                    "azure",
-                    "accessMethodType",
-                    accessMethodType));
-        trackingService.logEvent(bearerToken, "drshub:azureEgress", properties);
-      }
-    }
   }
 
   private void setDrsResponseValues(
