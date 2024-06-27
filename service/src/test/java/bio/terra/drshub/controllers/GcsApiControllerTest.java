@@ -64,7 +64,13 @@ public class GcsApiControllerTest extends BaseTest {
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, drsUri, bucketName, objectName, googleProject, true);
+        drsResolutionService,
+        drsUri,
+        bucketName,
+        objectName,
+        googleProject,
+        Optional.empty(),
+        true);
 
     var response = getSignedUrlRequest(TEST_ACCESS_TOKEN, null, null, drsUri, googleProject);
     response.andExpect(content().string(url.toString()));

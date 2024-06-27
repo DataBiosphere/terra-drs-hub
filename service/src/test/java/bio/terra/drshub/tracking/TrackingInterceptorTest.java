@@ -15,12 +15,14 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubApplication;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
+import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -53,7 +55,13 @@ class TrackingInterceptorTest {
   @BeforeEach
   void setUp() {
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, DRS_URI, "bucket", "path", GOOGLE_PROJECT, false);
+        drsResolutionService,
+        DRS_URI,
+        "bucket",
+        "path",
+        GOOGLE_PROJECT,
+        Optional.of(ServiceName.TERRA_UI),
+        false);
   }
 
   @Test
@@ -64,7 +72,15 @@ class TrackingInterceptorTest {
     postRequest(
             url,
             objectMapper.writeValueAsString(
-                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of(),
+                    "serviceName",
+                    "terra_ui")))
         .andExpect(status().isOk());
 
     verify(trackingService)
@@ -81,7 +97,9 @@ class TrackingInterceptorTest {
                 "cloudPlatform",
                 CloudPlatformEnum.GS.toString(),
                 "fields",
-                List.of()));
+                List.of(),
+                "serviceName",
+                "terra_ui"));
   }
 
   @Test
@@ -90,7 +108,15 @@ class TrackingInterceptorTest {
     postRequest(
             url,
             objectMapper.writeValueAsString(
-                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of(),
+                    "serviceName",
+                    "terra_ui")))
         .andExpect(status().isOk());
 
     verifyNoInteractions(trackingService);
@@ -109,7 +135,9 @@ class TrackingInterceptorTest {
                     "cloudPlatform",
                     CloudPlatformEnum.GS,
                     "fields",
-                    List.of())))
+                    List.of(),
+                    "serviceName",
+                    "terra_ui")))
         .andExpect(status().isNotFound());
     verify(trackingService, never()).logEvent(any(BearerToken.class), anyString(), any(Map.class));
   }

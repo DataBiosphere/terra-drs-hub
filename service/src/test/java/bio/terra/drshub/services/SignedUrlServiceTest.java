@@ -83,7 +83,13 @@ public class SignedUrlServiceTest extends BaseTest {
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, drsUri, bucketName, objectName, googleProject, true);
+        drsResolutionService,
+        drsUri,
+        bucketName,
+        objectName,
+        googleProject,
+        Optional.empty(),
+        true);
     var signedUrl =
         signedUrlService.getSignedUrl(
             null,

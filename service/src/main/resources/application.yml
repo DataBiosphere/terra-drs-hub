@@ -112,7 +112,9 @@ spring:
 
   config.import: classpath:rendered/version.properties
 
-  jackson.serialization.indent_output: true
+  jackson:
+    serialization.indent_output: true
+    mapper.accept-case-insensitive-enums: true
 
   main.banner-mode: off
 

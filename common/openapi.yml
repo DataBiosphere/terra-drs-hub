@@ -205,9 +205,7 @@ components:
           items:
             type: string
         serviceName:
-          description: The name of the service that is requesting the DRS object.
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/ServiceName'
 
     GetSignedUrlRequest:
       type: object
@@ -224,9 +222,22 @@ components:
         googleProject:
           type: string
         serviceName:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/ServiceName'
 
+    ServiceName:
+      description: The name of the service or client that is requesting the DRS object.
+      type: string
+      enum:
+        - terra_ui
+        - terra_notebook_utils
+        - terra_galaxy
+        - cromwell_drs_localizer
+        - rawls_drs_precheck
+        - anvil_bioconductor
+        - anvil_client_apis
+        - anvil_drs_downloader
+        - ucsc_azul
+      nullable: true
 
     ErrorReport:
       type: object
