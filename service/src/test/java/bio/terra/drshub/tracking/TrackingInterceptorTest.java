@@ -22,6 +22,7 @@ import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessURL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -65,9 +66,8 @@ class TrackingInterceptorTest {
   void testHappyPathEmittingToBard() throws Exception {
     mockBardEmissionsEnabled();
 
-    String url = "/api/v4/drs/resolve";
     postRequest(
-            url,
+        REQUEST_URL,
             objectMapper.writeValueAsString(
                 Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
@@ -76,17 +76,7 @@ class TrackingInterceptorTest {
         .logEvent(
             TEST_BEARER_TOKEN,
             EVENT_NAME,
-            Map.of(
-                "statusCode",
-                200,
-                "requestUrl",
-                url,
-                "url",
-                DRS_URI,
-                "cloudPlatform",
-                CloudPlatformEnum.GS.toString(),
-                "fields",
-                List.of()));
+            expectedBardProperties(List.of(), null));
   }
 
   @Test
@@ -109,21 +99,7 @@ class TrackingInterceptorTest {
 
     verify(trackingService)
         .logEvent(
-            TEST_BEARER_TOKEN,
-            EVENT_NAME,
-            Map.of(
-                "statusCode",
-                200,
-                "requestUrl",
-                REQUEST_URL,
-                "url",
-                DRS_URI,
-                "cloudPlatform",
-                CloudPlatformEnum.GS.toString(),
-                "fields",
-                List.of("accessUrl"),
-                "resolvedCloud",
-                "gcp"));
+            TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), "gcp"));
   }
 
   @Test
@@ -148,19 +124,7 @@ class TrackingInterceptorTest {
         .logEvent(
             TEST_BEARER_TOKEN,
             EVENT_NAME,
-            Map.of(
-                "statusCode",
-                200,
-                "requestUrl",
-                REQUEST_URL,
-                "url",
-                DRS_URI,
-                "cloudPlatform",
-                CloudPlatformEnum.GS.toString(),
-                "fields",
-                List.of("accessUrl"),
-                "resolvedCloud",
-                "azure"));
+            expectedBardProperties(List.of("accessUrl"), "azure"));
   }
 
   @Test
@@ -233,5 +197,26 @@ class TrackingInterceptorTest {
     when(drsResolutionService.resolveDrsObject(
             anyString(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(metadata));
+  }
+
+  private HashMap<String, Object> expectedBardProperties(
+      List<String> fields, String resolvedCloud) {
+    HashMap<String, Object> properties =
+        new HashMap<>(
+            Map.of(
+                "statusCode",
+                200,
+                "requestUrl",
+                REQUEST_URL,
+                "url",
+                DRS_URI,
+                "cloudPlatform",
+                CloudPlatformEnum.GS.toString(),
+                "fields",
+                fields));
+    if (resolvedCloud != null) {
+      properties.put("resolvedCloud", resolvedCloud);
+    }
+    return properties;
   }
 }
