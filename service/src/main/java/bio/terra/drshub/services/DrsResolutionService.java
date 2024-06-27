@@ -43,7 +43,6 @@ public class DrsResolutionService {
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
 
-  private final TrackingService trackingService;
   private final AuditLogger auditLogger;
 
   @Autowired
@@ -51,11 +50,9 @@ public class DrsResolutionService {
       DrsApiFactory drsApiFactory,
       DrsProviderService drsProviderService,
       AuthService authService,
-      TrackingService trackingService,
       AuditLogger auditLogger) {
     this.drsApiFactory = drsApiFactory;
     this.drsProviderService = drsProviderService;
-    this.trackingService = trackingService;
     this.authService = authService;
     this.auditLogger = auditLogger;
   }

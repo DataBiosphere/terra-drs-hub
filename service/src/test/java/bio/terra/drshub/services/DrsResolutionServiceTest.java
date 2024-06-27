@@ -20,7 +20,6 @@ import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.util.SignedUrlTestUtils;
-import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
 import io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum;
@@ -30,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -57,8 +55,6 @@ class DrsResolutionServiceTest {
   @Mock private DrsApi drsApi;
   @Mock private UriComponents uriComponents;
   @Mock private AuthService authService;
-
-  @Mock private TrackingService trackingService;
   @Mock private GoogleStorageService googleStorageService;
 
   private static final String PATH = "path";
@@ -77,12 +73,6 @@ class DrsResolutionServiceTest {
           SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
   private static final DrsObject DRS_OBJECT = new DrsObject().id("drs.id");
 
-  private static final AccessMethod azureAccessMethod =
-      new AccessMethod().accessId("az-" + UUID.randomUUID()).type(TypeEnum.HTTPS);
-
-  private static final AccessMethod gsAccessMethod =
-      new AccessMethod().accessId(UUID.randomUUID().toString()).type(TypeEnum.GS);
-
   @BeforeEach
   void before() {
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
@@ -92,7 +82,6 @@ class DrsResolutionServiceTest {
             drsApiFactory,
             mock(DrsProviderService.class),
             authService,
-            trackingService,
             mock(AuditLogger.class));
 
     when(uriComponents.getHost()).thenReturn("host.com");
