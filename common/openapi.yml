@@ -232,7 +232,7 @@ components:
         - terra_notebook_utils
         - terra_galaxy
         - cromwell_drs_localizer
-        - rawls_drs_precheck
+        - rawls
         - anvil_bioconductor
         - anvil_client_apis
         - anvil_drs_downloader
