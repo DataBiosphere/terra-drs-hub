@@ -265,10 +265,10 @@ public class DrsResolutionService {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
+    drsApi.setHeader("x-forwarded-for", ip);
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
-    drsApi.setHeader("x-forwarded-for", ip);
 
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
