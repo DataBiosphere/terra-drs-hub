@@ -120,7 +120,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-            TEST_FENCE_SA_TOKEN);
+        TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
@@ -149,7 +149,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-            TEST_FENCE_SA_TOKEN);
+        TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
@@ -170,7 +170,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-            TEST_FENCE_SA_TOKEN);
+        TEST_FENCE_SA_TOKEN);
 
     var requestBody =
         objectMapper.writeValueAsString(
@@ -272,7 +272,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-            TEST_FENCE_SA_TOKEN);
+        TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequestAccessUrlSuccess(cidProviderHost, drsObject.getId());
 
@@ -565,7 +565,7 @@ public class DrsHubApiControllerTest extends BaseTest {
     mockExternalCredsGetProviderAccessToken(
         Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
         TEST_ACCESS_TOKEN,
-            TEST_FENCE_SA_TOKEN);
+        TEST_FENCE_SA_TOKEN);
 
     postDrsHubRequest(
             TEST_ACCESS_TOKEN,
