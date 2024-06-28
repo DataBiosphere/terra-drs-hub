@@ -210,6 +210,7 @@ components:
       required:
         - dataObjectUri
         - googleProject
+        - ip
       properties:
         bucket:
           type: string
@@ -218,6 +219,8 @@ components:
         dataObjectUri:
           type: string
         googleProject:
+          type: string
+        ip:
           type: string
 
 

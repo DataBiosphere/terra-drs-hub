@@ -216,10 +216,11 @@ class DrsResolutionServiceTest {
   @Test
   void testSignGoogleUrlWithRequesterPays() throws Exception {
     var googleProject = "test-google-project";
-    var ip = "1.1.1.1";
+    var ip = "test.ip";
     var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
     var accessId = "foo";
-    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(
+        authService, googleStorageService, ip, googleProject, url);
     DrsProvider drsProvider =
         DrsProvider.create()
             .setMetadataAuth(true)
@@ -246,5 +247,40 @@ class DrsResolutionServiceTest {
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("x-user-project", googleProject);
+  }
+
+  @Test
+  void testDrsResolutionHeadersIncludeIpAddress() throws Exception {
+    var googleProject = "test-google-project";
+    var ip = "test.ip";
+    var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
+    var accessId = "foo";
+    SignedUrlTestUtils.setupSignedUrlMocks(
+        authService, googleStorageService, ip, googleProject, url);
+    DrsProvider drsProvider =
+        DrsProvider.create()
+            .setMetadataAuth(true)
+            .setName("test")
+            .setHostRegex(".*")
+            .setAccessMethodConfigs(
+                new ArrayList<>(
+                    List.of(
+                        ProviderAccessMethodConfig.create()
+                            .setType(AccessMethodConfigTypeEnum.gs)
+                            .setAuth(AccessUrlAuthEnum.current_request)
+                            .setFetchAccessUrl(true))));
+    when(drsApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            drsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(BEARERAUTH),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject);
+    assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
+    verify(drsApi).setHeader("x-forwarded-for", ip);
   }
 }

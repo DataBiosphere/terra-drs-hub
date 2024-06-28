@@ -51,6 +51,7 @@ public class SignedUrlTestUtils {
   public static void setupSignedUrlMocks(
       AuthService authService,
       GoogleStorageService googleStorageService,
+      String ip,
       String googleProject,
       URL url) {
 

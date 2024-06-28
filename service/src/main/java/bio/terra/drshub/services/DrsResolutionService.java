@@ -260,8 +260,8 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       List<DrsHubAuthorization> drsHubAuthorizations,
       AuditLogEvent.Builder auditLogEventBuilder,
-      String googleProject,
-      String ip) {
+      String ip,
+      String googleProject) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
