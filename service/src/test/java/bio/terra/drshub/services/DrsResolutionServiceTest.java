@@ -79,10 +79,7 @@ class DrsResolutionServiceTest {
 
     drsResolutionService =
         new DrsResolutionService(
-            drsApiFactory,
-            mock(DrsProviderService.class),
-            authService,
-            mock(AuditLogger.class));
+            drsApiFactory, mock(DrsProviderService.class), authService, mock(AuditLogger.class));
 
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);

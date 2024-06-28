@@ -42,7 +42,6 @@ public class DrsResolutionService {
   private final DrsApiFactory drsApiFactory;
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
-
   private final AuditLogger auditLogger;
 
   @Autowired

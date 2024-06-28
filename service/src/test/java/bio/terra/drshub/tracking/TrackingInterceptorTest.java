@@ -67,16 +67,13 @@ class TrackingInterceptorTest {
     mockBardEmissionsEnabled();
 
     postRequest(
-        REQUEST_URL,
+            REQUEST_URL,
             objectMapper.writeValueAsString(
                 Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
 
     verify(trackingService)
-        .logEvent(
-            TEST_BEARER_TOKEN,
-            EVENT_NAME,
-            expectedBardProperties(List.of(), null));
+        .logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of(), null));
   }
 
   @Test
@@ -122,9 +119,7 @@ class TrackingInterceptorTest {
 
     verify(trackingService)
         .logEvent(
-            TEST_BEARER_TOKEN,
-            EVENT_NAME,
-            expectedBardProperties(List.of("accessUrl"), "azure"));
+            TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), "azure"));
   }
 
   @Test
