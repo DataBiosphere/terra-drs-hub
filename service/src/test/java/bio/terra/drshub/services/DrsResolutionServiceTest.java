@@ -215,8 +215,8 @@ class DrsResolutionServiceTest {
 
   @Test
   void testSignGoogleUrlWithRequesterPays() throws Exception {
-    var googleProject = "test-google-project";
     var ip = "test.ip";
+    var googleProject = "test-google-project";
     var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
     var accessId = "foo";
     SignedUrlTestUtils.setupSignedUrlMocks(
