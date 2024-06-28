@@ -209,8 +209,8 @@ components:
       type: object
       required:
         - dataObjectUri
-        - googleProject
         - ip
+        - googleProject
       properties:
         bucket:
           type: string
@@ -218,9 +218,9 @@ components:
           type: string
         dataObjectUri:
           type: string
-        googleProject:
-          type: string
         ip:
+          type: string
+        googleProject:
           type: string
 
 
