@@ -31,7 +31,7 @@ public class GcsApiController implements GcsApi {
   @TrackCall
   public ResponseEntity<String> getSignedUrl(GetSignedUrlRequest body) {
     var bearerToken = bearerTokenFactory.from(request);
-    var ip = request.getHeader("X-Forwarded-For");
+    var ip = request.getHeader("x-forwarded-for");
     var signedUrl =
         signedUrlService.getSignedUrl(
             body.getBucket(),

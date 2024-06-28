@@ -127,7 +127,7 @@ class TrackingInterceptorTest {
     return mvc.perform(
         post(url)
             .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
-            .header("X-Forwarded-For", TEST_IP_ADDRESS)
+            .header("x-forwarded-for", TEST_IP_ADDRESS)
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
   }
