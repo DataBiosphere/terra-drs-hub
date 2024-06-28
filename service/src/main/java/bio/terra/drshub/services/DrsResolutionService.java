@@ -99,7 +99,7 @@ public class DrsResolutionService {
             ip,
             googleProject);
 
-    var response = buildResponseObject(requestedFields, metadata, provider, ip);
+    var response = buildResponseObject(requestedFields, metadata, provider);
 
     return CompletableFuture.completedFuture(response);
   }
@@ -265,7 +265,6 @@ public class DrsResolutionService {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
-    // TODO: thread IP address through and set like this on 266
     // TODO: ask team if we should do an if drsProvider is TDR or just send it on everything
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
@@ -344,7 +343,7 @@ public class DrsResolutionService {
   }
 
   private AnnotatedResourceMetadata buildResponseObject(
-      List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider, String ip) {
+      List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider) {
 
     return AnnotatedResourceMetadata.builder()
         .requestedFields(requestedFields)
