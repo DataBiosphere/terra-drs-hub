@@ -99,7 +99,7 @@ public class DrsResolutionService {
             ip,
             googleProject);
 
-    var response = buildResponseObject(requestedFields, metadata, provider);
+    var response = buildResponseObject(requestedFields, metadata, provider, ip);
 
     return CompletableFuture.completedFuture(response);
   }
@@ -161,6 +161,7 @@ public class DrsResolutionService {
           auditEventBuilder,
           authorizations,
           forceAccessUrl,
+          ip,
           googleProject);
     }
 
@@ -180,6 +181,7 @@ public class DrsResolutionService {
       AuditLogEvent.Builder auditEventBuilder,
       List<DrsHubAuthorization> authorizations,
       boolean forceAccessUrl,
+      String ip,
       String googleProject) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
@@ -197,6 +199,7 @@ public class DrsResolutionService {
                 accessMethodType,
                 authorizations,
                 auditEventBuilder,
+                ip,
                 googleProject);
         drsMetadataBuilder.accessUrl(accessUrl);
       } catch (RuntimeException e) {
@@ -257,13 +260,18 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       List<DrsHubAuthorization> drsHubAuthorizations,
       AuditLogEvent.Builder auditLogEventBuilder,
-      String googleProject) {
+      String googleProject,
+      String ip) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
+    // TODO: thread IP address through and set like this on 266
+    // TODO: ask team if we should do an if drsProvider is TDR or just send it on everything
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
+    drsApi.setHeader("x-forwarded-for", ip);
+
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
           authorization.getAuthForAccessMethodType().apply(accessMethodType);
@@ -336,12 +344,13 @@ public class DrsResolutionService {
   }
 
   private AnnotatedResourceMetadata buildResponseObject(
-      List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider) {
+      List<String> requestedFields, DrsMetadata drsMetadata, DrsProvider drsProvider, String ip) {
 
     return AnnotatedResourceMetadata.builder()
         .requestedFields(requestedFields)
         .drsMetadata(drsMetadata)
         .drsProvider(drsProvider)
+        .ip(ip)
         .build();
   }
 }

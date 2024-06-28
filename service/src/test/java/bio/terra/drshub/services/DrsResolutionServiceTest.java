@@ -216,6 +216,7 @@ class DrsResolutionServiceTest {
   @Test
   void testSignGoogleUrlWithRequesterPays() throws Exception {
     var googleProject = "test-google-project";
+    var ip = "1.1.1.1";
     var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
     var accessId = "foo";
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
@@ -240,6 +241,7 @@ class DrsResolutionServiceTest {
             TypeEnum.GS,
             List.of(BEARERAUTH),
             new AuditLogEvent.Builder(),
+            ip,
             googleProject);
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
