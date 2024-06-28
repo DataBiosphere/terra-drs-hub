@@ -27,8 +27,7 @@ class AnnotatedResourceMetadataSerializerTest extends BaseTest {
         new AnnotatedResourceMetadata(
             List.of(Fields.TIME_CREATED, Fields.TIME_UPDATED),
             new DrsMetadata.Builder().drsResponse(drsResponse).build(),
-            config.getDrsProviders().get("terraDataRepo"),
-            "fake.ip");
+            config.getDrsProviders().get("terraDataRepo"));
 
     var written = jacksonTester.write(metadata);
     assertTrue(written.getJson().contains("\"timeCreated\" : null"));

@@ -17,6 +17,4 @@ public class AnnotatedResourceMetadata extends ResourceMetadata {
   private DrsMetadata drsMetadata;
 
   private DrsProvider drsProvider;
-
-  private String ip;
 }

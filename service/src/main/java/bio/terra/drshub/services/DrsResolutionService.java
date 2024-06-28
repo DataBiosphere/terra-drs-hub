@@ -350,7 +350,6 @@ public class DrsResolutionService {
         .requestedFields(requestedFields)
         .drsMetadata(drsMetadata)
         .drsProvider(drsProvider)
-        .ip(ip)
         .build();
   }
 }
