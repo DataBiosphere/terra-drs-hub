@@ -265,7 +265,6 @@ public class DrsResolutionService {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
-    // TODO: ask team if we should do an if drsProvider is TDR or just send it on everything
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
