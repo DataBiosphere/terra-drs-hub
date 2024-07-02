@@ -6,6 +6,12 @@ paths:
   /api/v4/drs/resolve:
     post:
       summary: Get a file
+      parameters:
+        - in: header
+          name: X-Forwarded-For
+          schema:
+            type: string
+            required: false
       tags: [ drsHub ]
       operationId: resolveDrs
       requestBody:
