@@ -281,6 +281,6 @@ class DrsResolutionServiceTest {
             ip,
             googleProject);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
-    verify(drsApi).setHeader("x-forwarded-for", ip);
+    verify(drsApi).setHeader("X-Forwarded-For", ip);
   }
 }
