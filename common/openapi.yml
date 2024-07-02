@@ -209,7 +209,6 @@ components:
       type: object
       required:
         - dataObjectUri
-        - ip
         - googleProject
       properties:
         bucket:
