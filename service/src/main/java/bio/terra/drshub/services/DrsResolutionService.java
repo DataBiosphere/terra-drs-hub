@@ -268,7 +268,7 @@ public class DrsResolutionService {
 
     if (ip != null) {
       drsApi.setHeader("X-Forwarded-For", ip);
-  }
+    }
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
