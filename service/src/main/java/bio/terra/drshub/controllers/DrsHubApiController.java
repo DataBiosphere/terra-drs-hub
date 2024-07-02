@@ -27,7 +27,7 @@ public record DrsHubApiController(
 
   @Override
   @TrackCall
-  public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
+  public ResponseEntity<ResourceMetadata> resolveDrs(String xForwardedFor, RequestObject body) {
     var bearerToken = bearerTokenFactory.from(request);
     validateRequest(body);
 
