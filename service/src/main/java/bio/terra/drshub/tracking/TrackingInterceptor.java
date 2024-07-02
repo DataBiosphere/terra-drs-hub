@@ -119,13 +119,13 @@ public record TrackingInterceptor(
   public void addResolvedCloudToProperties(
       HttpServletResponse response, Map<String, Object> properties) {
     Map<String, Object> responseBody = readResponseBody(response);
-    if (responseBody.containsKey("accessUrl")) {
-      Map<String, String> accessUrlResponse = (Map<String, String>) responseBody.get("accessUrl");
-      String accessUrl = accessUrlResponse.get("url");
+    if (responseBody.get("accessUrl") != null) {
+      Map<String, String> accessURLResponse = (Map<String, String>) responseBody.get("accessUrl");
+      String url = accessURLResponse.get("url");
       String resolvedCloud = "";
-      if (accessUrl.contains("windows.net")) {
+      if (url.contains("windows.net")) {
         resolvedCloud = "azure";
-      } else if (accessUrl.contains("googleapis.com")) {
+      } else if (url.contains("googleapis.com")) {
         resolvedCloud = "gcp";
       }
       properties.put("resolvedCloud", resolvedCloud);
