@@ -219,8 +219,7 @@ class DrsResolutionServiceTest {
     var googleProject = "test-google-project";
     var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
     var accessId = "foo";
-    SignedUrlTestUtils.setupSignedUrlMocks(
-        authService, googleStorageService, ip, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     DrsProvider drsProvider =
         DrsProvider.create()
             .setMetadataAuth(true)
@@ -255,8 +254,7 @@ class DrsResolutionServiceTest {
     var ip = "test.ip";
     var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
     var accessId = "foo";
-    SignedUrlTestUtils.setupSignedUrlMocks(
-        authService, googleStorageService, ip, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     DrsProvider drsProvider =
         DrsProvider.create()
             .setMetadataAuth(true)

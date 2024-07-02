@@ -8,12 +8,6 @@ paths:
       summary: Get a file
       tags: [ drsHub ]
       operationId: resolveDrs
-      parameters:
-        - in: header
-          name: X-Forwarded-For
-          schema:
-            type: string
-            required: false
       requestBody:
         content:
           application/json:

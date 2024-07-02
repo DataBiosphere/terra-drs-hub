@@ -34,8 +34,7 @@ public class SignedUrlServiceTest extends BaseTest {
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
 
-    SignedUrlTestUtils.setupSignedUrlMocks(
-        authService, googleStorageService, ip, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
 
     var signedUrl =
         signedUrlService.getSignedUrl(
@@ -71,8 +70,7 @@ public class SignedUrlServiceTest extends BaseTest {
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
 
-    SignedUrlTestUtils.setupSignedUrlMocks(
-        authService, googleStorageService, ip, googleProject, url);
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
         drsResolutionService, drsUri, bucketName, objectName, googleProject, true);
     var signedUrl =
