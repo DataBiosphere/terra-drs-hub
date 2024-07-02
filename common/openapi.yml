@@ -218,8 +218,6 @@ components:
           type: string
         dataObjectUri:
           type: string
-        ip:
-          type: string
         googleProject:
           type: string
 
