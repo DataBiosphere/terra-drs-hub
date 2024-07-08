@@ -123,6 +123,27 @@ class TrackingInterceptorTest {
   }
 
   @Test
+  void testEmittingToBardOn401Error() throws Exception {
+    mockBardEmissionsEnabled();
+    mockResolveDrsResponse(null);
+    postRequest(
+            REQUEST_URL,
+            objectMapper.writeValueAsString(
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of("accessUrl"))))
+        .andExpect(status().isOk());
+
+    verify(trackingService)
+        .logEvent(
+            TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), null));
+  }
+
+  @Test
   void testDoesNotLogWhenBardEmissionsDisabled() throws Exception {
     postRequest(
             REQUEST_URL,
@@ -181,8 +202,11 @@ class TrackingInterceptorTest {
   }
 
   private void mockResolveDrsResponse(String accessUrl) {
-    DrsMetadata drsMetadata =
-        new DrsMetadata.Builder().accessUrl(new AccessURL().url(accessUrl)).build();
+    AccessURL metadataAccessUrl = null;
+    if (accessUrl != null) {
+      metadataAccessUrl = new AccessURL().url(accessUrl);
+    }
+    DrsMetadata drsMetadata = new DrsMetadata.Builder().accessUrl(metadataAccessUrl).build();
     AnnotatedResourceMetadata metadata =
         AnnotatedResourceMetadata.builder()
             .requestedFields(List.of("accessUrl"))
