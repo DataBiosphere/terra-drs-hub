@@ -36,6 +36,7 @@ public record DrsHubApiController(
     var forceAccessUrl = Objects.equals(request.getHeader("drshub-force-access-url"), "true");
     var ip = request.getHeader("X-Forwarded-For");
     var googleProject = request.getHeader("x-user-project");
+    var serviceName = RequestUtils.serviceNameFromRequest(request);
 
     log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
     return asyncUtils.runAndCatch(
@@ -43,7 +44,7 @@ public record DrsHubApiController(
             body.getUrl(),
             body.getCloudPlatform(),
             body.getFields(),
-            RequestUtils.serviceNameFromRequest(request),
+            serviceName,
             bearerToken,
             forceAccessUrl,
             ip,

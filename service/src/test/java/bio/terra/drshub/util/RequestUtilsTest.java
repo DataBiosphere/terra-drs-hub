@@ -57,9 +57,8 @@ class RequestUtilsTest extends BaseTest {
     request.addHeader("x-terra-service-id", "invalid");
 
     // Act
-    var result = RequestUtils.serviceNameFromRequest(request);
-
     // Assert
-    assertTrue(result.isEmpty());
+    assertThrows(
+        IllegalArgumentException.class, () -> RequestUtils.serviceNameFromRequest(request));
   }
 }

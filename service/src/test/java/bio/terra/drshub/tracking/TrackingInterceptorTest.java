@@ -16,16 +16,22 @@ import bio.terra.drshub.DrsHubApplication;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.generated.model.ServiceName;
+import bio.terra.drshub.models.AnnotatedResourceMetadata;
+import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.ga4gh.drs.model.AccessURL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -40,6 +46,7 @@ import org.springframework.test.web.servlet.ResultActions;
 @ContextConfiguration(classes = DrsHubApplication.class)
 @WebMvcTest
 class TrackingInterceptorTest {
+  private static final String REQUEST_URL = "/api/v4/drs/resolve";
   private static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
   private static final BearerToken TEST_BEARER_TOKEN = new BearerToken(TEST_ACCESS_TOKEN);
   private static final String DRS_URI = "drs://foo/object_id";
@@ -53,52 +60,148 @@ class TrackingInterceptorTest {
   @MockBean private DrsHubConfig drsHubConfig;
 
   @BeforeEach
-  void setUp() {
+  void setUp(TestInfo testInfo) {
+    var excludeServiceName = testInfo.getTags().contains("noServiceNameEmitted");
+    Optional<ServiceName> serviceName =
+        excludeServiceName ? Optional.empty() : Optional.of(ServiceName.TERRA_UI);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService,
-        DRS_URI,
-        "bucket",
-        "path",
-        GOOGLE_PROJECT,
-        Optional.of(ServiceName.TERRA_UI),
-        false);
+        drsResolutionService, DRS_URI, "bucket", "path", GOOGLE_PROJECT, serviceName, false);
   }
 
   @Test
   void testHappyPathEmittingToBard() throws Exception {
     mockBardEmissionsEnabled();
 
-    String url = "/api/v4/drs/resolve";
     postRequest(
-            url,
+            REQUEST_URL,
             objectMapper.writeValueAsString(
                 Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
 
     verify(trackingService)
+        .logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of(), null));
+  }
+
+  @Test
+  @Tag("noServiceNameEmitted")
+  void testHappyPathEmittingToBardNoServiceName() throws Exception {
+    mockBardEmissionsEnabled();
+
+    mvc.perform(
+            post(REQUEST_URL)
+                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                .header("X-Forwarded-For", TEST_IP_ADDRESS)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "url",
+                            DRS_URI,
+                            "cloudPlatform",
+                            CloudPlatformEnum.GS,
+                            "fields",
+                            List.of()))))
+        .andExpect(status().isOk());
+
+    var expectedProperties = expectedBardProperties(List.of(), null);
+    expectedProperties.remove("serviceName");
+    verify(trackingService).logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedProperties);
+  }
+
+  @Test
+  @Tag("noServiceNameEmitted")
+  void testHappyPathEmittingToBardBadServiceName() throws Exception {
+    mockBardEmissionsEnabled();
+
+    mvc.perform(
+            post(REQUEST_URL)
+                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                .header("X-Forwarded-For", TEST_IP_ADDRESS)
+                .header("X-Terra-Service-ID", "badServiceName")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "url",
+                            DRS_URI,
+                            "cloudPlatform",
+                            CloudPlatformEnum.GS,
+                            "fields",
+                            List.of()))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void testHappyPathEmittingToBardWithResolvedCloudGCP() throws Exception {
+    mockBardEmissionsEnabled();
+
+    String accessUrl = "https://storage.googleapis.com/foo/bar";
+    mockResolveDrsResponse(accessUrl);
+    postRequest(
+            REQUEST_URL,
+            objectMapper.writeValueAsString(
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of("accessUrl"))))
+        .andExpect(status().isOk());
+
+    verify(trackingService)
         .logEvent(
-            TEST_BEARER_TOKEN,
-            EVENT_NAME,
-            Map.of(
-                "statusCode",
-                200,
-                "requestUrl",
-                url,
-                "url",
-                DRS_URI,
-                "cloudPlatform",
-                CloudPlatformEnum.GS.toString(),
-                "fields",
-                List.of(),
-                "serviceName",
-                "terra_ui"));
+            TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), "gcp"));
+  }
+
+  @Test
+  void testHappyPathEmittingToBardWithResolvedCloudAzure() throws Exception {
+    mockBardEmissionsEnabled();
+
+    String accessUrl = "https://foo.blob.windows.net/bar";
+    mockResolveDrsResponse(accessUrl);
+    postRequest(
+            REQUEST_URL,
+            objectMapper.writeValueAsString(
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of("accessUrl"))))
+        .andExpect(status().isOk());
+
+    verify(trackingService)
+        .logEvent(
+            TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), "azure"));
+  }
+
+  @Test
+  void testEmittingToBardOn401Error() throws Exception {
+    mockBardEmissionsEnabled();
+    mockResolveDrsResponse(null);
+    postRequest(
+            REQUEST_URL,
+            objectMapper.writeValueAsString(
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of("accessUrl"))))
+        .andExpect(status().isOk());
+
+    verify(trackingService)
+        .logEvent(
+            TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), null));
   }
 
   @Test
   void testDoesNotLogWhenBardEmissionsDisabled() throws Exception {
-    String url = "/api/v4/drs/resolve";
     postRequest(
-            url,
+            REQUEST_URL,
             objectMapper.writeValueAsString(
                 Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
@@ -109,9 +212,8 @@ class TrackingInterceptorTest {
   @Test
   void testDoesNotLogOn404() throws Exception {
     mockBardEmissionsEnabled();
-    String url = "/api/v4/drs/resolve";
     postRequest(
-            url,
+            REQUEST_URL,
             objectMapper.writeValueAsString(
                 Map.of(
                     "url",
@@ -153,5 +255,45 @@ class TrackingInterceptorTest {
 
   private void mockBardEmissionsEnabled() {
     when(drsHubConfig.bardEventLoggingEnabled()).thenReturn(true);
+  }
+
+  private void mockResolveDrsResponse(String accessUrl) {
+    AccessURL metadataAccessUrl = null;
+    if (accessUrl != null) {
+      metadataAccessUrl = new AccessURL().url(accessUrl);
+    }
+    DrsMetadata drsMetadata = new DrsMetadata.Builder().accessUrl(metadataAccessUrl).build();
+    AnnotatedResourceMetadata metadata =
+        AnnotatedResourceMetadata.builder()
+            .requestedFields(List.of("accessUrl"))
+            .drsMetadata(drsMetadata)
+            .build();
+
+    when(drsResolutionService.resolveDrsObject(
+            anyString(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(metadata));
+  }
+
+  private HashMap<String, Object> expectedBardProperties(
+      List<String> fields, String resolvedCloud) {
+    HashMap<String, Object> properties =
+        new HashMap<>(
+            Map.of(
+                "statusCode",
+                200,
+                "requestUrl",
+                REQUEST_URL,
+                "url",
+                DRS_URI,
+                "cloudPlatform",
+                CloudPlatformEnum.GS.toString(),
+                "fields",
+                fields,
+                "serviceName",
+                ServiceName.TERRA_UI.toString()));
+    if (resolvedCloud != null) {
+      properties.put("resolvedCloud", resolvedCloud);
+    }
+    return properties;
   }
 }

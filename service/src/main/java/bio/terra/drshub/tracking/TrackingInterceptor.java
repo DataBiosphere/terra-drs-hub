@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 /**
  * Class to intercept requests and log them to the tracking service (Bard). Methods annotated with
@@ -56,26 +57,38 @@ public record TrackingInterceptor(
           new HashMap<String, Object>(
               Map.of("statusCode", responseStatus.value(), "requestUrl", path));
 
-      properties.putAll(readBody(request));
+      properties.putAll(readRequestBody(request));
 
       // There are all the known headers that are potentially sent to DRSHub that we want to track
       addToPropertiesIfPresentInHeader(request, properties, "x-user-project", "userProject");
       addToPropertiesIfPresentInHeader(
           request, properties, "drshub-force-access-url", "forceAccessUrl");
+      addResolvedCloudToProperties(response, properties);
       addToPropertiesIfPresentInHeader(request, properties, "x-terra-service-id", "serviceName");
 
       trackingService.logEvent(bearerToken, EVENT_NAME, properties);
     }
   }
 
-  private Map<String, Object> readBody(HttpServletRequest request) {
+  private Map<String, Object> readRequestBody(HttpServletRequest request) {
     var rawRequest =
         new String(
             ((ContentCachingRequestWrapper) request).getContentAsByteArray(),
             StandardCharsets.UTF_8);
+    return readBody(rawRequest);
+  }
 
+  private Map<String, Object> readResponseBody(HttpServletResponse response) {
+    var rawResponse =
+        new String(
+            ((ContentCachingResponseWrapper) response).getContentAsByteArray(),
+            StandardCharsets.UTF_8);
+    return readBody(rawResponse);
+  }
+
+  private Map<String, Object> readBody(String body) {
     try {
-      return objectMapper.readValue(rawRequest, new TypeReference<>() {});
+      return objectMapper.readValue(body, new TypeReference<>() {});
     } catch (JsonProcessingException e) {
       // Note: log a warning but do not fail so that at least part of the request is logged
       log.warn("Failed to parse request body for tracking", e);
@@ -102,6 +115,22 @@ public record TrackingInterceptor(
     var headerValue = request.getHeader(headerName);
     if (headerValue != null) {
       properties.put(propertyName, headerValue);
+    }
+  }
+
+  public void addResolvedCloudToProperties(
+      HttpServletResponse response, Map<String, Object> properties) {
+    Map<String, Object> responseBody = readResponseBody(response);
+    if (responseBody.get("accessUrl") != null) {
+      Map<String, String> accessURLResponse = (Map<String, String>) responseBody.get("accessUrl");
+      String url = accessURLResponse.get("url");
+      String resolvedCloud = "";
+      if (url.contains("windows.net")) {
+        resolvedCloud = "azure";
+      } else if (url.contains("googleapis.com")) {
+        resolvedCloud = "gcp";
+      }
+      properties.put("resolvedCloud", resolvedCloud);
     }
   }
 }
