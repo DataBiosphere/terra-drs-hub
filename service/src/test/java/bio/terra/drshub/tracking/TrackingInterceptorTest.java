@@ -72,15 +72,7 @@ class TrackingInterceptorTest {
     postRequest(
             url,
             objectMapper.writeValueAsString(
-                Map.of(
-                    "url",
-                    DRS_URI,
-                    "cloudPlatform",
-                    CloudPlatformEnum.GS,
-                    "fields",
-                    List.of(),
-                    "serviceName",
-                    "terra_ui")))
+                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
 
     verify(trackingService)
@@ -108,15 +100,7 @@ class TrackingInterceptorTest {
     postRequest(
             url,
             objectMapper.writeValueAsString(
-                Map.of(
-                    "url",
-                    DRS_URI,
-                    "cloudPlatform",
-                    CloudPlatformEnum.GS,
-                    "fields",
-                    List.of(),
-                    "serviceName",
-                    "terra_ui")))
+                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
         .andExpect(status().isOk());
 
     verifyNoInteractions(trackingService);
@@ -135,9 +119,7 @@ class TrackingInterceptorTest {
                     "cloudPlatform",
                     CloudPlatformEnum.GS,
                     "fields",
-                    List.of(),
-                    "serviceName",
-                    "terra_ui")))
+                    List.of())))
         .andExpect(status().isNotFound());
     verify(trackingService, never()).logEvent(any(BearerToken.class), anyString(), any(Map.class));
   }
@@ -156,6 +138,7 @@ class TrackingInterceptorTest {
         post(url)
             .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
             .header("X-Forwarded-For", TEST_IP_ADDRESS)
+            .header("X-Terra-Service-ID", "terra_ui")
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
   }

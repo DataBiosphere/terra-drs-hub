@@ -62,6 +62,7 @@ public record TrackingInterceptor(
       addToPropertiesIfPresentInHeader(request, properties, "x-user-project", "userProject");
       addToPropertiesIfPresentInHeader(
           request, properties, "drshub-force-access-url", "forceAccessUrl");
+      addToPropertiesIfPresentInHeader(request, properties, "x-terra-service-id", "serviceName");
 
       trackingService.logEvent(bearerToken, EVENT_NAME, properties);
     }

@@ -204,8 +204,6 @@ components:
           type: array
           items:
             type: string
-        serviceName:
-          $ref: '#/components/schemas/ServiceName'
 
     GetSignedUrlRequest:
       type: object
@@ -221,8 +219,6 @@ components:
           type: string
         googleProject:
           type: string
-        serviceName:
-          $ref: '#/components/schemas/ServiceName'
 
     ServiceName:
       description: The name of the service or client that is requesting the DRS object.

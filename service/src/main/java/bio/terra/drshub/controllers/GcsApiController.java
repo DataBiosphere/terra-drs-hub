@@ -5,8 +5,8 @@ import bio.terra.drshub.generated.api.GcsApi;
 import bio.terra.drshub.generated.model.GetSignedUrlRequest;
 import bio.terra.drshub.services.SignedUrlService;
 import bio.terra.drshub.tracking.TrackCall;
+import bio.terra.drshub.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -39,7 +39,7 @@ public class GcsApiController implements GcsApi {
             body.getObject(),
             body.getDataObjectUri(),
             body.getGoogleProject(),
-            Optional.ofNullable(body.getServiceName()),
+            RequestUtils.serviceNameFromRequest(request),
             bearerToken,
             ip);
     return ResponseEntity.ok(signedUrl.toString());

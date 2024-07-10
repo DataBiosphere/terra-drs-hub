@@ -9,10 +9,10 @@ import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.tracking.TrackCall;
 import bio.terra.drshub.util.AsyncUtils;
+import bio.terra.drshub.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -43,7 +43,7 @@ public record DrsHubApiController(
             body.getUrl(),
             body.getCloudPlatform(),
             body.getFields(),
-            Optional.ofNullable(body.getServiceName()),
+            RequestUtils.serviceNameFromRequest(request),
             bearerToken,
             forceAccessUrl,
             ip,
