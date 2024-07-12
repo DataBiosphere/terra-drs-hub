@@ -161,6 +161,7 @@ public class DrsResolutionService {
           auditEventBuilder,
           authorizations,
           forceAccessUrl,
+          ip,
           googleProject);
     }
 
@@ -180,6 +181,7 @@ public class DrsResolutionService {
       AuditLogEvent.Builder auditEventBuilder,
       List<DrsHubAuthorization> authorizations,
       boolean forceAccessUrl,
+      String ip,
       String googleProject) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
@@ -197,6 +199,7 @@ public class DrsResolutionService {
                 accessMethodType,
                 authorizations,
                 auditEventBuilder,
+                ip,
                 googleProject);
         drsMetadataBuilder.accessUrl(accessUrl);
       } catch (RuntimeException e) {
@@ -257,13 +260,19 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       List<DrsHubAuthorization> drsHubAuthorizations,
       AuditLogEvent.Builder auditLogEventBuilder,
+      String ip,
       String googleProject) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
+
+    if (ip != null) {
+      drsApi.setHeader("X-Forwarded-For", ip);
+    }
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
+
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
           authorization.getAuthForAccessMethodType().apply(accessMethodType);

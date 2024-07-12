@@ -30,6 +30,7 @@ public class SignedUrlServiceTest extends BaseTest {
     var drsUri = "drs://dg.4503:1234/456/2315asd";
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
+    var ip = "test.ip";
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
 
@@ -65,6 +66,7 @@ public class SignedUrlServiceTest extends BaseTest {
     var drsUri = "drs://dg.4503:1234/456/2315asd";
     var bucketName = "my-test-bucket";
     var objectName = "my-test-folder/my-test-object.txt";
+    var ip = "test.ip";
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
 

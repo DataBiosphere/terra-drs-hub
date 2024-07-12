@@ -73,8 +73,25 @@ class DrsResolutionServiceTest {
           SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
   private static final DrsObject DRS_OBJECT = new DrsObject().id("drs.id");
 
+  private static final String accessId = "foo";
+
+  private static URL url;
+
+  private static final DrsProvider testDrsProvider =
+      DrsProvider.create()
+          .setMetadataAuth(true)
+          .setName("test")
+          .setHostRegex(".*")
+          .setAccessMethodConfigs(
+              new ArrayList<>(
+                  List.of(
+                      ProviderAccessMethodConfig.create()
+                          .setType(AccessMethodConfigTypeEnum.gs)
+                          .setAuth(AccessUrlAuthEnum.current_request)
+                          .setFetchAccessUrl(true))));
+
   @BeforeEach
-  void before() {
+  void before() throws Exception {
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
 
     drsResolutionService =
@@ -85,6 +102,8 @@ class DrsResolutionServiceTest {
     when(uriComponents.getPath()).thenReturn(PATH);
     when(drsApiFactory.getApiFromUriComponents(eq(uriComponents), any(DrsProvider.class)))
         .thenReturn(drsApi);
+
+    url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
   }
 
   @Test
@@ -215,34 +234,64 @@ class DrsResolutionServiceTest {
 
   @Test
   void testSignGoogleUrlWithRequesterPays() throws Exception {
+    var ip = "test.ip";
     var googleProject = "test-google-project";
-    var url = new URL("https://storage.cloud.google.com/my-test-bucket/my/test.txt");
-    var accessId = "foo";
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
-    DrsProvider drsProvider =
-        DrsProvider.create()
-            .setMetadataAuth(true)
-            .setName("test")
-            .setHostRegex(".*")
-            .setAccessMethodConfigs(
-                new ArrayList<>(
-                    List.of(
-                        ProviderAccessMethodConfig.create()
-                            .setType(AccessMethodConfigTypeEnum.gs)
-                            .setAuth(AccessUrlAuthEnum.current_request)
-                            .setFetchAccessUrl(true))));
     when(drsApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
-            drsProvider,
+            testDrsProvider,
             uriComponents,
             accessId,
             TypeEnum.GS,
             List.of(BEARERAUTH),
             new AuditLogEvent.Builder(),
+            ip,
             googleProject);
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("x-user-project", googleProject);
+  }
+
+  @Test
+  void testDrsResolutionHeadersIncludeIpAddress() throws Exception {
+    var googleProject = "test-google-project";
+    var ip = "test.ip";
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    when(drsApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(BEARERAUTH),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject);
+    assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
+    verify(drsApi).setHeader("X-Forwarded-For", ip);
+  }
+
+  @Test
+  void testDrsResolutionWithoutOptionalHeaders() throws Exception {
+    String googleProject = null;
+    String ip = null;
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+
+    when(drsApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(BEARERAUTH),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject);
+    assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
+    verify(drsApi, never()).setHeader("X-Forwarded-For", ip);
+    verify(drsApi, never()).setHeader("x-user-project", googleProject);
   }
 }
