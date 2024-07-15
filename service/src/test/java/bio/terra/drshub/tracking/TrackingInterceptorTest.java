@@ -15,6 +15,7 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubApplication;
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
+import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.services.DrsResolutionService;
@@ -25,10 +26,12 @@ import io.github.ga4gh.drs.model.AccessURL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -57,9 +60,12 @@ class TrackingInterceptorTest {
   @MockBean private DrsHubConfig drsHubConfig;
 
   @BeforeEach
-  void setUp() {
+  void setUp(TestInfo testInfo) {
+    var excludeServiceName = testInfo.getTags().contains("noServiceNameEmitted");
+    Optional<ServiceName> serviceName =
+        excludeServiceName ? Optional.empty() : Optional.of(ServiceName.TERRA_UI);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, DRS_URI, "bucket", "path", GOOGLE_PROJECT, false);
+        drsResolutionService, DRS_URI, "bucket", "path", GOOGLE_PROJECT, serviceName, false);
   }
 
   @Test
@@ -74,6 +80,55 @@ class TrackingInterceptorTest {
 
     verify(trackingService)
         .logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of(), null));
+  }
+
+  @Test
+  @Tag("noServiceNameEmitted")
+  void testHappyPathEmittingToBardNoServiceName() throws Exception {
+    mockBardEmissionsEnabled();
+
+    mvc.perform(
+            post(REQUEST_URL)
+                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                .header("X-Forwarded-For", TEST_IP_ADDRESS)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "url",
+                            DRS_URI,
+                            "cloudPlatform",
+                            CloudPlatformEnum.GS,
+                            "fields",
+                            List.of()))))
+        .andExpect(status().isOk());
+
+    var expectedProperties = expectedBardProperties(List.of(), null);
+    expectedProperties.remove("serviceName");
+    verify(trackingService).logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedProperties);
+  }
+
+  @Test
+  @Tag("noServiceNameEmitted")
+  void testHappyPathEmittingToBardBadServiceName() throws Exception {
+    mockBardEmissionsEnabled();
+
+    mvc.perform(
+            post(REQUEST_URL)
+                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                .header("X-Forwarded-For", TEST_IP_ADDRESS)
+                .header("X-Terra-Service-ID", "badServiceName")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "url",
+                            DRS_URI,
+                            "cloudPlatform",
+                            CloudPlatformEnum.GS,
+                            "fields",
+                            List.of()))))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -185,6 +240,7 @@ class TrackingInterceptorTest {
         post(url)
             .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
             .header("X-Forwarded-For", TEST_IP_ADDRESS)
+            .header("X-Terra-Service-ID", "terra_ui")
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
   }
@@ -214,7 +270,7 @@ class TrackingInterceptorTest {
             .build();
 
     when(drsResolutionService.resolveDrsObject(
-            anyString(), any(), any(), any(), any(), any(), any()))
+            anyString(), any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(metadata));
   }
 
@@ -232,7 +288,9 @@ class TrackingInterceptorTest {
                 "cloudPlatform",
                 CloudPlatformEnum.GS.toString(),
                 "fields",
-                fields));
+                fields,
+                "serviceName",
+                ServiceName.TERRA_UI.toString()));
     if (resolvedCloud != null) {
       properties.put("resolvedCloud", resolvedCloud);
     }

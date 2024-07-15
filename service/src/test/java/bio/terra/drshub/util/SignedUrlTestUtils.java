@@ -12,6 +12,7 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.SaKeyObject;
+import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsResolutionService;
@@ -34,6 +35,7 @@ import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +89,7 @@ public class SignedUrlTestUtils {
       String bucketName,
       String objectName,
       String googleProject,
+      Optional<ServiceName> serviceName,
       boolean forceAccessUrl) {
     doReturn(
             CompletableFuture.completedFuture(
@@ -99,6 +102,7 @@ public class SignedUrlTestUtils {
             eq(drsUri),
             eq(RequestObject.CloudPlatformEnum.GS),
             any(List.class),
+            eq(serviceName),
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),
@@ -113,6 +117,7 @@ public class SignedUrlTestUtils {
             argThat(uri -> !uri.equals(drsUri)),
             eq(RequestObject.CloudPlatformEnum.GS),
             any(List.class),
+            eq(serviceName),
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),

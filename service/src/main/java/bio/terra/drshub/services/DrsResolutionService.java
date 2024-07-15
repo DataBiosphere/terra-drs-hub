@@ -7,6 +7,7 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
+import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -71,6 +72,7 @@ public class DrsResolutionService {
       String drsUri,
       CloudPlatformEnum cloudPlatform,
       List<String> rawRequestedFields,
+      Optional<ServiceName> serviceName,
       BearerToken bearerToken,
       Boolean forceAccessUrl,
       String ip,
@@ -92,6 +94,7 @@ public class DrsResolutionService {
             provider,
             cloudPlatform,
             requestedFields,
+            serviceName,
             uriComponents,
             drsUri,
             bearerToken,
@@ -108,6 +111,7 @@ public class DrsResolutionService {
       DrsProvider drsProvider,
       CloudPlatformEnum cloudPlatform,
       List<String> requestedFields,
+      Optional<ServiceName> serviceName,
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken,
@@ -119,7 +123,8 @@ public class DrsResolutionService {
         new AuditLogEvent.Builder()
             .dRSUrl(uriComponents.toUriString())
             .providerName(drsProvider.getName())
-            .clientIP(Optional.ofNullable(ip));
+            .clientIP(Optional.ofNullable(ip))
+            .serviceName(serviceName);
 
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;

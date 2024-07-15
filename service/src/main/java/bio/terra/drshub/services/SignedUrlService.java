@@ -6,6 +6,7 @@ import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.generated.model.SaKeyObject;
+import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
@@ -39,6 +40,7 @@ public record SignedUrlService(
       String objectName,
       String dataObjectUri,
       String googleProject,
+      Optional<ServiceName> serviceName,
       BearerToken bearerToken,
       String ip) {
 
@@ -51,6 +53,7 @@ public record SignedUrlService(
             .providerName(drsProvider.getName())
             .auditLogEventType(AuditLogEventType.GetSignedUrl)
             .clientIP(Optional.ofNullable(ip))
+            .serviceName(serviceName)
             .build();
     auditLogger.logEvent(logEvent);
 
@@ -60,7 +63,14 @@ public record SignedUrlService(
           bearerToken, String.format("gs://%s/%s", bucket, objectName), googleProject);
     } else {
       return getSignedUrlFromDrsProvider(
-          bearerToken, drsProvider, googleProject, bucket, objectName, dataObjectUri, ip);
+          bearerToken,
+          drsProvider,
+          googleProject,
+          bucket,
+          objectName,
+          dataObjectUri,
+          ip,
+          serviceName);
     }
   }
 
@@ -80,14 +90,16 @@ public record SignedUrlService(
       String bucket,
       String objectName,
       String dataObjectUri,
-      String ip) {
+      String ip,
+      Optional<ServiceName> serviceName) {
     SaKeyObject saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
     Storage storage = googleStorageService.getAuthedStorage(saKey, googleProject);
 
     final BlobInfo blobInfo;
     if (bucket == null || objectName == null) {
       blobInfo =
-          BlobInfo.newBuilder(getBlobIdFromDrsUri(dataObjectUri, bearerToken, ip, googleProject))
+          BlobInfo.newBuilder(
+                  getBlobIdFromDrsUri(dataObjectUri, bearerToken, ip, googleProject, serviceName))
               .build();
     } else {
       blobInfo = BlobInfo.newBuilder(BlobId.of(bucket, objectName)).build();
@@ -100,12 +112,17 @@ public record SignedUrlService(
   }
 
   private BlobId getBlobIdFromDrsUri(
-      String dataObjectUri, BearerToken bearerToken, String ip, String googleProject) {
+      String dataObjectUri,
+      BearerToken bearerToken,
+      String ip,
+      String googleProject,
+      Optional<ServiceName> serviceName) {
     var objectFuture =
         drsResolutionService.resolveDrsObject(
             dataObjectUri,
             CloudPlatformEnum.GS,
             Fields.CORE_FIELDS,
+            serviceName,
             bearerToken,
             true,
             ip,

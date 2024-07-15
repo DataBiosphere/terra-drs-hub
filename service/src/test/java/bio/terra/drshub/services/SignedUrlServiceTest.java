@@ -11,6 +11,7 @@ import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Optional;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,13 @@ public class SignedUrlServiceTest extends BaseTest {
 
     var signedUrl =
         signedUrlService.getSignedUrl(
-            bucketName, objectName, drsUri, googleProject, new BearerToken("12345"), "127.0.0.1");
+            bucketName,
+            objectName,
+            drsUri,
+            googleProject,
+            Optional.empty(),
+            new BearerToken("12345"),
+            "127.0.0.1");
     assertEquals(url, signedUrl);
   }
 
@@ -56,7 +63,13 @@ public class SignedUrlServiceTest extends BaseTest {
 
     var signedUrl =
         signedUrlService.getSignedUrl(
-            bucketName, objectName, drsUri, googleProject, new BearerToken("12345"), "127.0.0.1");
+            bucketName,
+            objectName,
+            drsUri,
+            googleProject,
+            Optional.empty(),
+            new BearerToken("12345"),
+            "127.0.0.1");
     assertEquals(url, signedUrl);
   }
 
@@ -72,10 +85,22 @@ public class SignedUrlServiceTest extends BaseTest {
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
-        drsResolutionService, drsUri, bucketName, objectName, googleProject, true);
+        drsResolutionService,
+        drsUri,
+        bucketName,
+        objectName,
+        googleProject,
+        Optional.empty(),
+        true);
     var signedUrl =
         signedUrlService.getSignedUrl(
-            null, null, drsUri, googleProject, new BearerToken("12345"), "127.0.0.1");
+            null,
+            null,
+            drsUri,
+            googleProject,
+            Optional.empty(),
+            new BearerToken("12345"),
+            "127.0.0.1");
     assertEquals(url, signedUrl);
   }
 
@@ -98,6 +123,7 @@ public class SignedUrlServiceTest extends BaseTest {
                 objectName,
                 drsUri,
                 googleProject,
+                Optional.empty(),
                 new BearerToken("12345"),
                 "127.0.0.1"));
   }
