@@ -117,7 +117,7 @@ class TrackingInterceptorTest {
             post(REQUEST_URL)
                 .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
                 .header("X-Forwarded-For", TEST_IP_ADDRESS)
-                .header("X-Terra-Service-ID", "badServiceName")
+                .header("X-App-Id", "badServiceName")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     objectMapper.writeValueAsString(
@@ -240,7 +240,7 @@ class TrackingInterceptorTest {
         post(url)
             .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
             .header("X-Forwarded-For", TEST_IP_ADDRESS)
-            .header("X-Terra-Service-ID", "terra_ui")
+            .header("X-App-Id", "terra_ui")
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestBody));
   }

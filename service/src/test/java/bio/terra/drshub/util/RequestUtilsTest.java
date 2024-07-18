@@ -16,7 +16,7 @@ class RequestUtilsTest extends BaseTest {
   void testServiceNameFromRequest() {
     // Arrange
     var request = new MockHttpServletRequest();
-    request.addHeader("x-terra-service-id", "terra_ui");
+    request.addHeader("x-app-id", "terra_ui");
 
     // Act
     var result = RequestUtils.serviceNameFromRequest(request);
@@ -29,7 +29,7 @@ class RequestUtilsTest extends BaseTest {
   void testServiceNameFromRequestWithCapitalizations() {
     // Arrange
     var request = new MockHttpServletRequest();
-    request.addHeader("X-Terra-Service-ID", "Terra_UI");
+    request.addHeader("X-App-Id", "Terra_UI");
 
     // Act
     var result = RequestUtils.serviceNameFromRequest(request);
@@ -54,11 +54,24 @@ class RequestUtilsTest extends BaseTest {
   void testServiceNameFromRequestInvalidHeader() {
     // Arrange
     var request = new MockHttpServletRequest();
-    request.addHeader("x-terra-service-id", "invalid");
+    request.addHeader("x-app-id", "invalid");
 
     // Act
     // Assert
     assertThrows(
         IllegalArgumentException.class, () -> RequestUtils.serviceNameFromRequest(request));
+  }
+
+  @Test
+  void testServiceNameFromRequestTranslatesAppId() {
+    // Arrange
+    var request = new MockHttpServletRequest();
+    request.addHeader("x-app-id", "saturn");
+
+    // Act
+    var result = RequestUtils.serviceNameFromRequest(request);
+
+    // Assert
+    assertEquals(Optional.of(ServiceName.TERRA_UI), result);
   }
 }
