@@ -64,7 +64,7 @@ public record TrackingInterceptor(
       addToPropertiesIfPresentInHeader(
           request, properties, "drshub-force-access-url", "forceAccessUrl");
       addResolvedCloudToProperties(response, properties);
-      addToPropertiesIfPresentInHeader(request, properties, "x-terra-service-id", "serviceName");
+      addToPropertiesIfPresentInHeader(request, properties, "x-app-id", "serviceName");
 
       trackingService.logEvent(bearerToken, EVENT_NAME, properties);
     }
