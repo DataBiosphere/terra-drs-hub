@@ -137,13 +137,19 @@ public record TrackingInterceptor(
   }
 
   public void addTDRSnapshotIdToProperties(Map<String, Object> properties) {
-    String drsURI = properties.get("url").toString();
+    var drsURI = properties.get("url").toString();
     if (drsURI != null) {
+      var uri = drsURI.toLowerCase();
       var tdrProvider = config.getDrsProviders().get("terraDataRepo");
-      if (drsURI.matches(tdrProvider.getHostRegex() + ".*")) {
-        var drsURIParts = drsURI.split("/");
+      if (uri.matches(tdrProvider.getHostRegex() + ".*")) {
+        var drsURIParts = uri.split("/");
         var objectId = drsURIParts[drsURIParts.length - 1];
         // The TDR drs object id has the format v1_snapshotId_objectId
+        var snapshotId = objectId.split("_")[1];
+        properties.put("snapshotId", snapshotId);
+      } else if (uri.contains("dg.anv0") || uri.contains("drs.anv0")) {
+        var drsURIParts = uri.split(":");
+        var objectId = drsURIParts[drsURIParts.length - 1];
         var snapshotId = objectId.split("_")[1];
         properties.put("snapshotId", snapshotId);
       }
