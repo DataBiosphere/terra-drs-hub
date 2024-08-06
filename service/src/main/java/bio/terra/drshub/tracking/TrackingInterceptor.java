@@ -63,8 +63,10 @@ public record TrackingInterceptor(
       addToPropertiesIfPresentInHeader(request, properties, "x-user-project", "userProject");
       addToPropertiesIfPresentInHeader(
           request, properties, "drshub-force-access-url", "forceAccessUrl");
-      addResolvedCloudToProperties(response, properties);
       addToPropertiesIfPresentInHeader(request, properties, "x-app-id", "serviceName");
+
+      addResolvedCloudToProperties(response, properties);
+      addTDRSnapshotIdToProperties(properties);
 
       trackingService.logEvent(bearerToken, EVENT_NAME, properties);
     }
@@ -131,6 +133,20 @@ public record TrackingInterceptor(
         resolvedCloud = "gcp";
       }
       properties.put("resolvedCloud", resolvedCloud);
+    }
+  }
+
+  public void addTDRSnapshotIdToProperties(Map<String, Object> properties) {
+    String drsURI = properties.get("url").toString();
+    if (drsURI != null) {
+      var tdrProvider = config.getDrsProviders().get("terraDataRepo");
+      if (drsURI.matches(tdrProvider.getHostRegex() + ".*")) {
+        var drsURIParts = drsURI.split("/");
+        var objectId = drsURIParts[drsURIParts.length - 1];
+        // The TDR drs object id has the format v1_snapshotId_objectId
+        var snapshotId = objectId.split("_")[1];
+        properties.put("snapshotId", snapshotId);
+      }
     }
   }
 }
