@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,11 +129,14 @@ public class DrsResolutionService {
 
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;
+    String transactionId = UUID.randomUUID().toString();
+
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
         authorizations = authService.buildAuthorizations(drsProvider, uriComponents, bearerToken);
         drsResponse =
-            fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken, authorizations);
+            fetchObjectInfo(
+                drsProvider, uriComponents, drsUri, bearerToken, authorizations, transactionId);
       } catch (Exception e) {
         auditLogger.logEvent(
             auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
@@ -167,7 +171,8 @@ public class DrsResolutionService {
           authorizations,
           forceAccessUrl,
           ip,
-          googleProject);
+          googleProject,
+          transactionId);
     }
 
     auditLogger.logEvent(
@@ -187,7 +192,8 @@ public class DrsResolutionService {
       List<DrsHubAuthorization> authorizations,
       boolean forceAccessUrl,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
     drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
@@ -205,7 +211,8 @@ public class DrsResolutionService {
                 authorizations,
                 auditEventBuilder,
                 ip,
-                googleProject);
+                googleProject,
+                transactionId);
         drsMetadataBuilder.accessUrl(accessUrl);
       } catch (RuntimeException e) {
         auditLogger.logEvent(
@@ -225,7 +232,8 @@ public class DrsResolutionService {
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken,
-      List<DrsHubAuthorization> authorizations) {
+      List<DrsHubAuthorization> authorizations,
+      String transactionId) {
     var sendMetadataAuth = drsProvider.isMetadataAuth();
 
     var objectId = getObjectId(uriComponents);
@@ -235,6 +243,7 @@ public class DrsResolutionService {
     log.info(drsRequestLogMessage);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    drsApi.setHeader("x-transaction-id", transactionId);
     if (sendMetadataAuth) {
       // Currently, no provider needs a fence_token for metadata auth.
       // If that changes, this will need to get updated.
@@ -266,7 +275,8 @@ public class DrsResolutionService {
       List<DrsHubAuthorization> drsHubAuthorizations,
       AuditLogEvent.Builder auditLogEventBuilder,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
@@ -277,6 +287,7 @@ public class DrsResolutionService {
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
+    drsApi.setHeader("x-transaction-id", transactionId);
 
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
