@@ -15,6 +15,7 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.tracking.UserLoggingMetrics;
 import bio.terra.drshub.util.AccessMethodUtils;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
@@ -45,17 +46,21 @@ public class DrsResolutionService {
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
   private final AuditLogger auditLogger;
+  private final UserLoggingMetrics userLoggingMetrics;
+  private static final String TRANSACTION_ID_FIELD_NAME = "transactionId";
 
   @Autowired
   public DrsResolutionService(
       DrsApiFactory drsApiFactory,
       DrsProviderService drsProviderService,
       AuthService authService,
-      AuditLogger auditLogger) {
+      AuditLogger auditLogger,
+      UserLoggingMetrics userLoggingMetrics) {
     this.drsApiFactory = drsApiFactory;
     this.drsProviderService = drsProviderService;
     this.authService = authService;
     this.auditLogger = auditLogger;
+    this.userLoggingMetrics = userLoggingMetrics;
   }
 
   /**
@@ -130,6 +135,7 @@ public class DrsResolutionService {
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;
     String transactionId = UUID.randomUUID().toString();
+    userLoggingMetrics.set(TRANSACTION_ID_FIELD_NAME, transactionId);
 
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {

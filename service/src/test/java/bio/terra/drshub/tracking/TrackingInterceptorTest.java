@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -55,15 +56,18 @@ class TrackingInterceptorTest {
 
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private UserLoggingMetrics userLoggingMetrics;
   @MockBean private DrsResolutionService drsResolutionService;
   @MockBean private TrackingService trackingService;
   @MockBean private DrsHubConfig drsHubConfig;
 
   @BeforeEach
   void setUp(TestInfo testInfo) {
+    userLoggingMetrics.get().clear();
     var excludeServiceName = testInfo.getTags().contains("noServiceNameEmitted");
     Optional<ServiceName> serviceName =
         excludeServiceName ? Optional.empty() : Optional.of(ServiceName.TERRA_UI);
+
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
         drsResolutionService, DRS_URI, "bucket", "path", GOOGLE_PROJECT, serviceName, false);
   }
@@ -175,6 +179,21 @@ class TrackingInterceptorTest {
     verify(trackingService)
         .logEvent(
             TEST_BEARER_TOKEN, EVENT_NAME, expectedBardProperties(List.of("accessUrl"), "azure"));
+  }
+
+  @Test
+  void testHappyPathEmittingToBardWithTransactionId() throws Exception {
+    mockBardEmissionsEnabled();
+    String transactionId = UUID.randomUUID().toString();
+    userLoggingMetrics.set("transactionId", transactionId);
+    postRequest(
+            REQUEST_URL,
+            objectMapper.writeValueAsString(
+                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
+        .andExpect(status().isOk());
+    HashMap<String, Object> expectedProperties = expectedBardProperties(List.of(), null);
+    expectedProperties.put("transactionId", transactionId);
+    verify(trackingService).logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedProperties);
   }
 
   @Test

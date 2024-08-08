@@ -33,7 +33,8 @@ public record TrackingInterceptor(
     AsyncUtils asyncUtils,
     BearerTokenFactory bearerTokenFactory,
     ObjectMapper objectMapper,
-    DrsHubConfig config)
+    DrsHubConfig config,
+    UserLoggingMetrics eventProperties)
     implements HandlerInterceptor {
 
   public static final String EVENT_NAME = "drshub:api";
@@ -56,7 +57,6 @@ public record TrackingInterceptor(
       var properties =
           new HashMap<String, Object>(
               Map.of("statusCode", responseStatus.value(), "requestUrl", path));
-
       properties.putAll(readRequestBody(request));
 
       // There are all the known headers that are potentially sent to DRSHub that we want to track
@@ -66,7 +66,8 @@ public record TrackingInterceptor(
       addResolvedCloudToProperties(response, properties);
       addToPropertiesIfPresentInHeader(request, properties, "x-app-id", "serviceName");
 
-      trackingService.logEvent(bearerToken, EVENT_NAME, properties);
+      eventProperties.setAll(properties);
+      trackingService.logEvent(bearerToken, EVENT_NAME, eventProperties.get());
     }
   }
 

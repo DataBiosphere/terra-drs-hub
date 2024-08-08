@@ -19,6 +19,7 @@ import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsHubAuthorization;
+import bio.terra.drshub.tracking.UserLoggingMetrics;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AccessURL;
@@ -57,6 +58,7 @@ class DrsResolutionServiceTest {
   @Mock private UriComponents uriComponents;
   @Mock private AuthService authService;
   @Mock private GoogleStorageService googleStorageService;
+  @Mock private UserLoggingMetrics userLoggingMetrics;
 
   private static final String PATH = "path";
 
@@ -99,7 +101,11 @@ class DrsResolutionServiceTest {
 
     drsResolutionService =
         new DrsResolutionService(
-            drsApiFactory, mock(DrsProviderService.class), authService, mock(AuditLogger.class));
+            drsApiFactory,
+            mock(DrsProviderService.class),
+            authService,
+            mock(AuditLogger.class),
+            userLoggingMetrics);
 
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);
