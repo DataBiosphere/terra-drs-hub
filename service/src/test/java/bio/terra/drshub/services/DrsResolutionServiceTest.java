@@ -139,7 +139,7 @@ class DrsResolutionServiceTest {
         actual,
         equalTo(DRS_OBJECT));
     // Verify transaction id header is set when fetching object info
-    verify(drsApi).setHeader("x-transaction-id", TRANSACTION_ID);
+    verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
   }
 
   @Test
@@ -332,6 +332,6 @@ class DrsResolutionServiceTest {
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi, never()).setHeader("X-Forwarded-For", ip);
     verify(drsApi, never()).setHeader("x-user-project", googleProject);
-    verify(drsApi).setHeader("x-transaction-id", TRANSACTION_ID);
+    verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
   }
 }
