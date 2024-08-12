@@ -47,7 +47,8 @@ public class DrsResolutionService {
   private final AuthService authService;
   private final AuditLogger auditLogger;
   private final UserLoggingMetrics userLoggingMetrics;
-  private static final String TRANSACTION_ID_FIELD_NAME = "transactionId";
+  public static final String TRANSACTION_ID_FIELD_NAME = "transactionId";
+  public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
   public DrsResolutionService(
@@ -249,7 +250,7 @@ public class DrsResolutionService {
     log.info(drsRequestLogMessage);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
-    drsApi.setHeader("x-transaction-id", transactionId);
+    drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
     if (sendMetadataAuth) {
       // Currently, no provider needs a fence_token for metadata auth.
       // If that changes, this will need to get updated.
@@ -293,7 +294,7 @@ public class DrsResolutionService {
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
-    drsApi.setHeader("x-transaction-id", transactionId);
+    drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
 
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
