@@ -1,5 +1,6 @@
 package bio.terra.drshub.controllers;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -83,7 +84,8 @@ public class GcsApiControllerTest extends BaseTest {
             eq(new BearerToken(TEST_ACCESS_TOKEN)),
             eq(true),
             eq(null),
-            eq(googleProject));
+            eq(googleProject),
+            eq(anyString()));
   }
 
   private ResultActions getSignedUrlRequest(

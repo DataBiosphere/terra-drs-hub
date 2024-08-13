@@ -20,6 +20,7 @@ import io.github.ga4gh.drs.model.AccessMethod;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -126,7 +127,8 @@ public record SignedUrlService(
             bearerToken,
             true,
             ip,
-            googleProject);
+            googleProject,
+            UUID.randomUUID().toString());
     return asyncUtils.runAndCatch(objectFuture, result -> BlobId.fromGsUtilUri(result.getGsUri()));
   }
 }

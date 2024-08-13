@@ -8,11 +8,13 @@ import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.tracking.TrackCall;
+import bio.terra.drshub.tracking.UserLoggingMetrics;
 import bio.terra.drshub.util.AsyncUtils;
 import bio.terra.drshub.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -23,7 +25,8 @@ public record DrsHubApiController(
     HttpServletRequest request,
     DrsResolutionService drsResolutionService,
     BearerTokenFactory bearerTokenFactory,
-    AsyncUtils asyncUtils)
+    AsyncUtils asyncUtils,
+    UserLoggingMetrics userLoggingMetrics)
     implements DrsHubApi {
 
   @Override
@@ -39,6 +42,9 @@ public record DrsHubApiController(
     var serviceName = RequestUtils.serviceNameFromRequest(request);
 
     log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
+    String transactionId = UUID.randomUUID().toString();
+    userLoggingMetrics.set("transactionId", transactionId);
+
     return asyncUtils.runAndCatch(
         drsResolutionService.resolveDrsObject(
             body.getUrl(),
@@ -48,7 +54,8 @@ public record DrsHubApiController(
             bearerToken,
             forceAccessUrl,
             ip,
-            googleProject),
+            googleProject,
+            transactionId),
         ResponseEntity::ok);
   }
 

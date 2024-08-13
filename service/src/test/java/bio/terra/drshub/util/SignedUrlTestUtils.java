@@ -106,7 +106,8 @@ public class SignedUrlTestUtils {
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),
-            nullable(String.class));
+            nullable(String.class),
+            any(String.class));
 
     doReturn(
             CompletableFuture.failedFuture(
@@ -121,7 +122,8 @@ public class SignedUrlTestUtils {
             any(BearerToken.class),
             eq(forceAccessUrl),
             nullable(String.class),
-            nullable(String.class));
+            nullable(String.class),
+            any(String.class));
   }
 
   public static String generateSaKeyObjectString()

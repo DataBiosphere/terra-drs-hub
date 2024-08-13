@@ -15,7 +15,6 @@ import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
-import bio.terra.drshub.tracking.UserLoggingMetrics;
 import bio.terra.drshub.util.AccessMethodUtils;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.model.AccessMethod;
@@ -29,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,8 +44,6 @@ public class DrsResolutionService {
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
   private final AuditLogger auditLogger;
-  private final UserLoggingMetrics userLoggingMetrics;
-  public static final String TRANSACTION_ID_FIELD_NAME = "transactionId";
   public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
@@ -55,13 +51,11 @@ public class DrsResolutionService {
       DrsApiFactory drsApiFactory,
       DrsProviderService drsProviderService,
       AuthService authService,
-      AuditLogger auditLogger,
-      UserLoggingMetrics userLoggingMetrics) {
+      AuditLogger auditLogger) {
     this.drsApiFactory = drsApiFactory;
     this.drsProviderService = drsProviderService;
     this.authService = authService;
     this.auditLogger = auditLogger;
-    this.userLoggingMetrics = userLoggingMetrics;
   }
 
   /**
@@ -83,7 +77,8 @@ public class DrsResolutionService {
       BearerToken bearerToken,
       Boolean forceAccessUrl,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -107,7 +102,8 @@ public class DrsResolutionService {
             bearerToken,
             forceAccessUrl,
             ip,
-            googleProject);
+            googleProject,
+            transactionId);
 
     var response = buildResponseObject(requestedFields, metadata, provider);
 
@@ -124,7 +120,8 @@ public class DrsResolutionService {
       BearerToken bearerToken,
       boolean forceAccessUrl,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     AuditLogEvent.Builder auditEventBuilder =
         new AuditLogEvent.Builder()
@@ -135,8 +132,6 @@ public class DrsResolutionService {
 
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;
-    String transactionId = UUID.randomUUID().toString();
-    userLoggingMetrics.set(TRANSACTION_ID_FIELD_NAME, transactionId);
 
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
