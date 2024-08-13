@@ -188,6 +188,7 @@ class TrackingInterceptorTest {
   void testHappyPathEmittingToBardWithTransactionId() throws Exception {
     mockBardEmissionsEnabled();
     String transactionId = UUID.randomUUID().toString();
+    when(drsResolutionService.getTransactionId()).thenReturn(transactionId);
     userLoggingMetrics.set("transactionId", transactionId);
     postRequest(
             REQUEST_URL,
