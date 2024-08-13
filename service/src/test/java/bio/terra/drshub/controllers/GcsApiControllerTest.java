@@ -1,8 +1,8 @@
 package bio.terra.drshub.controllers;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
@@ -19,6 +19,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,7 @@ public class GcsApiControllerTest extends BaseTest {
     var objectName = "my-test-folder/my-test-object.txt";
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
+    var transactionId = UUID.randomUUID().toString();
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
@@ -73,6 +75,7 @@ public class GcsApiControllerTest extends BaseTest {
         Optional.empty(),
         true);
 
+    when(drsResolutionService.getTransactionId()).thenReturn(transactionId);
     var response = getSignedUrlRequest(TEST_ACCESS_TOKEN, null, null, drsUri, googleProject);
     response.andExpect(content().string(url.toString()));
     verify(drsResolutionService)
@@ -85,7 +88,7 @@ public class GcsApiControllerTest extends BaseTest {
             eq(true),
             eq(null),
             eq(googleProject),
-            eq(anyString()));
+            eq(transactionId));
   }
 
   private ResultActions getSignedUrlRequest(
