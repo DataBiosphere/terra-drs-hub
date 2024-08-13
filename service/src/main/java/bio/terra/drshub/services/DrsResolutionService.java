@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -370,5 +371,9 @@ public class DrsResolutionService {
         .drsMetadata(drsMetadata)
         .drsProvider(drsProvider)
         .build();
+  }
+
+  public String getTransactionId() {
+    return UUID.randomUUID().toString();
   }
 }

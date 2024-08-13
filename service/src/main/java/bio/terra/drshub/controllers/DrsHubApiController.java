@@ -14,7 +14,6 @@ import bio.terra.drshub.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -42,7 +41,7 @@ public record DrsHubApiController(
     var serviceName = RequestUtils.serviceNameFromRequest(request);
 
     log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
-    String transactionId = UUID.randomUUID().toString();
+    String transactionId = drsResolutionService.getTransactionId();
     userLoggingMetrics.set("transactionId", transactionId);
 
     return asyncUtils.runAndCatch(

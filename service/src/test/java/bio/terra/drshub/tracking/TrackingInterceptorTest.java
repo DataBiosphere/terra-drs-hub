@@ -54,6 +54,8 @@ class TrackingInterceptorTest {
   private static final String TEST_IP_ADDRESS = "1.1.1.1";
   private static final String GOOGLE_PROJECT = "myproject";
 
+  private static String TRANSACTION_ID = UUID.randomUUID().toString();
+
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserLoggingMetrics userLoggingMetrics;
@@ -64,6 +66,7 @@ class TrackingInterceptorTest {
   @BeforeEach
   void setUp(TestInfo testInfo) {
     userLoggingMetrics.get().clear();
+    when(drsResolutionService.getTransactionId()).thenReturn(TRANSACTION_ID);
     var excludeServiceName = testInfo.getTags().contains("noServiceNameEmitted");
     Optional<ServiceName> serviceName =
         excludeServiceName ? Optional.empty() : Optional.of(ServiceName.TERRA_UI);
@@ -309,7 +312,9 @@ class TrackingInterceptorTest {
                 "fields",
                 fields,
                 "serviceName",
-                ServiceName.TERRA_UI.toString()));
+                ServiceName.TERRA_UI.toString(),
+                "transactionId",
+                TRANSACTION_ID));
     if (resolvedCloud != null) {
       properties.put("resolvedCloud", resolvedCloud);
     }
