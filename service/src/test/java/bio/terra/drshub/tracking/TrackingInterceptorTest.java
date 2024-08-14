@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -53,17 +54,23 @@ class TrackingInterceptorTest {
   private static final String TEST_IP_ADDRESS = "1.1.1.1";
   private static final String GOOGLE_PROJECT = "myproject";
 
+  private static String TRANSACTION_ID = UUID.randomUUID().toString();
+
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private UserLoggingMetrics userLoggingMetrics;
   @MockBean private DrsResolutionService drsResolutionService;
   @MockBean private TrackingService trackingService;
   @MockBean private DrsHubConfig drsHubConfig;
 
   @BeforeEach
   void setUp(TestInfo testInfo) {
+    userLoggingMetrics.get().clear();
+    when(drsResolutionService.getTransactionId()).thenReturn(TRANSACTION_ID);
     var excludeServiceName = testInfo.getTags().contains("noServiceNameEmitted");
     Optional<ServiceName> serviceName =
         excludeServiceName ? Optional.empty() : Optional.of(ServiceName.TERRA_UI);
+
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
         drsResolutionService, DRS_URI, "bucket", "path", GOOGLE_PROJECT, serviceName, false);
   }
@@ -178,6 +185,22 @@ class TrackingInterceptorTest {
   }
 
   @Test
+  void testHappyPathEmittingToBardWithTransactionId() throws Exception {
+    mockBardEmissionsEnabled();
+    String transactionId = UUID.randomUUID().toString();
+    when(drsResolutionService.getTransactionId()).thenReturn(transactionId);
+    userLoggingMetrics.set("transactionId", transactionId);
+    postRequest(
+            REQUEST_URL,
+            objectMapper.writeValueAsString(
+                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
+        .andExpect(status().isOk());
+    HashMap<String, Object> expectedProperties = expectedBardProperties(List.of(), null);
+    expectedProperties.put("transactionId", transactionId);
+    verify(trackingService).logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedProperties);
+  }
+
+  @Test
   void testEmittingToBardOn401Error() throws Exception {
     mockBardEmissionsEnabled();
     mockResolveDrsResponse(null);
@@ -270,7 +293,7 @@ class TrackingInterceptorTest {
             .build();
 
     when(drsResolutionService.resolveDrsObject(
-            anyString(), any(), any(), any(), any(), any(), any(), any()))
+            anyString(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(metadata));
   }
 
@@ -290,7 +313,9 @@ class TrackingInterceptorTest {
                 "fields",
                 fields,
                 "serviceName",
-                ServiceName.TERRA_UI.toString()));
+                ServiceName.TERRA_UI.toString(),
+                "transactionId",
+                TRANSACTION_ID));
     if (resolvedCloud != null) {
       properties.put("resolvedCloud", resolvedCloud);
     }

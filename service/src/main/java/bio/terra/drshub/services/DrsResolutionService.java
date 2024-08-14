@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ public class DrsResolutionService {
   private final DrsProviderService drsProviderService;
   private final AuthService authService;
   private final AuditLogger auditLogger;
+  public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
   public DrsResolutionService(
@@ -76,7 +78,8 @@ public class DrsResolutionService {
       BearerToken bearerToken,
       Boolean forceAccessUrl,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
 
@@ -100,7 +103,8 @@ public class DrsResolutionService {
             bearerToken,
             forceAccessUrl,
             ip,
-            googleProject);
+            googleProject,
+            transactionId);
 
     var response = buildResponseObject(requestedFields, metadata, provider);
 
@@ -117,7 +121,8 @@ public class DrsResolutionService {
       BearerToken bearerToken,
       boolean forceAccessUrl,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     AuditLogEvent.Builder auditEventBuilder =
         new AuditLogEvent.Builder()
@@ -128,11 +133,13 @@ public class DrsResolutionService {
 
     final DrsObject drsResponse;
     final List<DrsHubAuthorization> authorizations;
+
     if (Fields.shouldRequestObjectInfo(requestedFields)) {
       try {
         authorizations = authService.buildAuthorizations(drsProvider, uriComponents, bearerToken);
         drsResponse =
-            fetchObjectInfo(drsProvider, uriComponents, drsUri, bearerToken, authorizations);
+            fetchObjectInfo(
+                drsProvider, uriComponents, drsUri, bearerToken, authorizations, transactionId);
       } catch (Exception e) {
         auditLogger.logEvent(
             auditEventBuilder.auditLogEventType(AuditLogEventType.DrsResolutionFailed).build());
@@ -167,7 +174,8 @@ public class DrsResolutionService {
           authorizations,
           forceAccessUrl,
           ip,
-          googleProject);
+          googleProject,
+          transactionId);
     }
 
     auditLogger.logEvent(
@@ -187,7 +195,8 @@ public class DrsResolutionService {
       List<DrsHubAuthorization> authorizations,
       boolean forceAccessUrl,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
     drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
@@ -205,7 +214,8 @@ public class DrsResolutionService {
                 authorizations,
                 auditEventBuilder,
                 ip,
-                googleProject);
+                googleProject,
+                transactionId);
         drsMetadataBuilder.accessUrl(accessUrl);
       } catch (RuntimeException e) {
         auditLogger.logEvent(
@@ -225,7 +235,8 @@ public class DrsResolutionService {
       UriComponents uriComponents,
       String drsUri,
       BearerToken bearerToken,
-      List<DrsHubAuthorization> authorizations) {
+      List<DrsHubAuthorization> authorizations,
+      String transactionId) {
     var sendMetadataAuth = drsProvider.isMetadataAuth();
 
     var objectId = getObjectId(uriComponents);
@@ -235,6 +246,7 @@ public class DrsResolutionService {
     log.info(drsRequestLogMessage);
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+    drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
     if (sendMetadataAuth) {
       // Currently, no provider needs a fence_token for metadata auth.
       // If that changes, this will need to get updated.
@@ -266,7 +278,8 @@ public class DrsResolutionService {
       List<DrsHubAuthorization> drsHubAuthorizations,
       AuditLogEvent.Builder auditLogEventBuilder,
       String ip,
-      String googleProject) {
+      String googleProject,
+      String transactionId) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
@@ -277,6 +290,7 @@ public class DrsResolutionService {
     if (googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
+    drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
 
     for (var authorization : drsHubAuthorizations) {
       Optional<List<String>> auth =
@@ -357,5 +371,9 @@ public class DrsResolutionService {
         .drsMetadata(drsMetadata)
         .drsProvider(drsProvider)
         .build();
+  }
+
+  public String getTransactionId() {
+    return UUID.randomUUID().toString();
   }
 }

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -90,6 +91,8 @@ class DrsResolutionServiceTest {
                           .setAuth(AccessUrlAuthEnum.current_request)
                           .setFetchAccessUrl(true))));
 
+  private static final String TRANSACTION_ID = UUID.randomUUID().toString();
+
   @BeforeEach
   void before() throws Exception {
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
@@ -112,7 +115,12 @@ class DrsResolutionServiceTest {
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_UNAUTH, uriComponents, "drsUri", TOKEN, List.of(PASSPORTAUTH, BEARERAUTH));
+            DRS_PROVIDER_UNAUTH,
+            uriComponents,
+            "drsUri",
+            TOKEN,
+            List.of(PASSPORTAUTH, BEARERAUTH),
+            TRANSACTION_ID);
 
     // When authorization isn't required, we don't pass the bearer token to the API.
     verify(drsApi, never()).setBearerToken(any());
@@ -124,6 +132,8 @@ class DrsResolutionServiceTest {
         "Object fetched via getObject without token when authorization not required",
         actual,
         equalTo(DRS_OBJECT));
+    // Verify transaction id header is set when fetching object info
+    verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
   }
 
   @Test
@@ -132,7 +142,7 @@ class DrsResolutionServiceTest {
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH));
+            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH), TRANSACTION_ID);
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
@@ -153,7 +163,12 @@ class DrsResolutionServiceTest {
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH, PASSPORTAUTH));
+            DRS_PROVIDER_AUTH,
+            uriComponents,
+            "drsUri",
+            TOKEN,
+            List.of(BEARERAUTH, PASSPORTAUTH),
+            TRANSACTION_ID);
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
@@ -178,7 +193,12 @@ class DrsResolutionServiceTest {
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH, PASSPORTAUTH));
+            DRS_PROVIDER_AUTH,
+            uriComponents,
+            "drsUri",
+            TOKEN,
+            List.of(BEARERAUTH, PASSPORTAUTH),
+            TRANSACTION_ID);
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
@@ -198,7 +218,12 @@ class DrsResolutionServiceTest {
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH, PASSPORTAUTH));
+            DRS_PROVIDER_AUTH,
+            uriComponents,
+            "drsUri",
+            TOKEN,
+            List.of(BEARERAUTH, PASSPORTAUTH),
+            TRANSACTION_ID);
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
@@ -221,7 +246,12 @@ class DrsResolutionServiceTest {
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_AUTH, uriComponents, "drsUri", TOKEN, List.of(BEARERAUTH, PASSPORTAUTH));
+            DRS_PROVIDER_AUTH,
+            uriComponents,
+            "drsUri",
+            TOKEN,
+            List.of(BEARERAUTH, PASSPORTAUTH),
+            TRANSACTION_ID);
 
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
@@ -247,7 +277,8 @@ class DrsResolutionServiceTest {
             List.of(BEARERAUTH),
             new AuditLogEvent.Builder(),
             ip,
-            googleProject);
+            googleProject,
+            TRANSACTION_ID);
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("x-user-project", googleProject);
@@ -268,7 +299,8 @@ class DrsResolutionServiceTest {
             List.of(BEARERAUTH),
             new AuditLogEvent.Builder(),
             ip,
-            googleProject);
+            googleProject,
+            TRANSACTION_ID);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("X-Forwarded-For", ip);
   }
@@ -289,9 +321,11 @@ class DrsResolutionServiceTest {
             List.of(BEARERAUTH),
             new AuditLogEvent.Builder(),
             ip,
-            googleProject);
+            googleProject,
+            TRANSACTION_ID);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi, never()).setHeader("X-Forwarded-For", ip);
     verify(drsApi, never()).setHeader("x-user-project", googleProject);
+    verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
   }
 }

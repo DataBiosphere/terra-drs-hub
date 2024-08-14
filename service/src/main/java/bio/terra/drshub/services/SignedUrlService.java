@@ -126,7 +126,8 @@ public record SignedUrlService(
             bearerToken,
             true,
             ip,
-            googleProject);
+            googleProject,
+            drsResolutionService.getTransactionId());
     return asyncUtils.runAndCatch(objectFuture, result -> BlobId.fromGsUtilUri(result.getGsUri()));
   }
 }

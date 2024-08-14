@@ -12,6 +12,7 @@ import bio.terra.drshub.util.SignedUrlTestUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +83,7 @@ public class SignedUrlServiceTest extends BaseTest {
     var ip = "test.ip";
     var googleProject = "test-google-project";
     var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
+    var transactionId = UUID.randomUUID().toString();
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     SignedUrlTestUtils.setupDrsResolutionServiceMocks(
@@ -92,6 +94,7 @@ public class SignedUrlServiceTest extends BaseTest {
         googleProject,
         Optional.empty(),
         true);
+    when(drsResolutionService.getTransactionId()).thenReturn(transactionId);
     var signedUrl =
         signedUrlService.getSignedUrl(
             null,
