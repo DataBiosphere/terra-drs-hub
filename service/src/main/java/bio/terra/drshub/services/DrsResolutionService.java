@@ -42,19 +42,14 @@ import org.springframework.web.util.UriComponents;
 public class DrsResolutionService {
 
   private final DrsApiFactory drsApiFactory;
-  private final DrsProviderService drsProviderService;
   private final AuthService authService;
   private final AuditLogger auditLogger;
   public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
   public DrsResolutionService(
-      DrsApiFactory drsApiFactory,
-      DrsProviderService drsProviderService,
-      AuthService authService,
-      AuditLogger auditLogger) {
+      DrsApiFactory drsApiFactory, AuthService authService, AuditLogger auditLogger) {
     this.drsApiFactory = drsApiFactory;
-    this.drsProviderService = drsProviderService;
     this.authService = authService;
     this.auditLogger = auditLogger;
   }
@@ -79,12 +74,11 @@ public class DrsResolutionService {
       Boolean forceAccessUrl,
       String ip,
       String googleProject,
-      String transactionId) {
+      String transactionId,
+      UriComponents uriComponents,
+      DrsProvider provider) {
 
     var requestedFields = isEmpty(rawRequestedFields) ? Fields.DEFAULT_FIELDS : rawRequestedFields;
-
-    var uriComponents = drsProviderService.getUriComponents(drsUri);
-    var provider = drsProviderService.determineDrsProvider(uriComponents);
 
     log.info(
         "Drs URI {} will use provider {}, requested fields {}",

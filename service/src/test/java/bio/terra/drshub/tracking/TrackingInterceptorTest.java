@@ -14,8 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubApplication;
 import bio.terra.drshub.config.DrsHubConfig;
+import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.generated.model.ServiceName;
+import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
+import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.services.DrsResolutionService;
@@ -23,6 +27,7 @@ import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ga4gh.drs.model.AccessURL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +55,10 @@ class TrackingInterceptorTest {
   private static final String REQUEST_URL = "/api/v4/drs/resolve";
   private static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
   private static final BearerToken TEST_BEARER_TOKEN = new BearerToken(TEST_ACCESS_TOKEN);
-  private static final String DRS_URI = "drs://foo/object_id";
+  private static final String DRS_URI =
+      String.format(
+          "drs://jade.datarepo-dev.broadinstitute.org/v1_%s/%s",
+          UUID.randomUUID(), UUID.randomUUID());
   private static final String TEST_IP_ADDRESS = "1.1.1.1";
   private static final String GOOGLE_PROJECT = "myproject";
 
@@ -66,6 +74,7 @@ class TrackingInterceptorTest {
   @BeforeEach
   void setUp(TestInfo testInfo) {
     userLoggingMetrics.get().clear();
+    mockProviders();
     when(drsResolutionService.getTransactionId()).thenReturn(TRANSACTION_ID);
     var excludeServiceName = testInfo.getTags().contains("noServiceNameEmitted");
     Optional<ServiceName> serviceName =
@@ -293,7 +302,7 @@ class TrackingInterceptorTest {
             .build();
 
     when(drsResolutionService.resolveDrsObject(
-            anyString(), any(), any(), any(), any(), any(), any(), any(), any()))
+            anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(metadata));
   }
 
@@ -312,6 +321,8 @@ class TrackingInterceptorTest {
                 CloudPlatformEnum.GS.toString(),
                 "fields",
                 fields,
+                "provider",
+                "terraDataRepo",
                 "serviceName",
                 ServiceName.TERRA_UI.toString(),
                 "transactionId",
@@ -320,5 +331,21 @@ class TrackingInterceptorTest {
       properties.put("resolvedCloud", resolvedCloud);
     }
     return properties;
+  }
+
+  private void mockProviders() {
+    DrsProvider tdrProvider = DrsProvider.create();
+    tdrProvider.setName("terraDataRepo");
+    tdrProvider.setMetadataAuth(true);
+    var accessMethod =
+        ProviderAccessMethodConfig.create()
+            .setType(AccessMethodConfigTypeEnum.gs)
+            .setAuth(AccessUrlAuthEnum.fence_token)
+            .setFetchAccessUrl(true);
+    ArrayList<ProviderAccessMethodConfig> accessMethods = new ArrayList<>();
+    accessMethods.add(accessMethod);
+    tdrProvider.setAccessMethodConfigs(accessMethods);
+    tdrProvider.setHostRegex(".*data.*[-.](?:broadinstitute\\.org|terra\\.bio)");
+    when(drsHubConfig.getDrsProviders()).thenReturn(Map.of("terraDataRepo", tdrProvider));
   }
 }

@@ -6,6 +6,7 @@ import bio.terra.drshub.generated.api.DrsHubApi;
 import bio.terra.drshub.generated.model.RequestObject;
 import bio.terra.drshub.generated.model.ResourceMetadata;
 import bio.terra.drshub.models.Fields;
+import bio.terra.drshub.services.DrsProviderService;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.tracking.TrackCall;
 import bio.terra.drshub.tracking.UserLoggingMetrics;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Controller;
 public record DrsHubApiController(
     HttpServletRequest request,
     DrsResolutionService drsResolutionService,
+    DrsProviderService drsProviderService,
     BearerTokenFactory bearerTokenFactory,
     AsyncUtils asyncUtils,
     UserLoggingMetrics userLoggingMetrics)
@@ -41,6 +43,11 @@ public record DrsHubApiController(
     var serviceName = RequestUtils.serviceNameFromRequest(request);
 
     log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
+
+    var uriComponents = drsProviderService.getUriComponents(body.getUrl());
+    var provider = drsProviderService.determineDrsProvider(uriComponents);
+    userLoggingMetrics.set("provider", provider.getName());
+
     String transactionId = drsResolutionService.getTransactionId();
     userLoggingMetrics.set("transactionId", transactionId);
 
@@ -54,7 +61,9 @@ public record DrsHubApiController(
             forceAccessUrl,
             ip,
             googleProject,
-            transactionId),
+            transactionId,
+            uriComponents,
+            provider),
         ResponseEntity::ok);
   }
 
