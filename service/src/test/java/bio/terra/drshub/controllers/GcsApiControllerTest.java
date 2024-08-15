@@ -1,5 +1,6 @@
 package bio.terra.drshub.controllers;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -8,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.AuthService;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.util.UriComponents;
 
 @Tag("Unit")
 @AutoConfigureMockMvc
@@ -88,7 +91,9 @@ public class GcsApiControllerTest extends BaseTest {
             eq(true),
             eq(null),
             eq(googleProject),
-            eq(transactionId));
+            eq(transactionId),
+            any(UriComponents.class),
+            any(DrsProvider.class));
   }
 
   private ResultActions getSignedUrlRequest(

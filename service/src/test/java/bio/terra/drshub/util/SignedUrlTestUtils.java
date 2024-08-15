@@ -46,6 +46,7 @@ import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
 import org.junit.jupiter.api.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.util.UriComponents;
 
 @Tag("Unit")
 public class SignedUrlTestUtils {
@@ -107,7 +108,9 @@ public class SignedUrlTestUtils {
             eq(forceAccessUrl),
             nullable(String.class),
             nullable(String.class),
-            any(String.class));
+            any(String.class),
+            any(UriComponents.class),
+            any(DrsProvider.class));
 
     doReturn(
             CompletableFuture.failedFuture(
@@ -123,7 +126,9 @@ public class SignedUrlTestUtils {
             eq(forceAccessUrl),
             nullable(String.class),
             nullable(String.class),
-            any(String.class));
+            any(String.class),
+            any(UriComponents.class),
+            any(DrsProvider.class));
   }
 
   public static String generateSaKeyObjectString()

@@ -293,7 +293,7 @@ class TrackingInterceptorTest {
             .build();
 
     when(drsResolutionService.resolveDrsObject(
-            anyString(), any(), any(), any(), any(), any(), any(), any(), any()))
+            anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(metadata));
   }
 

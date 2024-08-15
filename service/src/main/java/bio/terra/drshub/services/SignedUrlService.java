@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponents;
 
 @Service
 @Slf4j
@@ -64,6 +65,7 @@ public record SignedUrlService(
     } else {
       return getSignedUrlFromDrsProvider(
           bearerToken,
+          components,
           drsProvider,
           googleProject,
           bucket,
@@ -85,6 +87,7 @@ public record SignedUrlService(
 
   private URL getSignedUrlFromDrsProvider(
       BearerToken bearerToken,
+      UriComponents components,
       DrsProvider drsProvider,
       String googleProject,
       String bucket,
@@ -99,7 +102,14 @@ public record SignedUrlService(
     if (bucket == null || objectName == null) {
       blobInfo =
           BlobInfo.newBuilder(
-                  getBlobIdFromDrsUri(dataObjectUri, bearerToken, ip, googleProject, serviceName))
+                  getBlobIdFromDrsUri(
+                      dataObjectUri,
+                      components,
+                      drsProvider,
+                      bearerToken,
+                      ip,
+                      googleProject,
+                      serviceName))
               .build();
     } else {
       blobInfo = BlobInfo.newBuilder(BlobId.of(bucket, objectName)).build();
@@ -113,10 +123,13 @@ public record SignedUrlService(
 
   private BlobId getBlobIdFromDrsUri(
       String dataObjectUri,
+      UriComponents components,
+      DrsProvider drsProvider,
       BearerToken bearerToken,
       String ip,
       String googleProject,
       Optional<ServiceName> serviceName) {
+
     var objectFuture =
         drsResolutionService.resolveDrsObject(
             dataObjectUri,
@@ -127,7 +140,9 @@ public record SignedUrlService(
             true,
             ip,
             googleProject,
-            drsResolutionService.getTransactionId());
+            drsResolutionService.getTransactionId(),
+            components,
+            drsProvider);
     return asyncUtils.runAndCatch(objectFuture, result -> BlobId.fromGsUtilUri(result.getGsUri()));
   }
 }
