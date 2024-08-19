@@ -63,8 +63,9 @@ public record TrackingInterceptor(
       addToPropertiesIfPresentInHeader(request, properties, "x-user-project", "userProject");
       addToPropertiesIfPresentInHeader(
           request, properties, "drshub-force-access-url", "forceAccessUrl");
-      addResolvedCloudToProperties(response, properties);
       addToPropertiesIfPresentInHeader(request, properties, "x-app-id", "serviceName");
+      addResolvedCloudToProperties(response, properties);
+      addToPropertiesIfPresentInResponse(response, properties, "fileName");
 
       eventProperties.setAll(properties);
       trackingService.logEvent(bearerToken, EVENT_NAME, eventProperties.get());
@@ -132,6 +133,14 @@ public record TrackingInterceptor(
         resolvedCloud = "gcp";
       }
       properties.put("resolvedCloud", resolvedCloud);
+    }
+  }
+
+  public void addToPropertiesIfPresentInResponse(HttpServletResponse response, Map<String, Object> properties, String propertyName) {
+    Map<String, Object> responseBody = readResponseBody(response);
+    if (responseBody.get(propertyName) != null) {
+      String property = responseBody.get(propertyName).toString();
+      properties.put(propertyName, property);
     }
   }
 }
