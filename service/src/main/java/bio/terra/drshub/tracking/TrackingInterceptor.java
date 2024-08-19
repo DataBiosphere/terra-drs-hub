@@ -136,7 +136,8 @@ public record TrackingInterceptor(
     }
   }
 
-  public void addToPropertiesIfPresentInResponse(HttpServletResponse response, Map<String, Object> properties, String propertyName) {
+  private void addToPropertiesIfPresentInResponse(
+      HttpServletResponse response, Map<String, Object> properties, String propertyName) {
     Map<String, Object> responseBody = readResponseBody(response);
     if (responseBody.get(propertyName) != null) {
       String property = responseBody.get(propertyName).toString();
