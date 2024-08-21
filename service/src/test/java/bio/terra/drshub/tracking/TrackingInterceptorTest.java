@@ -194,18 +194,24 @@ class TrackingInterceptorTest {
   }
 
   @Test
-  void testHappyPathEmittingToBardWithTransactionId() throws Exception {
+  void testHappyPathEmittingToBardWithFileName() throws Exception {
     mockBardEmissionsEnabled();
-    String transactionId = UUID.randomUUID().toString();
-    when(drsResolutionService.getTransactionId()).thenReturn(transactionId);
-    userLoggingMetrics.set("transactionId", transactionId);
+    String fileName = "file-" + UUID.randomUUID();
+    mockResolveDrsResponseWithFileName(fileName);
     postRequest(
             REQUEST_URL,
             objectMapper.writeValueAsString(
-                Map.of("url", DRS_URI, "cloudPlatform", CloudPlatformEnum.GS, "fields", List.of())))
+                Map.of(
+                    "url",
+                    DRS_URI,
+                    "cloudPlatform",
+                    CloudPlatformEnum.GS,
+                    "fields",
+                    List.of("fileName"))))
         .andExpect(status().isOk());
-    HashMap<String, Object> expectedProperties = expectedBardProperties(List.of(), null);
-    expectedProperties.put("transactionId", transactionId);
+
+    HashMap<String, Object> expectedProperties = expectedBardProperties(List.of("fileName"), null);
+    expectedProperties.put("fileName", fileName);
     verify(trackingService).logEvent(TEST_BEARER_TOKEN, EVENT_NAME, expectedProperties);
   }
 
@@ -301,6 +307,18 @@ class TrackingInterceptorTest {
             .drsMetadata(drsMetadata)
             .build();
 
+    when(drsResolutionService.resolveDrsObject(
+            anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(metadata));
+  }
+
+  private void mockResolveDrsResponseWithFileName(String fileName) {
+    DrsMetadata drsMetadata = new DrsMetadata.Builder().fileName(fileName).build();
+    AnnotatedResourceMetadata metadata =
+        AnnotatedResourceMetadata.builder()
+            .requestedFields(List.of("fileName"))
+            .drsMetadata(drsMetadata)
+            .build();
     when(drsResolutionService.resolveDrsObject(
             anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(metadata));
