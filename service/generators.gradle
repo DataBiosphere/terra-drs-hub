@@ -17,7 +17,6 @@ swaggerSources {
 			additionalProperties = [
 					modelPackage     : "${artifactGroup}.generated.model",
 					apiPackage       : "${artifactGroup}.generated.api",
-					apiPackage       : "${artifactGroup}.generated.api",
 					dateLibrary      : 'java11',
 					jakarta          : 'true',
 					interfaceOnly    : 'true',
