@@ -12,7 +12,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import bio.terra.drshub.BaseTest;
-import bio.terra.drshub.generated.model.SaKeyObject;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.AuthService;
@@ -220,45 +219,6 @@ public class DrsHubApiControllerTest extends BaseTest {
         .andExpect(content().json(objectMapper.writeValueAsString(drsObjectMap), true));
 
     verify(externalCredsApiFactory, times(0)).getApi(any());
-  }
-
-  @Test
-  void testDrsProviderDoesNotSupportGoogle() throws Exception {
-    var cidProviderHost = getProviderHosts("kidsFirst");
-
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            UUID.randomUUID().toString(),
-            List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
-        .andExpect(status().isOk())
-        .andExpect(content().json("{}"));
-  }
-
-  @Test
-  void testDrsProviderDoesSupportGoogle() throws Exception {
-    var cidProviderHost = getProviderHosts("bioDataCatalyst");
-
-    Map<String, Object> fenceAccountKey = new HashMap<>();
-    fenceAccountKey.put("foo", "sa key");
-    ObjectMapper mapper = new ObjectMapper();
-    mockExternalCredsFenceAccountKeyApi(
-        Provider.fromValue(cidProviderHost.drsProvider().getEcmFenceProvider().get().getUriValue()),
-        TEST_ACCESS_TOKEN,
-        mapper.writeValueAsString(fenceAccountKey));
-
-    var saKeyObject = new SaKeyObject().data(fenceAccountKey);
-    postDrsHubRequest(
-            TEST_ACCESS_TOKEN,
-            cidProviderHost.compactUriPrefix(),
-            UUID.randomUUID().toString(),
-            List.of(Fields.GOOGLE_SERVICE_ACCOUNT))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .json(
-                    objectMapper.writeValueAsString(
-                        Map.of(Fields.GOOGLE_SERVICE_ACCOUNT, saKeyObject))));
   }
 
   @Test

@@ -149,11 +149,6 @@ public class DrsResolutionService {
     var accessMethod = AccessMethodUtils.getAccessMethod(drsResponse, drsProvider, cloudPlatform);
     var accessMethodType = accessMethod.map(AccessMethod::getType).orElse(null);
 
-    if (drsProvider.shouldFetchUserServiceAccount(accessMethodType, requestedFields)) {
-      var saKey = authService.fetchUserServiceAccount(drsProvider, bearerToken);
-      drsMetadataBuilder.bondSaKey(saKey);
-    }
-
     if (drsResponse != null) {
       drsMetadataBuilder.drsResponse(drsResponse);
       setDrsResponseValues(
