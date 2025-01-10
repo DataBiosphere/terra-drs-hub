@@ -7,6 +7,7 @@ pluginManagement {
 				}
 			}
 		}
+		mavenCentral()
 		maven {
 			url 'https://broadinstitute.jfrog.io/artifactory/plugins-snapshot'
 		}
