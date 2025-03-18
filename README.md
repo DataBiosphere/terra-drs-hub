@@ -127,8 +127,8 @@ To run the Pact tests, run the following:
 export PACT_BROKER_URL="pact-broker.dsp-eng-tools.broadinstitute.org"
 export PACT_PROVIDER_COMMIT="$(git rev-parse HEAD)"
 export PACT_PROVIDER_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-export PACT_BROKER_USERNAME="$(vault read -field=basic_auth_read_only_username secret/dsp/pact-broker/users/read-only)"
-export PACT_BROKER_PASSWORD="$(vault read -field=basic_auth_read_only_password secret/dsp/pact-broker/users/read-only)"
+export PACT_BROKER_USERNAME="$(gcloud --project broad-dsp-eng-tools secrets versions access latest --secret pact-broker-users-read-write | jq -r .basic_auth_username)"
+export PACT_BROKER_PASSWORD="$(gcloud --project broad-dsp-eng-tools secrets versions access latest --secret pact-broker-users-read-write | jq -r .basic_auth_password)"
 
 ./gradlew verifyPacts
 ```
