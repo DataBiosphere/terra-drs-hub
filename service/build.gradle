@@ -46,7 +46,7 @@ dependencies {
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache5'
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
 
-	implementation('bio.terra:terra-common-lib:1.1.11-SNAPSHOT') {
+	implementation('bio.terra:terra-common-lib:1.1.38-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
 		exclude group: 'org.liquibase', module: 'liquibase-core'
 		exclude group: 'bio.terra', module: 'stairway-gcp'
@@ -68,18 +68,6 @@ dependencies {
 	// For Micrometer metrics gathering
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 
-	// For OpenTelemetry
-	var openTelemetryVersion = '1.32.0'
-	implementation "io.opentelemetry:opentelemetry-api:${openTelemetryVersion}"
-	implementation "io.opentelemetry:opentelemetry-sdk:${openTelemetryVersion}"
-	implementation "io.opentelemetry:opentelemetry-sdk-metrics:${openTelemetryVersion}"
-	implementation "io.opentelemetry:opentelemetry-exporter-logging:${openTelemetryVersion}"
-	implementation "io.opentelemetry.semconv:opentelemetry-semconv:1.21.0-alpha"
-	implementation "io.opentelemetry.instrumentation:opentelemetry-spring-webmvc-6.0:${openTelemetryVersion}-alpha"
-	implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:${openTelemetryVersion}"
-	implementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot:${openTelemetryVersion}-alpha"
-	implementation "com.google.cloud.opentelemetry:exporter-trace:0.25.2"
-
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		// Fixes warning about multiple occurrences of JSONObject on the classpath
 		exclude group: 'com.vaadin.external.google', module: 'android-json'
@@ -87,7 +75,6 @@ dependencies {
 
 	testImplementation('au.com.dius.pact.provider:junit5:4.6.17')
 	testImplementation('au.com.dius.pact.provider:junit5spring:4.5.8')
-	testImplementation('org.awaitility:awaitility:4.2.0')
 }
 
 sonarqube {
