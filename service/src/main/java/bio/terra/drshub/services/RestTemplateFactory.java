@@ -23,7 +23,9 @@ public class RestTemplateFactory {
     connectionPoolSize = drsHubConfig.restTemplateConnectionPoolSize();
   }
 
-  /** @return a new RestTemplate backed by a pooling connection manager */
+  /**
+   * @return a new RestTemplate backed by a pooling connection manager
+   */
   public RestTemplate makeRestTemplateWithPooling() {
     return makeRestTemplateWithPooling(null);
   }
