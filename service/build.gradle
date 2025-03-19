@@ -9,7 +9,7 @@ plugins {
 	id 'com.github.ben-manes.versions' version '0.52.0'
 	id 'com.github.spotbugs' version '5.0.6'
 	id 'com.google.cloud.tools.jib'
-	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
+	id 'com.gorylenko.gradle-git-properties' version '2.5.0'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
   	id 'com.srcclr.gradle' version '3.1.12'
@@ -42,7 +42,7 @@ dependencyManagement {
 }
 
 dependencies {
-	annotationProcessor 'org.immutables:value:2.9.2'
+	annotationProcessor 'org.immutables:value:2.10.1'
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache5'
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
 
@@ -57,7 +57,7 @@ dependencies {
 	}
 	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:v0.0.332'
 	implementation 'bio.terra:externalcreds-client-resttemplate:1.20.0-20240318.171436-1'
-	implementation 'org.codehaus.janino:janino:3.1.9' // Provides if/else xml parsing for logback config
+	implementation 'org.codehaus.janino:janino:3.1.12' // Provides if/else xml parsing for logback config
 
 	// google
 	implementation platform('com.google.cloud:libraries-bom:26.56.0')
@@ -69,7 +69,7 @@ dependencies {
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	// For OpenTelemetry
-	implementation 'io.opentelemetry:opentelemetry-api:1.41.0'
+	implementation 'io.opentelemetry:opentelemetry-api:1.48.0'
 
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		// Fixes warning about multiple occurrences of JSONObject on the classpath
