@@ -1,3 +1,4 @@
+#!/bin/bash
 ENV=${1:-dev}
 
 if [[ $ENV == dev ]]; then
@@ -12,11 +13,12 @@ fi
 SERVICE_OUTPUT_LOCATION="$(dirname "$0")/service/src/main/resources/rendered"
 INTEGRATION_OUTPUT_LOCATION="$(dirname "$0")/integration/src/main/resources/rendered"
 
-GET_SECRET="gcloud secrets versions access latest --project $GCLOUD_PROJECT --secret"
+get_secret() {
+  gcloud secrets versions access latest --project "$GCLOUD_PROJECT" --secret "$1"
+}
 
-$GET_SECRET drshub-ras-mtls-client-cert >"$SERVICE_OUTPUT_LOCATION/ras-mtls-client.crt"
-$GET_SECRET drshub-ras-mtls-client-key >"$SERVICE_OUTPUT_LOCATION/ras-mtls-client.key"
-$GET_SECRET drshub-swagger-client-id >"$SERVICE_OUTPUT_LOCATION/swagger-client-id"
+get_secret drshub-ras-mtls-client-cert >"$SERVICE_OUTPUT_LOCATION/ras-mtls-client.crt"
+get_secret drshub-ras-mtls-client-key >"$SERVICE_OUTPUT_LOCATION/ras-mtls-client.key"
+get_secret drshub-swagger-client-id >"$SERVICE_OUTPUT_LOCATION/swagger-client-id"
 
-
-$GET_SECRET firecloud-sa >"$INTEGRATION_OUTPUT_LOCATION/user-delegated-sa.json"
+get_secret firecloud-sa >"$INTEGRATION_OUTPUT_LOCATION/user-delegated-sa.json"
