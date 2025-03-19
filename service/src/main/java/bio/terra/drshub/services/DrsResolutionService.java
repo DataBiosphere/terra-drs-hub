@@ -287,8 +287,9 @@ public class DrsResolutionService {
       var accessUrl =
           switch (authorization.drsAuthType()) {
             case NONE -> drsApi.getAccessURL(objectId, accessId);
-            case BASICAUTH -> throw new BadRequestException(
-                "DRSHub does not support basic username/password authentication at this time.");
+            case BASICAUTH ->
+                throw new BadRequestException(
+                    "DRSHub does not support basic username/password authentication at this time.");
             case BEARERAUTH -> {
               drsApi.setBearerToken(
                   auth.map(l -> l.get(0))

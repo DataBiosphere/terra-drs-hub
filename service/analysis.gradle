@@ -21,15 +21,15 @@ spotbugs {
 	excludeFilter = file('../spotbugsExclude.xml')
 }
 
-spotbugsMain {
-	reports {
-		sarif { enabled = true }
+tasks.spotbugsMain {
+	reports.create("sarif") {
+		required = true
 	}
 }
 
 spotbugsTest { enabled = false }
 
-task runMinnieKenny(type: Exec) {
+tasks.register('runMinnieKenny', Exec) {
 	workingDir rootDir
 
 	commandLine './minnie-kenny.sh'
@@ -42,7 +42,7 @@ test {
 	dependsOn runMinnieKenny
 }
 
-task verifyPacts(type: Test) {
+tasks.register('verifyPacts', Test) {
 	outputs.upToDateWhen { false } // always run this task even if it's up to date
 	useJUnitPlatform {
 		includeTags 'Pact'

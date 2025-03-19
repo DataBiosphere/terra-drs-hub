@@ -143,36 +143,43 @@ public class AuthService {
       UriComponents components,
       BearerToken bearerToken) {
     return switch (authType) {
-      case NONE -> new DrsHubAuthorization(
-          authType, (AccessMethod.TypeEnum accessType) -> Optional.empty());
-      case BASICAUTH -> throw new DrsHubException(
-          "DRSHub does not currently support basic username/password authentication");
-      case BEARERAUTH -> new DrsHubAuthorization(
-          authType,
-          (AccessMethod.TypeEnum accessType) ->
-              switch (drsProvider.getAccessMethodByType(accessType).getAuth()) {
-                case fence_token -> getFenceAccessToken(
-                    components.toUriString(), drsProvider, bearerToken);
-                case current_request -> Optional.ofNullable(bearerToken.getToken()).map(List::of);
-                  // The passport case is weird. The provider needs a bearer auth,
-                  // but configs say this provider should be using a passport.
-                  // Check to see if the fallback auth is current_request or fence_token
-                case passport -> drsProvider
-                    .getAccessMethodByType(accessType)
-                    .getFallbackAuth()
-                    .flatMap(
-                        auth ->
-                            switch (auth) {
-                              case fence_token -> getFenceAccessToken(
-                                  components.toUriString(), drsProvider, bearerToken);
-                              case current_request -> Optional.ofNullable(bearerToken.getToken())
-                                  .map(List::of);
-                              default -> throw new DrsHubException(
-                                  "Auth mismatch. DRS Provider requests bearer auth, but DRSHub config does not specify what bearer auth to use");
-                            });
-              });
-      case PASSPORTAUTH -> new DrsHubAuthorization(
-          authType, (AccessMethod.TypeEnum accessType) -> fetchPassports(bearerToken));
+      case NONE ->
+          new DrsHubAuthorization(authType, (AccessMethod.TypeEnum accessType) -> Optional.empty());
+      case BASICAUTH ->
+          throw new DrsHubException(
+              "DRSHub does not currently support basic username/password authentication");
+      case BEARERAUTH ->
+          new DrsHubAuthorization(
+              authType,
+              (AccessMethod.TypeEnum accessType) ->
+                  switch (drsProvider.getAccessMethodByType(accessType).getAuth()) {
+                    case fence_token ->
+                        getFenceAccessToken(components.toUriString(), drsProvider, bearerToken);
+                    case current_request ->
+                        Optional.ofNullable(bearerToken.getToken()).map(List::of);
+                    // The passport case is weird. The provider needs a bearer auth,
+                    // but configs say this provider should be using a passport.
+                    // Check to see if the fallback auth is current_request or fence_token
+                    case passport ->
+                        drsProvider
+                            .getAccessMethodByType(accessType)
+                            .getFallbackAuth()
+                            .flatMap(
+                                auth ->
+                                    switch (auth) {
+                                      case fence_token ->
+                                          getFenceAccessToken(
+                                              components.toUriString(), drsProvider, bearerToken);
+                                      case current_request ->
+                                          Optional.ofNullable(bearerToken.getToken()).map(List::of);
+                                      default ->
+                                          throw new DrsHubException(
+                                              "Auth mismatch. DRS Provider requests bearer auth, but DRSHub config does not specify what bearer auth to use");
+                                    });
+                  });
+      case PASSPORTAUTH ->
+          new DrsHubAuthorization(
+              authType, (AccessMethod.TypeEnum accessType) -> fetchPassports(bearerToken));
     };
   }
 
@@ -207,15 +214,19 @@ public class AuthService {
       UriComponents components,
       BearerToken bearerToken) {
     return switch (authType) {
-      case current_request -> new DrsHubAuthorization(
-          Authorizations.SupportedTypesEnum.BEARERAUTH,
-          accessType -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
-      case fence_token -> new DrsHubAuthorization(
-          Authorizations.SupportedTypesEnum.BEARERAUTH,
-          accessType -> getFenceAccessToken(components.toUriString(), drsProvider, bearerToken));
-      case passport -> new DrsHubAuthorization(
-          Authorizations.SupportedTypesEnum.PASSPORTAUTH,
-          accessType -> fetchPassports(bearerToken));
+      case current_request ->
+          new DrsHubAuthorization(
+              Authorizations.SupportedTypesEnum.BEARERAUTH,
+              accessType -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
+      case fence_token ->
+          new DrsHubAuthorization(
+              Authorizations.SupportedTypesEnum.BEARERAUTH,
+              accessType ->
+                  getFenceAccessToken(components.toUriString(), drsProvider, bearerToken));
+      case passport ->
+          new DrsHubAuthorization(
+              Authorizations.SupportedTypesEnum.PASSPORTAUTH,
+              accessType -> fetchPassports(bearerToken));
     };
   }
 

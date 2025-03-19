@@ -6,7 +6,7 @@ plugins {
 	id 'org.springframework.boot'
 
 	id 'com.diffplug.spotless'
-	id 'com.github.ben-manes.versions' version '0.42.0'
+	id 'com.github.ben-manes.versions' version '0.52.0'
 	id 'com.github.spotbugs' version '5.0.6'
 	id 'com.google.cloud.tools.jib'
 	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
@@ -14,7 +14,7 @@ plugins {
 	id 'org.hidetake.swagger.generator'
   	id 'com.srcclr.gradle' version '3.1.12'
 	id 'org.sonarqube'
-	id "io.sentry.jvm.gradle" version "4.11.0"
+	id 'io.sentry.jvm.gradle' version '4.14.1'
 }
 
 repositories {
@@ -46,7 +46,7 @@ dependencies {
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache5'
 	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
 
-	implementation('bio.terra:terra-common-lib:0.1.9-SNAPSHOT') {
+	implementation('bio.terra:terra-common-lib:1.1.38-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
 		exclude group: 'org.liquibase', module: 'liquibase-core'
 		exclude group: 'bio.terra', module: 'stairway-gcp'
@@ -55,12 +55,12 @@ dependencies {
 		exclude group: 'com.google.oauth-client', module: 'google-oauth-client'
 		exclude group: 'org.postgresql', module: 'postgresql'
 	}
-	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:0.1-6a32c36'
+	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:v0.0.332'
 	implementation 'bio.terra:externalcreds-client-resttemplate:1.20.0-20240318.171436-1'
 	implementation 'org.codehaus.janino:janino:3.1.9' // Provides if/else xml parsing for logback config
 
 	// google
-	implementation platform('com.google.cloud:libraries-bom:26.28.0')
+	implementation platform('com.google.cloud:libraries-bom:26.56.0')
 	implementation 'com.google.oauth-client:google-oauth-client'
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-logging:4.9.0'
@@ -69,25 +69,15 @@ dependencies {
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	// For OpenTelemetry
-	var openTelemetryVersion = '1.32.0'
-	implementation "io.opentelemetry:opentelemetry-api:${openTelemetryVersion}"
-	implementation "io.opentelemetry:opentelemetry-sdk:${openTelemetryVersion}"
-	implementation "io.opentelemetry:opentelemetry-sdk-metrics:${openTelemetryVersion}"
-	implementation "io.opentelemetry:opentelemetry-exporter-logging:${openTelemetryVersion}"
-	implementation "io.opentelemetry.semconv:opentelemetry-semconv:1.21.0-alpha"
-	implementation "io.opentelemetry.instrumentation:opentelemetry-spring-webmvc-6.0:${openTelemetryVersion}-alpha"
-	implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:${openTelemetryVersion}"
-	implementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot:${openTelemetryVersion}-alpha"
-	implementation "com.google.cloud.opentelemetry:exporter-trace:0.25.2"
+	implementation 'io.opentelemetry:opentelemetry-api:1.41.0'
 
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		// Fixes warning about multiple occurrences of JSONObject on the classpath
 		exclude group: 'com.vaadin.external.google', module: 'android-json'
 	}
 
-	testImplementation('au.com.dius.pact.provider:junit5:4.5.8')
-	testImplementation('au.com.dius.pact.provider:junit5spring:4.5.8')
-	testImplementation('org.awaitility:awaitility:4.2.0')
+	testImplementation('au.com.dius.pact.provider:junit5:4.6.17')
+	testImplementation('au.com.dius.pact.provider:junit5spring:4.6.17')
 }
 
 sonarqube {
