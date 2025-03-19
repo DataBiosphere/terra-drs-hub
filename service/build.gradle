@@ -34,7 +34,7 @@ apply from: 'analysis.gradle'
 
 dependencyManagement {
 	dependencies {
-		dependencySet(group:'io.github.hakky54', version: '8.2.0') {
+		dependencySet(group:'io.github.hakky54', version: '9.1.0') {
 			entry 'sslcontext-kickstart-for-apache5'
 			entry 'sslcontext-kickstart-for-pem'
 		}
