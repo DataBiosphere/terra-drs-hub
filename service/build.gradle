@@ -7,7 +7,6 @@ plugins {
 
 	id 'com.diffplug.spotless'
 	id 'com.github.ben-manes.versions' version '0.52.0'
-	id 'com.github.spotbugs' version '6.1.7'
 	id 'com.google.cloud.tools.jib'
 	id 'com.gorylenko.gradle-git-properties' version '2.4.0'
 	id 'io.freefair.lombok'
@@ -80,7 +79,7 @@ dependencies {
 	testImplementation('au.com.dius.pact.provider:junit5spring:4.6.17')
 }
 
-sonarqube {
+sonar {
 	properties {
 		property "sonar.projectName", "terra-drs-hub"
 		property "sonar.projectKey", "DataBiosphere_terra-drs-hub"
