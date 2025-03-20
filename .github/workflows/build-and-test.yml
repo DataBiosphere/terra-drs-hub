@@ -39,18 +39,13 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Gradle build service
-        run: ./gradlew --build-cache :service:build -x test
+        run: ./gradlew --build-cache :service:build -x test jacocoTestReport
 
-      - name: SonarQube scan service
+      - name: Sonar scan service
         env:
           GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew --build-cache :service:sonarqube
-
-      - name: Upload spotbugs results
-        uses: github/codeql-action/upload-sarif@main
-        with:
-          sarif_file: service/build/reports/spotbugs/main.sarif
 
   jib:
     needs: [ build ]
