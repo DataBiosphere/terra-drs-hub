@@ -92,6 +92,10 @@ otel:
         service:
           name: ${spring.application.name}
 
+  instrumentation:
+    logback-appender:
+      enabled: false
+
 server:
   max-http-request-header-size: 32KB
   compression:
