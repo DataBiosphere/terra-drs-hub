@@ -24,8 +24,5 @@ updates:
       time: "06:00"
       timezone: "America/New_York"
     target-branch: "dev"
-    labels:
-      - "dependency"
-      - "gradle"
     commit-message:
       prefix: "[DT-400-gradle]"
