@@ -14,21 +14,6 @@ jacocoTestReport {
 	}
 }
 
-spotbugs {
-	reportLevel = 'high'
-	effort = 'max'
-	reportsDir = file("${project.reporting.baseDir}/spotbugs")
-	excludeFilter = file('../spotbugsExclude.xml')
-}
-
-tasks.spotbugsMain {
-	reports.create("sarif") {
-		required = true
-	}
-}
-
-spotbugsTest { enabled = false }
-
 tasks.register('runMinnieKenny', Exec) {
 	workingDir rootDir
 
