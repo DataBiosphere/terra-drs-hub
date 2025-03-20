@@ -98,6 +98,7 @@ afterEvaluate {
 
 // see https://github.com/n0mer/gradle-git-properties
 gitProperties {
+	dotGitDirectory = project.rootProject.layout.projectDirectory.dir(".git")
 	gitPropertiesName = 'rendered/version.properties'
 	keys = []
 	customProperty('drshub.version.gitTag', { it.describe(tags: true) })
