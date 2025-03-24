@@ -86,15 +86,11 @@ otel:
   sdk:
     disabled: false # set to true to disable all open telemetry features
 
-  springboot:
-    resource:
-      attributes:
-        service:
-          name: ${spring.application.name}
-
-  instrumentation:
-    logback-appender:
-      enabled: false
+  resource:
+    attributes:
+      service:
+        name: ${spring.application.name}
+        version: ${drshub.version.gitTag:unknown}
 
 server:
   max-http-request-header-size: 32KB
