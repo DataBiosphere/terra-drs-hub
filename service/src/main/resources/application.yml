@@ -57,6 +57,15 @@ drshub:
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure
+    sage:
+      name: Sage Bionetworks
+      hostRegex: 'repo-([^.]+)\.\1\.sagebase\.org' # Dev: 'repo-dev.dev.sagebase.org' & Prod: 'repo-prod.prod.sagebase.org'
+      metadataAuth: false
+      ecmFenceProvider: sage
+      accessMethodConfigs:
+        - type: s3
+          auth: fence_token
+          fetchAccessUrl: true
   pencilsDownSeconds: 58
   asyncThreads: ${TOMCAT_MAX_THREADS:200}
   restTemplateConnectionPoolSize: ${REST_TEMPLATE_CONNECTION_POOL_SIZE:500}
