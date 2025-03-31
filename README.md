@@ -26,6 +26,8 @@ This is the short name, full name, and auth type(s) for each provider
   - Fence Token
 - **TDR** (Terra Data Repo)
   - Bearer Token
+- **Sage Bionetworks** (Synapse)
+  - Fence Token
 
 ## Usage
 To resolve a DRS URL, perform an HTTP `POST` to `/api/v4/drs/resolve`.

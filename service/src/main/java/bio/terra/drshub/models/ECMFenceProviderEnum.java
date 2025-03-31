@@ -4,7 +4,8 @@ public enum ECMFenceProviderEnum {
   dcf_fence("dcf-fence"),
   fence("fence"),
   anvil("anvil"),
-  kids_first("kids-first");
+  kids_first("kids-first"),
+  sage("sage");
 
   private String uriValue;
 
