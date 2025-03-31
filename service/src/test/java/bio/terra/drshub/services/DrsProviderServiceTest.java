@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import bio.terra.drshub.BaseTest;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,7 +19,12 @@ class DrsProviderServiceTest extends BaseTest {
 
   @Test
   void testResolvesDnsHostsAndProviders() {
+    List<String> nonCompactIdProviders = List.of("sage");
+
     for (var providerName : config.getDrsProviders().keySet()) {
+      if (nonCompactIdProviders.contains(providerName)) {
+        continue; // Skip the non-compact ID providers
+      }
       var cidProviderHost = getProviderHosts(providerName);
 
       var testUri = String.format("drs://%s:12345", cidProviderHost.compactUriPrefix());
