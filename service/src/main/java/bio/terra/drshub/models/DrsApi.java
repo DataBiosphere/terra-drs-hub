@@ -1,5 +1,6 @@
 package bio.terra.drshub.models;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.github.ga4gh.drs.api.ObjectsApi;
 import io.github.ga4gh.drs.client.ApiClient;
 import io.github.ga4gh.drs.client.auth.OAuth;
@@ -16,47 +17,50 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 
 @Slf4j
-public class DrsApi extends ObjectsApi {
+public class DrsApi {
   static final int MAX_TRIALS = 4;
 
+  private ObjectsApi objectsApi;
+
   public DrsApi(ApiClient apiClient) {
-    super(apiClient);
+    this.objectsApi = new ObjectsApi(apiClient);
+  }
+
+  @VisibleForTesting
+  public ApiClient getApiClient() {
+    return objectsApi.getApiClient();
   }
 
   public void setBearerToken(String bearerToken) {
-    ((OAuth) this.getApiClient().getAuthentication("BearerAuth")).setAccessToken(bearerToken);
+    ((OAuth) objectsApi.getApiClient().getAuthentication("BearerAuth")).setAccessToken(bearerToken);
   }
 
   public void setHeader(String name, String value) {
-    this.getApiClient().addDefaultHeader(name, value);
+    objectsApi.getApiClient().addDefaultHeader(name, value);
   }
 
-  @Override
   public DrsObject postObject(Object body, String objectId) throws RestClientException {
-    return retry(() -> super.postObject(body, objectId));
+    return retry(() -> objectsApi.postObject(body, objectId));
   }
 
-  @Override
   public AccessURL postAccessURL(Object body, String objectId, String accessId)
       throws RestClientException {
-    return retry(() -> super.postAccessURL(body, objectId, accessId));
+    return retry(() -> objectsApi.postAccessURL(body, objectId, accessId));
   }
 
-  @Override
   public Authorizations optionsObject(String objectId) throws RestClientException {
-    return retry(() -> super.optionsObject(objectId));
+    return retry(() -> objectsApi.optionsObject(objectId));
   }
 
-  @Override
   public DrsObject getObject(String objectId, Boolean expand) throws RestClientException {
-    return retry(() -> super.getObject(objectId, expand));
+    return retry(() -> objectsApi.getObject(objectId, expand));
   }
 
-  @Override
   public AccessURL getAccessURL(String objectId, String accessId) throws RestClientException {
-    return retry(() -> super.getAccessURL(objectId, accessId));
+    return retry(() -> objectsApi.getAccessURL(objectId, accessId));
   }
 
+  @VisibleForTesting
   static <T> T retry(Supplier<T> supplier) {
     for (int trial = 1; true; trial++) {
       try {
@@ -74,6 +78,7 @@ public class DrsApi extends ObjectsApi {
           try {
             Thread.sleep(10L * trial);
           } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
             throw e;
           }
         }

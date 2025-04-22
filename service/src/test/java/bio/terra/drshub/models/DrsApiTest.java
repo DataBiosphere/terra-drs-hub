@@ -59,7 +59,7 @@ class DrsApiTest {
       ints = {
         500, 502, 503, 504,
       }) // HttpStatus.INTERNAL_SERVER_ERROR, BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
-  void testRetries(int status) {
+  void testRetriesBadGateway(int status) {
     AtomicInteger callCount = new AtomicInteger();
     assertThrows(
         HttpServerErrorException.class,
