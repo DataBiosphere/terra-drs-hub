@@ -17,10 +17,10 @@ import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsApi;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
-import bio.terra.drshub.models.ECMFenceProviderEnum;
+import bio.terra.drshub.models.ECMProviderEnum;
 import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.DrsProviderService;
@@ -127,13 +127,12 @@ class VerifyPactsDrsHubApiController {
 
     var drsProvider = DrsProvider.create();
     drsProvider.setHostRegex(".*\\.theanvil\\.io");
-    drsProvider.setMetadataAuth(false);
-    drsProvider.setEcmFenceProvider(ECMFenceProviderEnum.anvil);
+    drsProvider.setEcmProvider(ECMProviderEnum.anvil);
     drsProvider.setUseAliasesForLocalizationPath(true);
     drsProvider.setName("AnVIL");
 
     var accessMethodConfig = ProviderAccessMethodConfig.create();
-    accessMethodConfig.setAuth(AccessUrlAuthEnum.passport);
+    accessMethodConfig.setAuth(DrsAuthEnum.passport);
     accessMethodConfig.setType(AccessMethodConfigTypeEnum.gs);
     accessMethodConfig.setFetchAccessUrl(true);
 

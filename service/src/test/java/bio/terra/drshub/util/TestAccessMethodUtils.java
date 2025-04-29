@@ -8,7 +8,7 @@ import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
 import io.github.ga4gh.drs.model.AllOfAccessMethodAccessUrl;
@@ -106,7 +106,7 @@ public class TestAccessMethodUtils {
   private ProviderAccessMethodConfig createTestAccessMethodConfig(AccessMethodConfigTypeEnum type) {
     return ProviderAccessMethodConfig.create()
         .setType(type)
-        .setAuth(AccessUrlAuthEnum.fence_token)
+        .setAuth(DrsAuthEnum.provider_access_token)
         .setFetchAccessUrl(true);
   }
 }

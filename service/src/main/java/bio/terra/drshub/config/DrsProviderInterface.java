@@ -1,8 +1,8 @@
 package bio.terra.drshub.config;
 
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
-import bio.terra.drshub.models.ECMFenceProviderEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
+import bio.terra.drshub.models.ECMProviderEnum;
 import bio.terra.drshub.models.Fields;
 import io.github.ga4gh.drs.model.AccessMethod;
 import jakarta.annotation.Nullable;
@@ -20,9 +20,9 @@ public interface DrsProviderInterface {
 
   String getHostRegex();
 
-  boolean isMetadataAuth();
+  DrsAuthEnum getMetadataAuthType();
 
-  Optional<ECMFenceProviderEnum> getEcmFenceProvider();
+  Optional<ECMProviderEnum> getEcmProvider();
 
   ArrayList<ProviderAccessMethodConfig> getAccessMethodConfigs();
 
@@ -58,37 +58,6 @@ public interface DrsProviderInterface {
     return getAccessMethodConfigs().stream().map(ProviderAccessMethodConfig::getType).toList();
   }
 
-  /**
-   * Should Drshub call Bond to retrieve a Fence access token to use when later calling the `access`
-   * endpoint to retrieve a signed URL. Should return `true` for Gen3 signed URL flows and `false`
-   * otherwise, including TDR signed URL flows (TDR uses the same auth supplied to the current
-   * Drshub request for calling `access`).
-   *
-   * @param useFallbackAuth if false (default) check accessUrlAuth in accessMethods, otherwise check
-   *     fallbackAccessUrlAuth
-   */
-  default boolean shouldFetchFenceAccessToken(
-      AccessMethod.TypeEnum accessMethodType, boolean useFallbackAuth, boolean forceAccessUrl) {
-    return getEcmFenceProvider().isPresent()
-        && (forceAccessUrl
-            || getAccessMethodConfigs().stream()
-                .anyMatch(
-                    m -> {
-                      var accessMethodTypeMatches =
-                          m.getType().getReturnedEquivalent() == accessMethodType;
-                      var validFallbackAuth =
-                          !useFallbackAuth
-                              || m.getFallbackAuth().orElse(null) == AccessUrlAuthEnum.fence_token;
-                      var validAccessAuth =
-                          useFallbackAuth || m.getAuth() == AccessUrlAuthEnum.fence_token;
-
-                      return accessMethodTypeMatches
-                          && validFallbackAuth
-                          && validAccessAuth
-                          && m.isFetchAccessUrl();
-                    }));
-  }
-
   /** Should Drshub call the DRS provider's `access` endpoint to get a signed URL. */
   default boolean shouldFetchAccessUrl(
       AccessMethod.TypeEnum accessMethodType,
@@ -104,22 +73,6 @@ public interface DrsProviderInterface {
                         && m.isFetchAccessUrl());
 
     return fieldsOverlap && (accessMethodTypeMatches || forceAccessUrl);
-  }
-
-  /**
-   * Should Drshub fetch the Google user service account from Bond. Because this account is
-   * Google-specific it should not be fetched if we know the underlying data is not GCS-based.
-   */
-  default boolean shouldFetchUserServiceAccount(
-      AccessMethod.TypeEnum accessMethodType, List<String> requestedFields) {
-    // This account would be stored in Bond so no Bond means no account.
-    return getEcmFenceProvider().isPresent()
-        // "Not definitely not GCS". A falsy accessMethod is okay because there may not have been a
-        // preceding metadata request to determine the accessMethod.
-        && (accessMethodType == null
-            || AccessMethodConfigTypeEnum.gs.getReturnedEquivalent() == accessMethodType)
-        && getAccessMethodConfigTypes().contains(AccessMethodConfigTypeEnum.gs)
-        && Fields.overlap(requestedFields, Fields.BOND_SA_FIELDS);
   }
 
   /**

@@ -10,7 +10,7 @@ import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.util.AsyncUtils;
 import com.google.cloud.storage.BlobId;
@@ -59,7 +59,7 @@ public record SignedUrlService(
     auditLogger.logEvent(logEvent);
 
     if (drsProvider.getAccessMethodByType(AccessMethod.TypeEnum.GS).getAuth()
-        == AccessUrlAuthEnum.current_request) {
+        == DrsAuthEnum.current_request) {
       return getSignedUrlFromSam(
           bearerToken, String.format("gs://%s/%s", bucket, objectName), googleProject);
     } else {

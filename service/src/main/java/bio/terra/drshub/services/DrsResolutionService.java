@@ -12,6 +12,7 @@ import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
@@ -226,7 +227,7 @@ public class DrsResolutionService {
       BearerToken bearerToken,
       List<DrsHubAuthorization> authorizations,
       String transactionId) {
-    var sendMetadataAuth = drsProvider.isMetadataAuth();
+    var sendMetadataAuth = drsProvider.metadataAuthTypeIsSet();
 
     var objectId = getObjectId(uriComponents);
     String drsRequestLogMessage =
@@ -237,11 +238,9 @@ public class DrsResolutionService {
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
     if (sendMetadataAuth) {
-      // Currently, no provider needs a fence_token for metadata auth.
-      // If that changes, this will need to get updated.
-      drsApi.setBearerToken(bearerToken.getToken());
-      if (authorizations.stream()
-          .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
+      if (drsProvider.getMetadataAuthType() == DrsAuthEnum.passport
+          || authorizations.stream()
+              .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
         try {
           List<String> passports = authService.fetchPassports(bearerToken).orElse(List.of());
           if (!passports.isEmpty()) {
@@ -253,6 +252,10 @@ public class DrsResolutionService {
           log.warn(drsRequestLogMessage + " failed via passport, using bearer token", ex);
         }
       }
+      // note that the above if block will return early if passport is requested and is successful
+      // if it is not required or successful, we set the bearer token
+      drsApi.setBearerToken(
+          authService.getMetadataAuthBearerToken(drsProvider, uriComponents, bearerToken));
     }
 
     return drsApi.getObject(objectId, null);

@@ -19,8 +19,8 @@ import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
 import bio.terra.drshub.generated.model.ServiceName;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.services.DrsResolutionService;
 import bio.terra.drshub.services.TrackingService;
@@ -354,11 +354,11 @@ class TrackingInterceptorTest {
   private void mockProviders() {
     DrsProvider tdrProvider = DrsProvider.create();
     tdrProvider.setName("terraDataRepo");
-    tdrProvider.setMetadataAuth(true);
+    tdrProvider.setMetadataAuthType(DrsAuthEnum.current_request);
     var accessMethod =
         ProviderAccessMethodConfig.create()
             .setType(AccessMethodConfigTypeEnum.gs)
-            .setAuth(AccessUrlAuthEnum.fence_token)
+            .setAuth(DrsAuthEnum.provider_access_token)
             .setFetchAccessUrl(true);
     ArrayList<ProviderAccessMethodConfig> accessMethods = new ArrayList<>();
     accessMethods.add(accessMethod);

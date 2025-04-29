@@ -4,7 +4,7 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.generated.model.SaKeyObject;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.externalcreds.model.PassportProvider;
 import bio.terra.externalcreds.model.Provider;
@@ -57,7 +57,7 @@ public class AuthService {
   private final Map<Pair<String, String>, SaKeyObject> serviceAccountKeyCache =
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
 
-  private final Map<Pair<String, String>, Optional<List<String>>> fenceAccessTokenCache =
+  private final Map<Pair<String, String>, Optional<List<String>>> providerAccessTokenCache =
       Collections.synchronizedMap(new PassiveExpiringMap<>(1, TimeUnit.MINUTES));
 
   public AuthService(
@@ -78,8 +78,7 @@ public class AuthService {
    */
   public SaKeyObject fetchUserServiceAccount(DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
-        Pair.of(
-            bearerToken.getToken(), drsProvider.getEcmFenceProvider().orElseThrow().getUriValue());
+        Pair.of(bearerToken.getToken(), drsProvider.getEcmProvider().orElseThrow().getUriValue());
     if (serviceAccountKeyCache.containsKey(cacheKey)) {
       log.info(
           "Cache hit. Not fetching service account from DRS Provider '{}'", drsProvider.getName());
@@ -136,7 +135,7 @@ public class AuthService {
 
   // For a given Authorization type returned by the Drs Provider,
   // build the DrsHubAuthorization that maps that auth type to the function that lazily gets the
-  // bearer/fence token or passport.
+  // bearer/provider token or passport.
   private DrsHubAuthorization mapDrsAuthType(
       Authorizations.SupportedTypesEnum authType,
       DrsProvider drsProvider,
@@ -153,13 +152,13 @@ public class AuthService {
               authType,
               (AccessMethod.TypeEnum accessType) ->
                   switch (drsProvider.getAccessMethodByType(accessType).getAuth()) {
-                    case fence_token ->
-                        getFenceAccessToken(components.toUriString(), drsProvider, bearerToken);
+                    case provider_access_token ->
+                        getProviderAccessToken(components.toUriString(), drsProvider, bearerToken);
                     case current_request ->
                         Optional.ofNullable(bearerToken.getToken()).map(List::of);
                     // The passport case is weird. The provider needs a bearer auth,
                     // but configs say this provider should be using a passport.
-                    // Check to see if the fallback auth is current_request or fence_token
+                    // Check to see if the fallback auth is current_request or provider_access_token
                     case passport ->
                         drsProvider
                             .getAccessMethodByType(accessType)
@@ -167,8 +166,8 @@ public class AuthService {
                             .flatMap(
                                 auth ->
                                     switch (auth) {
-                                      case fence_token ->
-                                          getFenceAccessToken(
+                                      case provider_access_token ->
+                                          getProviderAccessToken(
                                               components.toUriString(), drsProvider, bearerToken);
                                       case current_request ->
                                           Optional.ofNullable(bearerToken.getToken()).map(List::of);
@@ -209,7 +208,7 @@ public class AuthService {
 
   // Map a GA4GH Authorization type to the types DRSHub keeps in its config.
   private DrsHubAuthorization mapAccessMethodConfigAuthType(
-      AccessUrlAuthEnum authType,
+      DrsAuthEnum authType,
       DrsProvider drsProvider,
       UriComponents components,
       BearerToken bearerToken) {
@@ -218,11 +217,11 @@ public class AuthService {
           new DrsHubAuthorization(
               Authorizations.SupportedTypesEnum.BEARERAUTH,
               accessType -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
-      case fence_token ->
+      case provider_access_token ->
           new DrsHubAuthorization(
               Authorizations.SupportedTypesEnum.BEARERAUTH,
               accessType ->
-                  getFenceAccessToken(components.toUriString(), drsProvider, bearerToken));
+                  getProviderAccessToken(components.toUriString(), drsProvider, bearerToken));
       case passport ->
           new DrsHubAuthorization(
               Authorizations.SupportedTypesEnum.PASSPORTAUTH,
@@ -263,25 +262,22 @@ public class AuthService {
     }
   }
 
-  // Reach out to ECM and get the fence token for the user.
-  private Optional<List<String>> getFenceAccessToken(
+  // Reach out to ECM and get the provider token for the user.
+  private Optional<List<String>> getProviderAccessToken(
       String drsUri, DrsProvider drsProvider, BearerToken bearerToken) {
     var cacheKey =
-        Pair.of(
-            bearerToken.getToken(), drsProvider.getEcmFenceProvider().orElseThrow().getUriValue());
-    if (fenceAccessTokenCache.containsKey(cacheKey)) {
+        Pair.of(bearerToken.getToken(), drsProvider.getEcmProvider().orElseThrow().getUriValue());
+    if (providerAccessTokenCache.containsKey(cacheKey)) {
       log.info(
-          "Cache hit. Not fetching fence access token for '{}' from '{}'",
-          drsUri,
-          drsProvider.getName());
+          "Cache hit. Not fetching access token for '{}' from '{}'", drsUri, drsProvider.getName());
     }
-    return fenceAccessTokenCache.computeIfAbsent(
+    return providerAccessTokenCache.computeIfAbsent(
         cacheKey,
         pair -> {
           log.info(
-              "Fetching fence access token for '{}' from '{}'",
+              "Fetching access token for '{}' from '{}'",
               drsUri,
-              drsProvider.getEcmFenceProvider().orElseThrow());
+              drsProvider.getEcmProvider().orElseThrow());
 
           var ecmOauthApi = externalCredsApiFactory.getOauthApi(bearerToken.getToken());
           var response = ecmOauthApi.getProviderAccessToken(Provider.fromValue(pair.getRight()));
@@ -334,6 +330,31 @@ public class AuthService {
   public void clearCaches() {
     passportCache.clear();
     serviceAccountKeyCache.clear();
-    fenceAccessTokenCache.clear();
+    providerAccessTokenCache.clear();
+  }
+
+  public String getMetadataAuthBearerToken(
+      DrsProvider drsProvider, UriComponents uriComponents, BearerToken currentRequestBearerToken) {
+    return switch (drsProvider.getMetadataAuthType()) {
+      case passport ->
+          // passports are too big to be used as bearer tokens. We have likely reached this spot
+          // because passport auth was attempted but failed, and we are retrying with bearer auth
+          // and metadata auth type is set to passport.
+          throw new DrsHubException(
+              String.format(
+                  "Passport auth failed for DRS provider '%s' and uri '%s'",
+                  drsProvider.getName(), uriComponents.toUriString()));
+      case provider_access_token ->
+          getProviderAccessToken(
+                  uriComponents.toUriString(), drsProvider, currentRequestBearerToken)
+              .orElseThrow(
+                  () ->
+                      new DrsHubException(
+                          String.format(
+                              "Failed to get bearer token for DRS provider '%s' and uri '%s'",
+                              drsProvider.getName(), uriComponents.toUriString())))
+              .get(0);
+      case current_request -> currentRequestBearerToken.getToken();
+    };
   }
 }

@@ -30,38 +30,6 @@ class DrsProviderInterfaceTest extends BaseTest {
   }
 
   @Test
-  void testShouldFetchFenceAccessToken() {
-    var passportProviderHost = getProviderHosts("passportRequestFallback");
-    var passportTestUri = String.format("drs://%s:12345", passportProviderHost.compactUriPrefix());
-    var passportUriComponent = drsProviderService.getUriComponents(passportTestUri);
-    DrsProvider passportDrsPorvider = drsProviderService.determineDrsProvider(passportUriComponent);
-
-    assertFalse(
-        passportDrsPorvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.GS, false, false));
-
-    var fenceProviderHost = getProviderHosts("fenceTokenOnly");
-    var fenceTestUri = String.format("drs://%s:12345", fenceProviderHost.compactUriPrefix());
-    var fenceUriComponent = drsProviderService.getUriComponents(fenceTestUri);
-    DrsProvider fenceDrsProvider = drsProviderService.determineDrsProvider(fenceUriComponent);
-
-    assertTrue(fenceDrsProvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.GS, false, true));
-    assertTrue(
-        fenceDrsProvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.GS, false, false));
-    assertFalse(
-        fenceDrsProvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.S3, false, false));
-
-    var fallbackProviderHost = getProviderHosts("passportFenceFallback");
-    var fallbackTestUri = String.format("drs://%s:12345", fallbackProviderHost.compactUriPrefix());
-    var fallbackUriComponent = drsProviderService.getUriComponents(fallbackTestUri);
-    DrsProvider fallbackDrsProvider = drsProviderService.determineDrsProvider(fallbackUriComponent);
-
-    assertFalse(
-        fallbackDrsProvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.GS, false, false));
-    assertTrue(
-        fallbackDrsProvider.shouldFetchFenceAccessToken(AccessMethod.TypeEnum.GS, true, false));
-  }
-
-  @Test
   void testShouldFetchAccessUrl() {
     var passportProviderHost = getProviderHosts("passportRequestFallback");
     var passportTestUri = String.format("drs://%s:12345", passportProviderHost.compactUriPrefix());

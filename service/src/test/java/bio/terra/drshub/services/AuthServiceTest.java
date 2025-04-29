@@ -1,6 +1,7 @@
 package bio.terra.drshub.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -9,23 +10,30 @@ import static org.mockito.Mockito.when;
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.DrsHubException;
+import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.models.DrsApi;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
+import bio.terra.drshub.models.ECMProviderEnum;
 import bio.terra.externalcreds.api.OauthApi;
 import bio.terra.externalcreds.api.OidcApi;
 import bio.terra.sam.api.SamApi;
 import bio.terra.sam.model.UserSignedUrlForBlobBody;
 import io.github.ga4gh.drs.model.AccessMethod;
 import io.github.ga4gh.drs.model.Authorizations;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Tag("Unit")
 class AuthServiceTest extends BaseTest {
@@ -87,7 +95,7 @@ class AuthServiceTest extends BaseTest {
                     Authorizations.SupportedTypesEnum.NONE));
 
     var passport = "I am a passport";
-    var fencetoken = "fence_token";
+    var providerAccessToken = "provider_access_token";
     var bearerToken = "bearer_token";
 
     var cidProviderHost = getProviderHosts("passport");
@@ -99,7 +107,7 @@ class AuthServiceTest extends BaseTest {
     when(drsApi.optionsObject(any())).thenReturn(expectedAuthorizations);
 
     when(externalCredsApiFactory.getOauthApi(any())).thenReturn(oauthApi);
-    when(oauthApi.getProviderAccessToken(any())).thenReturn(fencetoken);
+    when(oauthApi.getProviderAccessToken(any())).thenReturn(providerAccessToken);
     when(externalCredsApiFactory.getOidcApi(any())).thenReturn(oidcApi);
     when(oidcApi.getProviderPassport(any())).thenReturn(passport);
 
@@ -113,7 +121,10 @@ class AuthServiceTest extends BaseTest {
             .collect(Collectors.toSet());
 
     Set<Optional<List<String>>> expected =
-        Set.of(Optional.of(List.of(passport)), Optional.of(List.of(fencetoken)), Optional.empty());
+        Set.of(
+            Optional.of(List.of(passport)),
+            Optional.of(List.of(providerAccessToken)),
+            Optional.empty());
 
     // This time, it should have the fence token, not the bearer token.
     assertEquals(expected, secrets);
@@ -160,7 +171,7 @@ class AuthServiceTest extends BaseTest {
         authService.buildAuthorizations(
             cidProviderHost.drsProvider(), resolvedUri, new BearerToken("foobar"));
 
-    // Should only return fence_token authorizations
+    // Should only return provider_access_token authorizations
     assertPresent(
         authorizations.stream()
             .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
@@ -186,7 +197,7 @@ class AuthServiceTest extends BaseTest {
         authService.buildAuthorizations(
             cidProviderHost.drsProvider(), resolvedUri, new BearerToken("foobar"));
 
-    // Should not return fence_token authorizations
+    // Should not return provider_access_token authorizations
     assertEmpty(
         authorizations.stream()
             .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
@@ -208,5 +219,55 @@ class AuthServiceTest extends BaseTest {
 
     var signedUrl = authService.getSignedUrlForBlob(bearerToken, gsPath, googleProject);
     assertEquals(url, signedUrl);
+  }
+
+  @Test
+  public void testGetMetadataAuthBearerTokenForPassport() {
+    var drsProvider =
+        DrsProvider.create()
+            .setMetadataAuthType(DrsAuthEnum.passport)
+            .setName("name")
+            .setHostRegex(".*")
+            .setAccessMethodConfigs(new ArrayList<>());
+    var uriComponents = UriComponentsBuilder.newInstance().build();
+    assertThrows(
+        DrsHubException.class,
+        () ->
+            authService.getMetadataAuthBearerToken(
+                drsProvider, uriComponents, new BearerToken("")));
+  }
+
+  @Test
+  public void testGetMetadataAuthBearerTokenForCurrentRequest() {
+    var drsProvider =
+        DrsProvider.create()
+            .setMetadataAuthType(DrsAuthEnum.current_request)
+            .setName("name")
+            .setHostRegex(".*")
+            .setAccessMethodConfigs(new ArrayList<>());
+    var uriComponents = UriComponentsBuilder.newInstance().build();
+    var token = UUID.randomUUID().toString();
+    var result =
+        authService.getMetadataAuthBearerToken(drsProvider, uriComponents, new BearerToken(token));
+    assertEquals(token, result);
+  }
+
+  @Test
+  public void testGetMetadataAuthBearerTokenForProviderAccessToken() {
+    var drsProvider =
+        DrsProvider.create()
+            .setMetadataAuthType(DrsAuthEnum.provider_access_token)
+            .setName("name")
+            .setHostRegex(".*")
+            .setAccessMethodConfigs(new ArrayList<>())
+            .setEcmProvider(ECMProviderEnum.sage);
+    var uriComponents = UriComponentsBuilder.newInstance().build();
+    var token = UUID.randomUUID().toString();
+    when(externalCredsApiFactory.getOauthApi(any())).thenReturn(oauthApi);
+    when(oauthApi.getProviderAccessToken(any())).thenReturn(token);
+    var result =
+        authService.getMetadataAuthBearerToken(
+            drsProvider, uriComponents, new BearerToken("not this token"));
+    assertEquals(token, result);
   }
 }
