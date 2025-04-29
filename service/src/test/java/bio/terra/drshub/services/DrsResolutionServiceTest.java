@@ -216,18 +216,25 @@ class DrsResolutionServiceTest {
         equalTo(DRS_OBJECT));
   }
 
-  @Test
-  void fetchObjectInfo_passport() {
+  private static Stream<Arguments> fetchObjectInfo_passport() {
+    return Stream.of(
+        Arguments.of(DrsAuthEnum.passport, List.of()),
+        Arguments.of(DrsAuthEnum.current_request, List.of(PASSPORTAUTH)));
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  void fetchObjectInfo_passport(DrsAuthEnum authType, List<DrsHubAuthorization> authorizations) {
     when(authService.fetchPassports(TOKEN)).thenReturn(Optional.of(PASSPORTS));
     when(drsApi.postObject(Map.of("passports", PASSPORTS), PATH)).thenReturn(DRS_OBJECT);
 
     var actual =
         drsResolutionService.fetchObjectInfo(
-            DRS_PROVIDER_AUTH,
+            DrsProvider.create().setMetadataAuthType(authType),
             uriComponents,
             "drsUri",
             TOKEN,
-            List.of(BEARERAUTH, PASSPORTAUTH),
+            authorizations,
             TRANSACTION_ID);
 
     // When passport authorization is used, bearer token is not passed to the API.

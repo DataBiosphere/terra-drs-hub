@@ -12,6 +12,7 @@ import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
 import bio.terra.drshub.models.Fields;
@@ -237,8 +238,9 @@ public class DrsResolutionService {
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
     if (sendMetadataAuth) {
-      if (authorizations.stream()
-          .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
+      if (drsProvider.getMetadataAuthType() == DrsAuthEnum.passport
+          || authorizations.stream()
+              .anyMatch(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.PASSPORTAUTH)) {
         try {
           List<String> passports = authService.fetchPassports(bearerToken).orElse(List.of());
           if (!passports.isEmpty()) {
