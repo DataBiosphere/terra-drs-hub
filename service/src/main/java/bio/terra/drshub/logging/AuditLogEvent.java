@@ -1,7 +1,7 @@
 package bio.terra.drshub.logging;
 
 import bio.terra.drshub.generated.model.ServiceName;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -22,7 +22,7 @@ public interface AuditLogEvent extends WithAuditLogEvent {
   Optional<String> getDRSUrl();
 
   @JsonInclude(Include.NON_EMPTY)
-  Optional<AccessUrlAuthEnum> getAuthType();
+  Optional<DrsAuthEnum> getAuthType();
 
   AuditLogEventType getAuditLogEventType();
 

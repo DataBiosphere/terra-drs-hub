@@ -1,6 +1,6 @@
 package bio.terra.drshub.models;
 
-public enum ECMFenceProviderEnum {
+public enum ECMProviderEnum {
   dcf_fence("dcf-fence"),
   fence("fence"),
   anvil("anvil"),
@@ -9,7 +9,7 @@ public enum ECMFenceProviderEnum {
 
   private String uriValue;
 
-  ECMFenceProviderEnum(String uriValue) {
+  ECMProviderEnum(String uriValue) {
     this.uriValue = uriValue;
   }
 

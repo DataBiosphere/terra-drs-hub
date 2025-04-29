@@ -1,7 +1,7 @@
 package bio.terra.drshub.config;
 
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -10,9 +10,9 @@ import org.immutables.value.Value;
 public interface ProviderAccessMethodConfigInterface {
   AccessMethodConfigTypeEnum getType();
 
-  AccessUrlAuthEnum getAuth();
+  DrsAuthEnum getAuth();
 
   boolean isFetchAccessUrl();
 
-  Optional<AccessUrlAuthEnum> getFallbackAuth();
+  Optional<DrsAuthEnum> getFallbackAuth();
 }

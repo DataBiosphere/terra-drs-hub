@@ -16,8 +16,8 @@ import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
-import bio.terra.drshub.models.AccessUrlAuthEnum;
 import bio.terra.drshub.models.DrsApi;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.util.SignedUrlTestUtils;
 import io.github.ga4gh.drs.model.AccessMethod.TypeEnum;
@@ -60,9 +60,9 @@ class DrsResolutionServiceTest {
 
   private static final String PATH = "path";
 
-  private static final DrsProvider DRS_PROVIDER_UNAUTH =
-      DrsProvider.create().setMetadataAuth(false);
-  private static final DrsProvider DRS_PROVIDER_AUTH = DrsProvider.create().setMetadataAuth(true);
+  private static final DrsProvider DRS_PROVIDER_UNAUTH = DrsProvider.create();
+  private static final DrsProvider DRS_PROVIDER_AUTH =
+      DrsProvider.create().setMetadataAuthType(DrsAuthEnum.current_request);
 
   private static final String TOKEN_VALUE = "token";
   private static final BearerToken TOKEN = new BearerToken(TOKEN_VALUE);
@@ -80,7 +80,7 @@ class DrsResolutionServiceTest {
 
   private static final DrsProvider testDrsProvider =
       DrsProvider.create()
-          .setMetadataAuth(true)
+          .setMetadataAuthType(DrsAuthEnum.current_request)
           .setName("test")
           .setHostRegex(".*")
           .setAccessMethodConfigs(
@@ -88,7 +88,7 @@ class DrsResolutionServiceTest {
                   List.of(
                       ProviderAccessMethodConfig.create()
                           .setType(AccessMethodConfigTypeEnum.gs)
-                          .setAuth(AccessUrlAuthEnum.current_request)
+                          .setAuth(DrsAuthEnum.current_request)
                           .setFetchAccessUrl(true))));
 
   private static final String TRANSACTION_ID = UUID.randomUUID().toString();
@@ -138,6 +138,8 @@ class DrsResolutionServiceTest {
   @Test
   void fetchObjectInfo_passportUnsupported() {
     when(drsApi.getObject(PATH, null)).thenReturn(DRS_OBJECT);
+    when(authService.getMetadataAuthBearerToken(DRS_PROVIDER_AUTH, uriComponents, TOKEN))
+        .thenReturn(TOKEN.getToken());
 
     var actual =
         drsResolutionService.fetchObjectInfo(
@@ -146,7 +148,7 @@ class DrsResolutionServiceTest {
     // When authorization is required, we pass the bearer token to the API.
     verify(drsApi).setBearerToken(TOKEN.getToken());
     // When RAS passports are not a supported means of authorization, we don't obtain them.
-    verifyNoInteractions(authService);
+    verify(authService, never()).fetchPassports(TOKEN);
     verify(drsApi, never()).postObject(any(), any());
 
     assertThat(
@@ -159,6 +161,8 @@ class DrsResolutionServiceTest {
   void fetchObjectInfo_passportFetchThrows() {
     when(authService.fetchPassports(TOKEN)).thenThrow(RuntimeException.class);
     when(drsApi.getObject(PATH, null)).thenReturn(DRS_OBJECT);
+    when(authService.getMetadataAuthBearerToken(DRS_PROVIDER_AUTH, uriComponents, TOKEN))
+        .thenReturn(TOKEN.getToken());
 
     var actual =
         drsResolutionService.fetchObjectInfo(
@@ -189,6 +193,8 @@ class DrsResolutionServiceTest {
   void fetchObjectInfo_passportUnavailable(Optional<List<String>> passports) {
     when(authService.fetchPassports(TOKEN)).thenReturn(passports);
     when(drsApi.getObject(PATH, null)).thenReturn(DRS_OBJECT);
+    when(authService.getMetadataAuthBearerToken(DRS_PROVIDER_AUTH, uriComponents, TOKEN))
+        .thenReturn(TOKEN.getToken());
 
     var actual =
         drsResolutionService.fetchObjectInfo(
@@ -224,8 +230,8 @@ class DrsResolutionServiceTest {
             List.of(BEARERAUTH, PASSPORTAUTH),
             TRANSACTION_ID);
 
-    // When authorization is required, we pass the bearer token to the API.
-    verify(drsApi).setBearerToken(TOKEN.getToken());
+    // When passport authorization is used, bearer token is not passed to the API.
+    verify(drsApi, never()).setBearerToken(TOKEN.getToken());
     // When fetching the object via POSTed passports succeeds, we don't attempt to fetch it via
     // bearer token.
     verify(drsApi, never()).getObject(any(), any());
@@ -242,6 +248,8 @@ class DrsResolutionServiceTest {
     when(drsApi.postObject(Map.of("passports", PASSPORTS), PATH))
         .thenThrow(RestClientException.class);
     when(drsApi.getObject(PATH, null)).thenReturn(DRS_OBJECT);
+    when(authService.getMetadataAuthBearerToken(DRS_PROVIDER_AUTH, uriComponents, TOKEN))
+        .thenReturn(TOKEN.getToken());
 
     var actual =
         drsResolutionService.fetchObjectInfo(

@@ -9,46 +9,42 @@ drshub:
     anvil:
       name: NHGRI Analysis Visualization and Informatics Lab-space (The AnVIL)
       hostRegex: '.*\.theanvil\.io'
-      metadataAuth: false
-      ecmFenceProvider: anvil
+      ecmProvider: anvil
       accessMethodConfigs:
         - type: gs
-          auth: fence_token
+          auth: provider_access_token
           fetchAccessUrl: false
     bioDataCatalyst:
       name: BioData Catalyst (BDC)
       hostRegex: '.*\.biodatacatalyst\.nhlbi\.nih\.gov|wb-mock-drs-dev\.storage\.googleapis\.com'
-      metadataAuth: false
-      ecmFenceProvider: fence
+      ecmProvider: fence
       accessMethodConfigs:
         - type: gs
-          auth: fence_token
+          auth: provider_access_token
           fetchAccessUrl: true
     crdc:
       name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
       hostRegex: '.*\.datacommons\.io'
-      metadataAuth: false
-      ecmFenceProvider: dcf_fence
+      ecmProvider: dcf_fence
       accessMethodConfigs:
         - type: gs
-          auth: fence_token
+          auth: provider_access_token
           fetchAccessUrl: true
         - type: s3
-          auth: fence_token
+          auth: provider_access_token
           fetchAccessUrl: true
     kidsFirst:
       name: Gabriella Miller Kids First DRC
       hostRegex: '.*\.kidsfirstdrc\.org'
-      metadataAuth: false
-      ecmFenceProvider: kids_first
+      ecmProvider: kids_first
       accessMethodConfigs:
         - type: s3
-          auth: fence_token
+          auth: provider_access_token
           fetchAccessUrl: true
     terraDataRepo:
       name: Terra Data Repo (TDR)
       hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
-      metadataAuth: true
+      metadataAuthType: current_request
       useAliasesForLocalizationPath: true
       accessMethodConfigs:
         - type: gs
@@ -60,11 +56,11 @@ drshub:
     sage:
       name: Sage Bionetworks
       hostRegex: 'repo-dev\.dev\.sagebase\.org|repo-prod\.prod\.sagebase\.org'
-      metadataAuth: false
-      ecmFenceProvider: sage
+      metadataAuthType: provider_access_token
+      ecmProvider: sage
       accessMethodConfigs:
         - type: s3
-          auth: fence_token
+          auth: provider_access_token
           fetchAccessUrl: true
   pencilsDownSeconds: 58
   asyncThreads: ${TOMCAT_MAX_THREADS:200}
@@ -155,17 +151,16 @@ drshub:
     passport:
       name: Passport Test Provider
       hostRegex: 'ctds-test-env\.planx-pla\.net'
-      metadataAuth: false
-      ecmFenceProvider: dcf_fence
+      ecmProvider: dcf_fence
       accessMethodConfigs:
         - type: gs
           auth: passport
           fetchAccessUrl: true
-          fallbackAuth: fence_token
+          fallbackAuth: provider_access_token
         - type: s3
           auth: passport
           fetchAccessUrl: true
-          fallbackAuth: fence_token
+          fallbackAuth: provider_access_token
       mTlsConfig:
         keyPath: rendered/ras-mtls-client.key
         certPath: rendered/ras-mtls-client.crt

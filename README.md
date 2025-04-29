@@ -14,20 +14,20 @@ It is a Java Spring Boot rewrite of the deprecated Cloud Function [Martha](https
 This is the short name, full name, and auth type(s) for each provider
 
 - **AnVIL** (NHGRI Analysis Visualization and Informatics Lab-space)
-  - Fence Token
+  - Ecm Provider Access Token
 - **BDC** (BioData Catalyst)
-  - Fence Token
+  - Ecm Provider Access Token
 - **CRDC** (NCI Cancer Research/Proteomics Data Commons)
-  - Fence Token
+  - Ecm Provider Access Token
 - **KidsFirst** (Gabriella Miller Kids First DRC)
-  - Fence Token
+  - Ecm Provider Access Token
 - **Passport Test** (Passport Test Provider)
   - Passport
-  - Fence Token
+  - Ecm Provider Access Token
 - **TDR** (Terra Data Repo)
   - Bearer Token
 - **Sage Bionetworks** (Synapse)
-  - Fence Token
+  - Ecm Provider Access Token
 
 ## Usage
 To resolve a DRS URL, perform an HTTP `POST` to `/api/v4/drs/resolve`.
