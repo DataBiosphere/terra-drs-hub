@@ -62,6 +62,9 @@ drshub:
         - type: s3
           auth: provider_access_token
           fetchAccessUrl: true
+        - type: https
+          auth: provider_access_token
+          fetchAccessUrl: true
   pencilsDownSeconds: 58
   asyncThreads: ${TOMCAT_MAX_THREADS:200}
   restTemplateConnectionPoolSize: ${REST_TEMPLATE_CONNECTION_POOL_SIZE:500}
