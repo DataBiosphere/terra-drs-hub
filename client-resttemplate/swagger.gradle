@@ -17,6 +17,8 @@ generateSwaggerCode {
 			modelDocs: false, modelTests: false
 	]
 
+	templateDir = file("${projectDir}/src/main/resources/swaggercodegen")
+
 	additionalProperties = [
 			modelPackage  : "${artifactGroup}.model",
 			apiPackage    : "${artifactGroup}.api",

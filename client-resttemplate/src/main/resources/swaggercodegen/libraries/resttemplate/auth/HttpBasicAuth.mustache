@@ -1,0 +1,61 @@
+{{!--
+  Copied from the https://github.com/swagger-api/swagger-codegen-generators tagged release 1.0.42:
+  https://github.com/swagger-api/swagger-codegen-generators/blob/v1.0.42/src/main/resources/handlebars/Java/libraries/resttemplate/auth/HttpBasicAuth.mustache
+
+  This file may include Terra-specific modifications to the Swagger-codegen generated API client
+  code. This file (ApiClient.mustache) is responsible for generating the generic ApiClient class
+  for clients used by Drs Hub to communicated with various services,
+  e.g. bio.terra.*.ApiClient.
+
+  All Terra changes or additions should be surrounded by comment blocks of the form:
+
+  {{! Begin Terra change }}
+  // Code
+  {{! End Terra change }}
+--}}
+package {{invokerPackage}}.auth;
+
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+{{! Begin Terra change }}
+import java.util.Base64;
+{{! End Terra change }}
+
+import org.springframework.http.HttpHeaders;
+{{! Begin Terra change }}
+/* import org.springframework.util.Base64Utils; */
+{{! End Terra change }}
+import org.springframework.util.MultiValueMap;
+
+{{>generatedAnnotation}}
+public class HttpBasicAuth implements Authentication {
+    private String username;
+    private String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    @Override
+    public void applyToParams(MultiValueMap<String, String> queryParams, HttpHeaders headerParams) {
+        if (username == null && password == null) {
+            return;
+        }
+        String str = (username == null ? "" : username) + ":" + (password == null ? "" : password);
+{{! Begin Terra change }}
+        headerParams.add(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder().encodeToString(str.getBytes(StandardCharsets.UTF_8)));
+{{! End Terra change }}
+    }
+}
