@@ -40,10 +40,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -67,9 +67,9 @@ class TrackingInterceptorTest {
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserLoggingMetrics userLoggingMetrics;
-  @MockBean private DrsResolutionService drsResolutionService;
-  @MockBean private TrackingService trackingService;
-  @MockBean private DrsHubConfig drsHubConfig;
+  @MockitoBean private DrsResolutionService drsResolutionService;
+  @MockitoBean private TrackingService trackingService;
+  @MockitoBean private DrsHubConfig drsHubConfig;
 
   @BeforeEach
   void setUp(TestInfo testInfo) {

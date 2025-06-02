@@ -16,14 +16,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Tag("Unit")
 public class SignedUrlServiceTest extends BaseTest {
 
-  @MockBean private AuthService authService;
-  @MockBean private GoogleStorageService googleStorageService;
-  @MockBean private DrsResolutionService drsResolutionService;
+  @MockitoBean private AuthService authService;
+  @MockitoBean private GoogleStorageService googleStorageService;
+  @MockitoBean private DrsResolutionService drsResolutionService;
   @Autowired private SignedUrlService signedUrlService;
 
   @Test

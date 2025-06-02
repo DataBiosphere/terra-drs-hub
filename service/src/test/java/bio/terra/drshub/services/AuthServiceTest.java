@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -40,13 +40,13 @@ class AuthServiceTest extends BaseTest {
 
   @Autowired private AuthService authService;
   @Autowired private DrsProviderService drsProviderService;
-  @MockBean private DrsApiFactory drsApiFactory;
-  @MockBean private DrsApi drsApi;
-  @MockBean private ExternalCredsApiFactory externalCredsApiFactory;
-  @MockBean private OauthApi oauthApi;
-  @MockBean private OidcApi oidcApi;
-  @MockBean private SamApiFactory samApiFactory;
-  @MockBean private SamApi samApi;
+  @MockitoBean private DrsApiFactory drsApiFactory;
+  @MockitoBean private DrsApi drsApi;
+  @MockitoBean private ExternalCredsApiFactory externalCredsApiFactory;
+  @MockitoBean private OauthApi oauthApi;
+  @MockitoBean private OidcApi oidcApi;
+  @MockitoBean private SamApiFactory samApiFactory;
+  @MockitoBean private SamApi samApi;
 
   @Test
   void testDrsOptionsEndpoint() {

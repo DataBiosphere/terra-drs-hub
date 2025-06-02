@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClientException;
 
 @Tag("Unit")
@@ -27,7 +27,7 @@ class TrackingServiceTest extends BaseTest {
   private static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
   private static final BearerToken TEST_BEARER_TOKEN = new BearerToken(TEST_ACCESS_TOKEN);
 
-  @MockBean BardApiFactory bardApiFactory;
+  @MockitoBean BardApiFactory bardApiFactory;
   BardApi bardApi;
   @Autowired TrackingService trackingService;
 

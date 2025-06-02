@@ -46,9 +46,9 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @Tag("Pact")
@@ -60,17 +60,17 @@ class VerifyPactsDrsHubApiController {
   private static final String CONSUMER_BRANCH = System.getenv("CONSUMER_BRANCH");
   private static final String CONSUMER_NAME = System.getenv("CONSUMER_NAME");
 
-  @MockBean private DrsHubConfig drsHubConfig;
-  @MockBean private BearerTokenFactory tokenFactory;
-  @MockBean private AuthService authService;
-  @MockBean private DrsApi drsApi;
-  @MockBean private DrsApiFactory drsApiFactory;
-  @MockBean private AuditLogger auditLogger;
-  @MockBean private TrackingService trackingService;
-  @SpyBean private DrsResolutionService drsResolutionService;
-  @SpyBean private DrsProviderService drsProviderService;
-  @SpyBean private AsyncUtils asyncUtils;
-  @SpyBean private UserLoggingMetrics userLoggingMetrics;
+  @MockitoBean private DrsHubConfig drsHubConfig;
+  @MockitoBean private BearerTokenFactory tokenFactory;
+  @MockitoBean private AuthService authService;
+  @MockitoBean private DrsApi drsApi;
+  @MockitoBean private DrsApiFactory drsApiFactory;
+  @MockitoBean private AuditLogger auditLogger;
+  @MockitoBean private TrackingService trackingService;
+  @MockitoSpyBean private DrsResolutionService drsResolutionService;
+  @MockitoSpyBean private DrsProviderService drsProviderService;
+  @MockitoSpyBean private AsyncUtils asyncUtils;
+  @MockitoSpyBean private UserLoggingMetrics userLoggingMetrics;
 
   @Autowired private ObjectMapper objectMapper;
 

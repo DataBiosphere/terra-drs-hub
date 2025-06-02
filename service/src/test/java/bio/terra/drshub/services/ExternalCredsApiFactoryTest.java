@@ -1,7 +1,10 @@
 package bio.terra.drshub.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.externalcreds.api.FenceAccountKeyApi;
@@ -14,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.web.client.RestTemplate;
 
 @Tag("Unit")
@@ -22,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 class ExternalCredsApiFactoryTest {
 
   @Mock private DrsHubConfig drsHubConfig;
-  @SpyBean private ExternalCredsApiFactory externalCredsApiFactory;
+  @MockitoSpyBean private ExternalCredsApiFactory externalCredsApiFactory;
   private String accessToken = "foo";
   private String baseUrl = "https://externalcreds.dsde-dev.broadinstitute.org";
 

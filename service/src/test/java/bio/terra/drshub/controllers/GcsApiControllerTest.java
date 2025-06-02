@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.util.UriComponents;
@@ -40,9 +40,9 @@ public class GcsApiControllerTest extends BaseTest {
 
   @Autowired private MockMvc mvc;
   @Autowired private ObjectMapper objectMapper;
-  @MockBean DrsResolutionService drsResolutionService;
-  @MockBean AuthService authService;
-  @MockBean GoogleStorageService googleStorageService;
+  @MockitoBean DrsResolutionService drsResolutionService;
+  @MockitoBean AuthService authService;
+  @MockitoBean GoogleStorageService googleStorageService;
 
   @Test
   void testSignsUrls() throws Exception {
