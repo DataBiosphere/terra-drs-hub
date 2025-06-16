@@ -59,7 +59,7 @@ dependencies {
 	implementation 'org.codehaus.janino:janino:3.1.12' // Provides if/else xml parsing for logback config
 
 	// google
-	implementation platform('com.google.cloud:libraries-bom:26.61.0')
+	implementation platform('com.google.cloud:libraries-bom:26.62.0')
 	implementation 'com.google.oauth-client:google-oauth-client'
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-logging:4.9.0'
