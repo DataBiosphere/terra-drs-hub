@@ -33,17 +33,17 @@ apply from: 'analysis.gradle'
 
 dependencyManagement {
 	dependencies {
-		dependencySet(group:'io.github.hakky54', version: '8.2.0') {
-			entry 'sslcontext-kickstart-for-apache5'
-			entry 'sslcontext-kickstart-for-pem'
+		dependencySet(group:'io.github.hakky54', version: '10.0.0') {
+			entry 'ayza-for-apache5'
+			entry 'ayza-for-pem'
 		}
 	}
 }
 
 dependencies {
 	annotationProcessor 'org.immutables:value:2.11.3'
-	implementation 'io.github.hakky54:sslcontext-kickstart-for-apache5'
-	implementation 'io.github.hakky54:sslcontext-kickstart-for-pem'
+	implementation 'io.github.hakky54:ayza-for-apache5'
+	implementation 'io.github.hakky54:ayza-for-pem'
 
 	implementation('bio.terra:terra-common-lib:1.1.39-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
