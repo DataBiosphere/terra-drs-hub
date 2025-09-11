@@ -2,14 +2,13 @@ package bio.terra.drshub.services;
 
 import bio.terra.drshub.config.DrsHubConfig;
 import bio.terra.drshub.config.MTlsConfig;
-import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.apache5.util.Apache5SslUtils;
-import nl.altindag.ssl.pem.util.PemUtils;
+import javax.net.ssl.SSLContext;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -18,9 +17,11 @@ import org.springframework.web.client.RestTemplate;
 public class RestTemplateFactory {
 
   private final int connectionPoolSize;
+  private final SSLContextFactory sslContextFactory;
 
-  public RestTemplateFactory(DrsHubConfig drsHubConfig) {
-    connectionPoolSize = drsHubConfig.restTemplateConnectionPoolSize();
+  public RestTemplateFactory(DrsHubConfig drsHubConfig, SSLContextFactory sslContextFactory) {
+    this.connectionPoolSize = drsHubConfig.restTemplateConnectionPoolSize();
+    this.sslContextFactory = sslContextFactory;
   }
 
   /**
@@ -35,12 +36,9 @@ public class RestTemplateFactory {
    *     must also be authenticated)
    */
   public RestTemplate makeMTlsRestTemplateWithPooling(MTlsConfig mTlsConfig) {
-    var keyManager =
-        PemUtils.loadIdentityMaterial(mTlsConfig.getCertPath(), mTlsConfig.getKeyPath());
-    var sslFactory = SSLFactory.builder().withIdentityMaterial(keyManager).build();
-    var socketFactory = Apache5SslUtils.toSocketFactory(sslFactory);
-
-    return makeRestTemplateWithPooling(socketFactory);
+    SSLContext sslContext = sslContextFactory.createSSLContextWithClientCert(mTlsConfig);
+    SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext);
+    return makeRestTemplateWithPooling(sslSocketFactory);
   }
 
   /**
