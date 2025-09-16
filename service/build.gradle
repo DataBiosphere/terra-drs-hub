@@ -13,7 +13,7 @@ plugins {
 	id 'org.hidetake.swagger.generator'
   	id 'com.srcclr.gradle' version '3.1.12'
 	id 'org.sonarqube'
-	id 'io.sentry.jvm.gradle' version '5.9.0'
+	id 'io.sentry.jvm.gradle' version '5.11.0'
 }
 
 repositories {
@@ -48,7 +48,7 @@ dependencies {
 	implementation 'org.codehaus.janino:janino:3.1.12' // Provides if/else xml parsing for logback config
 
 	// google
-	implementation platform('com.google.cloud:libraries-bom:26.67.0')
+	implementation platform('com.google.cloud:libraries-bom:26.68.0')
 	implementation 'com.google.oauth-client:google-oauth-client'
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-logging:4.9.0'
@@ -65,8 +65,8 @@ dependencies {
 	}
 
 	// BouncyCastle for test key generation utilities
-	testImplementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-	testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+	testImplementation 'org.bouncycastle:bcprov-jdk18on:1.81'
+	testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.81'
 
 	testImplementation('au.com.dius.pact.provider:junit5:4.6.17')
 	testImplementation('au.com.dius.pact.provider:junit5spring:4.6.17')
