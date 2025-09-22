@@ -65,8 +65,8 @@ dependencies {
 	}
 
 	// BouncyCastle for test key generation utilities
-	testImplementation 'org.bouncycastle:bcprov-jdk18on:1.81'
-	testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.81'
+	testImplementation 'org.bouncycastle:bcprov-jdk18on:1.82'
+	testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.82'
 
 	testImplementation('au.com.dius.pact.provider:junit5:4.6.17')
 	testImplementation('au.com.dius.pact.provider:junit5spring:4.6.17')
