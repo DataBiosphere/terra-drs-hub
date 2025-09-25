@@ -3,13 +3,13 @@ plugins {
 	id 'java-library'
 	id 'maven-publish'
 
-	id 'com.jfrog.artifactory' version '6.0.1'
+	id 'com.google.cloud.artifactregistry.gradle-plugin' version '2.1.5'
 	id 'org.hidetake.swagger.generator'
 }
 
 repositories { mavenCentral() }
 
-apply from: 'artifactory.gradle'
+apply from: 'publishing.gradle'
 apply from: 'swagger.gradle'
 
 // In the future when pursuing a Java upgrade, source and target compatibility may differ:

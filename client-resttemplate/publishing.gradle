@@ -1,0 +1,22 @@
+def garProjectId = "dsp-artifact-registry"
+def garLocation = "us-central1"
+def garRepoId = "libs-snapshot-standard"
+
+java {
+    // Builds sources into the published package as part of the 'assemble' task.
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        drshubResttemplateClientLibrary(MavenPublication) {
+            from components.java
+            artifactId = "drshub-client-resttemplate"
+        }
+    }
+    repositories {
+        maven {
+            url = uri("artifactregistry://${garLocation}-maven.pkg.dev/${garProjectId}/${garRepoId}")
+        }
+    }
+}
