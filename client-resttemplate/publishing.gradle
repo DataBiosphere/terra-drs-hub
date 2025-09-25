@@ -12,6 +12,12 @@ publishing {
         drshubResttemplateClientLibrary(MavenPublication) {
             from components.java
             artifactId = "drshub-client-resttemplate"
+            
+            versionMapping {
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
         }
     }
     repositories {
