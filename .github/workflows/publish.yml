@@ -33,13 +33,6 @@ jobs:
         id: tag
         run: echo tag=$(git describe --tags) >> $GITHUB_OUTPUT
 
-      #    - name: "Publish to Artifactory"
-      #      run: ./gradlew --build-cache :client:artifactoryPublish
-      #      env:
-      #        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-      #        ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-      #        ARTIFACTORY_REPO_KEY: "libs-snapshot-local"
-
       - name: Auth to GCR
         uses: google-github-actions/auth@v1
         with:
