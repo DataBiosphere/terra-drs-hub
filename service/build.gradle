@@ -6,14 +6,14 @@ plugins {
 	id 'org.springframework.boot'
 
 	id 'com.diffplug.spotless'
-	id 'com.github.ben-manes.versions' version '0.52.0'
+	id 'com.github.ben-manes.versions' version '0.53.0'
 	id 'com.google.cloud.tools.jib'
 	id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
   	id 'com.srcclr.gradle' version '3.1.12'
 	id 'org.sonarqube'
-	id 'io.sentry.jvm.gradle' version '5.11.0'
+	id 'io.sentry.jvm.gradle' version '5.12.0'
 }
 
 repositories {
@@ -32,7 +32,7 @@ apply from: 'tooling.gradle'
 apply from: 'analysis.gradle'
 
 dependencies {
-	annotationProcessor 'org.immutables:value:2.11.3'
+	annotationProcessor 'org.immutables:value:2.11.4'
 
 	implementation('bio.terra:terra-common-lib:1.1.39-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
