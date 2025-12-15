@@ -32,7 +32,7 @@ apply from: 'tooling.gradle'
 apply from: 'analysis.gradle'
 
 dependencies {
-	annotationProcessor 'org.immutables:value:2.11.7'
+	annotationProcessor 'org.immutables:value:2.12.0'
 
 	implementation('bio.terra:terra-common-lib:1.1.39-SNAPSHOT') {
 		// remove transitive database deps, drshub has no db
