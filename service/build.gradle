@@ -48,7 +48,7 @@ dependencies {
 	implementation 'org.codehaus.janino:janino:3.1.12' // Provides if/else xml parsing for logback config
 
 	// google
-	implementation platform('com.google.cloud:libraries-bom:26.72.0')
+	implementation platform('com.google.cloud:libraries-bom:26.73.0')
 	implementation 'com.google.oauth-client:google-oauth-client'
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-logging:4.9.0'
@@ -68,8 +68,8 @@ dependencies {
 	testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
 	testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
 
-	testImplementation('au.com.dius.pact.provider:junit5:4.6.18')
-	testImplementation('au.com.dius.pact.provider:junit5spring:4.6.18')
+	testImplementation('au.com.dius.pact.provider:junit5:4.6.19')
+	testImplementation('au.com.dius.pact.provider:junit5spring:4.6.19')
 }
 
 sonar {
