@@ -8,7 +8,7 @@ plugins {
 	id 'com.diffplug.spotless'
 	id 'com.github.ben-manes.versions' version '0.53.0'
 	id 'com.google.cloud.tools.jib'
-	id 'com.gorylenko.gradle-git-properties' version '2.5.6'
+	id 'com.gorylenko.gradle-git-properties' version '2.5.7'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
   	id 'com.srcclr.gradle' version '3.1.12'
@@ -48,7 +48,7 @@ dependencies {
 	implementation 'org.codehaus.janino:janino:3.1.12' // Provides if/else xml parsing for logback config
 
 	// google
-	implementation platform('com.google.cloud:libraries-bom:26.75.0')
+	implementation platform('com.google.cloud:libraries-bom:26.76.0')
 	implementation 'com.google.oauth-client:google-oauth-client'
 	implementation 'com.google.cloud:google-cloud-storage'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-logging:4.9.0'
