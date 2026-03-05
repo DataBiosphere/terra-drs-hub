@@ -1,5 +1,6 @@
 package bio.terra.drshub.controllers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -24,9 +25,12 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -34,6 +38,7 @@ import org.springframework.web.util.UriComponents;
 
 @Tag("Unit")
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 public class GcsApiControllerTest extends BaseTest {
 
   public static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
@@ -94,6 +99,39 @@ public class GcsApiControllerTest extends BaseTest {
             eq(transactionId),
             any(UriComponents.class),
             any(DrsProvider.class));
+  }
+
+  @Test
+  void testGetSignedUrlLogsRequest(CapturedOutput output) throws Exception {
+    var drsUri = "drs://dg.4503:1234/456/2315asd";
+    var bucketName = "my-test-bucket";
+    var objectName = "my-test-folder/my-test-object.txt";
+    var googleProject = "test-google-project";
+    var url = new URL("https", "storage.cloud.google.com", "/" + bucketName + "/" + objectName);
+
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+
+    mvc.perform(
+            post("/api/v4/gcs/getSignedUrl")
+                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                .header("x-user-project", googleProject)
+                .header("User-Agent", "JUnit-Test-Agent")
+                .header("X-Forwarded-For", "1.2.3.4")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "dataObjectUri", drsUri,
+                            "googleProject", googleProject,
+                            "bucket", bucketName,
+                            "object", objectName))))
+        .andExpect(content().string(url.toString()));
+
+    assertThat(output)
+        .contains("Received URL " + objectName)
+        .contains("agent JUnit-Test-Agent")
+        .contains("IP 1.2.3.4")
+        .contains("project " + googleProject);
   }
 
   private ResultActions getSignedUrlRequest(
