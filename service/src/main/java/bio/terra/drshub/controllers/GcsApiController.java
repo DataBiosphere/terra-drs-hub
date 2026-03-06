@@ -33,7 +33,7 @@ public class GcsApiController implements GcsApi {
   public ResponseEntity<String> getSignedUrl(GetSignedUrlRequest body) {
     var bearerToken = bearerTokenFactory.from(request);
     var ip = request.getHeader("X-Forwarded-For");
-    var googleProject = request.getHeader("x-user-project");
+    var googleProject = body.getGoogleProject();
     var userAgent = request.getHeader("User-Agent");
     var signedUrl =
         signedUrlService.getSignedUrl(
