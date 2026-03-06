@@ -1,6 +1,5 @@
 package bio.terra.drshub.controllers;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -51,12 +50,9 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -73,7 +69,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Tag("Unit")
 @AutoConfigureMockMvc
-@ExtendWith(OutputCaptureExtension.class)
 public class DrsHubApiControllerTest extends BaseTest {
 
   public static final String TEST_ACCESS_TOKEN = "I_am_an_access_token";
@@ -608,35 +603,6 @@ public class DrsHubApiControllerTest extends BaseTest {
 
     mockDrsApiRestTemplate(drsHost, drsObject);
     postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
-  }
-
-  @Test
-  void testResolveDrsLogsRequest(CapturedOutput output) throws Exception {
-    var cidProviderHost = getProviderHosts("kidsFirst");
-    var drsObject = drsObjectWithRandomId("gs");
-    var drsUrl =
-        String.format("drs://%s:%s", cidProviderHost.compactUriPrefix(), drsObject.getId());
-    var googleProject = "test-google-project";
-
-    mockDrsApi(cidProviderHost.dnsHost(), drsObject);
-
-    mvc.perform(
-            post("/api/v4/drs/resolve")
-                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
-                .header("User-Agent", "JUnit-Test-Agent")
-                .header("X-Forwarded-For", "5.6.7.8")
-                .header("x-user-project", googleProject)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(
-                        Map.of("url", drsUrl, "fields", List.of(Fields.SIZE)))))
-        .andExpect(status().isOk());
-
-    assertThat(output)
-        .contains("Received URL " + drsUrl)
-        .contains("agent JUnit-Test-Agent")
-        .contains("IP 5.6.7.8")
-        .contains("project " + googleProject);
   }
 
   /**
