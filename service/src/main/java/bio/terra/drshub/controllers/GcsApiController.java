@@ -33,6 +33,8 @@ public class GcsApiController implements GcsApi {
   public ResponseEntity<String> getSignedUrl(GetSignedUrlRequest body) {
     var bearerToken = bearerTokenFactory.from(request);
     var ip = request.getHeader("X-Forwarded-For");
+    var googleProject = body.getGoogleProject();
+    var userAgent = request.getHeader("User-Agent");
     var signedUrl =
         signedUrlService.getSignedUrl(
             body.getBucket(),
@@ -42,6 +44,14 @@ public class GcsApiController implements GcsApi {
             RequestUtils.serviceNameFromRequest(request),
             bearerToken,
             ip);
+
+    log.info(
+        "Received URL {} from agent {} on IP {} with project {}",
+        body.getObject(),
+        userAgent,
+        ip,
+        googleProject);
+
     return ResponseEntity.ok(signedUrl.toString());
   }
 }

@@ -42,7 +42,12 @@ public record DrsHubApiController(
     var googleProject = request.getHeader("x-user-project");
     var serviceName = RequestUtils.serviceNameFromRequest(request);
 
-    log.info("Received URL {} from agent {} on IP {}", body.getUrl(), userAgent, ip);
+    log.info(
+        "Received URL {} from agent {} on IP {} with project {}",
+        body.getUrl(),
+        userAgent,
+        ip,
+        googleProject);
 
     var uriComponents = drsProviderService.getUriComponents(body.getUrl());
     var provider = drsProviderService.determineDrsProvider(uriComponents);
