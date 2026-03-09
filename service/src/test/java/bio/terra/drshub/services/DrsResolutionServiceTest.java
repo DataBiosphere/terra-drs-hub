@@ -2,6 +2,7 @@ package bio.terra.drshub.services;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -42,6 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
 
@@ -341,5 +343,184 @@ class DrsResolutionServiceTest {
     verify(drsApi, never()).setHeader("X-Forwarded-For", ip);
     verify(drsApi, never()).setHeader("x-user-project", googleProject);
     verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
+  }
+
+  @Test
+  void testTdrWithRequireUserProject_firstCallSucceeds() {
+    // First call succeeds, so no retry needed and x-user-project header not sent
+    var ip = "test.ip";
+    var googleProject = "test-google-project";
+    var tdrProvider = createTdrProviderWithRetryMode();
+
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    when(drsApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            tdrProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(BEARERAUTH),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject,
+            TRANSACTION_ID);
+
+    assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
+    verify(drsApi, never()).setHeader("x-user-project", googleProject);
+  }
+
+  @Test
+  void testTdrWithRequireUserProject_retrySucceeds() {
+    // Retry with x-user-project header after initial 400 "requireUserProject" error
+    var ip = "test.ip";
+    var googleProject = "test-google-project";
+    var tdrProvider = createTdrProviderWithRetryMode();
+    var retryApi = mock(DrsApi.class);
+
+    DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
+    when(drsApiFactory.getApiFromUriComponents(eq(uriComponents), any(DrsProvider.class)))
+        .thenReturn(drsApi)
+        .thenReturn(retryApi);
+
+    drsResolutionService =
+        new DrsResolutionService(drsApiFactory, authService, mock(AuditLogger.class));
+
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    when(drsApi.getAccessURL(PATH, accessId))
+        .thenThrow(
+            HttpClientErrorException.create(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "BadRequest",
+                org.springframework.http.HttpHeaders.EMPTY,
+                "Snapshot requires an x-user-project header".getBytes(),
+                null));
+    when(retryApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            tdrProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(BEARERAUTH),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url is properly returned after retry", response.getUrl(), equalTo(url.toString()));
+    verify(drsApi, never()).setHeader("x-user-project", googleProject);
+    verify(retryApi).setHeader("x-user-project", googleProject);
+    verify(retryApi).setHeader("X-Forwarded-For", ip);
+    verify(retryApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
+  }
+
+  @Test
+  void testTdrWithRequireUserProject_noGoogleProject() {
+    // No retry without googleProject, even if error indicates it's needed
+    var ip = "test.ip";
+    String googleProject = null;
+    var tdrProvider = createTdrProviderWithRetryMode();
+
+    when(drsApi.getAccessURL(PATH, accessId))
+        .thenThrow(
+            HttpClientErrorException.create(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "BadRequest",
+                org.springframework.http.HttpHeaders.EMPTY,
+                "Snapshot requires an x-user-project header".getBytes(),
+                null));
+
+    assertThrows(
+        HttpClientErrorException.BadRequest.class,
+        () ->
+            drsResolutionService.fetchDrsObjectAccessUrl(
+                tdrProvider,
+                uriComponents,
+                accessId,
+                TypeEnum.GS,
+                List.of(BEARERAUTH),
+                new AuditLogEvent.Builder(),
+                ip,
+                googleProject,
+                TRANSACTION_ID));
+
+    verify(drsApi, never()).setHeader(eq("x-user-project"), any());
+  }
+
+  @Test
+  void testTdrWithRequireUserProject_unrelated400() {
+    // Unrelated 400 error should not trigger retry
+    var ip = "test.ip";
+    var googleProject = "test-google-project";
+    var tdrProvider = createTdrProviderWithRetryMode();
+
+    when(drsApi.getAccessURL(PATH, accessId))
+        .thenThrow(
+            HttpClientErrorException.create(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "BadRequest",
+                null,
+                "Some other error message".getBytes(),
+                null));
+
+    assertThrows(
+        HttpClientErrorException.BadRequest.class,
+        () ->
+            drsResolutionService.fetchDrsObjectAccessUrl(
+                tdrProvider,
+                uriComponents,
+                accessId,
+                TypeEnum.GS,
+                List.of(BEARERAUTH),
+                new AuditLogEvent.Builder(),
+                ip,
+                googleProject,
+                TRANSACTION_ID));
+
+    verify(drsApi, never()).setHeader(eq("x-user-project"), any());
+  }
+
+  @Test
+  void testNonTdrProviderAlwaysForwards() throws Exception {
+    // Non-TDR provider always sends x-user-project header on first call
+    var ip = "test.ip";
+    var googleProject = "test-google-project";
+
+    SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
+    when(drsApi.getAccessURL(PATH, accessId)).thenReturn(new AccessURL().url(url.toString()));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider, // This provider doesn't have requiresUserProjectOnRetry
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(BEARERAUTH),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject,
+            TRANSACTION_ID);
+
+    assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
+    verify(drsApi).setHeader("x-user-project", googleProject);
+  }
+
+  private DrsProvider createTdrProviderWithRetryMode() {
+    return DrsProvider.create()
+        .setMetadataAuthType(DrsAuthEnum.current_request)
+        .setName("tdr")
+        .setHostRegex(".*")
+        .setAccessMethodConfigs(
+            new ArrayList<>(
+                List.of(
+                    ProviderAccessMethodConfig.create()
+                        .setType(AccessMethodConfigTypeEnum.gs)
+                        .setAuth(DrsAuthEnum.current_request)
+                        .setFetchAccessUrl(true)
+                        .setRequiresUserProjectOnRetry(true))));
   }
 }
