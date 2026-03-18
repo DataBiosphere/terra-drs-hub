@@ -12,19 +12,6 @@ plugins {
 	id 'org.sonarqube' version '7.2.2.6593' apply false
 }
 
-// Fail fast on Java 17.0.0/17.0.1: compiler bug JDK-8273408 (typeSig ERROR) with records + Immutables.
-// Fixed in JDK 17.0.2. See https://bugs.openjdk.org/browse/JDK-8273408
-def versionStr = Runtime.version().toString()
-def parts = versionStr.split(/\./)
-def feature = parts[0].replaceAll(/[^0-9].*/, '').toInteger()
-def update = parts.length >= 3 ? parts[2].replaceAll(/[^0-9].*/, '').toInteger() : 0
-if (feature == 17 && update < 2) {
-	throw new GradleException(
-		"Java 17.0." + update + " is too old. This project uses records and Immutables, which trigger " +
-		"a compiler bug (typeSig ERROR) in Java 17.0.0 and 17.0.1. Please use Java 17.0.2 or later."
-	)
-}
-
 repositories { mavenCentral() }
 
 subprojects {
