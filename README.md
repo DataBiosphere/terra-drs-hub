@@ -84,7 +84,7 @@ Some architecture diagrams can be found in [LucidChart](https://lucid.app/docume
 ## Development
 
 ### Setup
-Install Java 17 SDK from your preferred provider. A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/).
+Install Java 17 SDK (**17.0.2 or later**; 17.0.0 and 17.0.1 hit a compiler bug with records + Immutables and will fail with a typeSig ERROR during compileJava). A common way to install and manage different JDK versions is to use [sdkman](https://sdkman.io/).
 
 If developing in IntelliJ, you can configure the Project SDK to use Java 17.
 You'll also need to set the Gradle JVM, located at `Preferences | Build, Execution, Deployment | Build Tools | Gradle`.
