@@ -1,5 +1,6 @@
 package bio.terra.drshub.services;
 
+import static io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum.BEARERAUTH;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
@@ -12,6 +13,7 @@ import bio.terra.drshub.logging.AuditLogEvent;
 import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AnnotatedResourceMetadata;
+import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
 import bio.terra.drshub.models.DrsMetadata;
@@ -35,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
 
@@ -275,49 +278,35 @@ public class DrsResolutionService {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
+    var accessMethodConfig = drsProvider.getAccessMethodByType(accessMethodType);
+    boolean retryMode =
+        accessMethodConfig != null && accessMethodConfig.requiresUserProjectOnRetry();
 
-    if (ip != null) {
-      drsApi.setHeader("X-Forwarded-For", ip);
-    }
-    if (googleProject != null) {
+    // Set x-user-project immediately for providers that always want it
+    if (!retryMode && googleProject != null) {
       drsApi.setHeader("x-user-project", googleProject);
     }
-    drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
+    addStandardHeaders(drsApi, ip, transactionId);
 
     for (var authorization : drsHubAuthorizations) {
-      Optional<List<String>> auth =
-          authorization.getAuthForAccessMethodType().apply(accessMethodType);
-      var accessUrl =
-          switch (authorization.drsAuthType()) {
-            case NONE -> drsApi.getAccessURL(objectId, accessId);
-            case BASICAUTH ->
-                throw new BadRequestException(
-                    "DRSHub does not support basic username/password authentication at this time.");
-            case BEARERAUTH -> {
-              drsApi.setBearerToken(
-                  auth.map(l -> l.get(0))
-                      .orElseThrow(
-                          () ->
-                              new BadRequestException(
-                                  String.format(
-                                      "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
-                                      uriComponents.toUriString()))));
-              yield drsApi.getAccessURL(objectId, accessId);
-            }
-            case PASSPORTAUTH -> {
-              try {
-                yield auth.map(
-                        a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
-                    .orElse(null);
-              } catch (RestClientException e) {
-                log.error(
-                    "Passport authorized request failed for {} with error {}",
-                    uriComponents.toUriString(),
-                    e.getMessage());
-                yield null;
-              }
-            }
-          };
+      AccessURL accessUrl;
+      try {
+        accessUrl =
+            callAccessUrl(
+                drsApi, objectId, accessId, authorization, accessMethodType, uriComponents);
+      } catch (HttpClientErrorException.BadRequest e) {
+        if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
+          // Retry with a fresh client that includes x-user-project
+          var retryApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
+          addStandardHeaders(retryApi, ip, transactionId);
+          retryApi.setHeader("x-user-project", googleProject);
+          accessUrl =
+              callAccessUrl(
+                  retryApi, objectId, accessId, authorization, accessMethodType, uriComponents);
+        } else {
+          throw e;
+        }
+      }
       if (accessUrl != null) {
         auditLogEventBuilder.authType(
             drsProvider.getAccessMethodByType(accessMethodType).getAuth());
@@ -325,6 +314,58 @@ public class DrsResolutionService {
       }
     }
     return null;
+  }
+
+  private static AccessURL callAccessUrl(
+      DrsApi drsApi,
+      String objectId,
+      String accessId,
+      DrsHubAuthorization authorization,
+      TypeEnum accessMethodType,
+      UriComponents uriComponents) {
+    Optional<List<String>> auth =
+        authorization.getAuthForAccessMethodType().apply(accessMethodType);
+
+    return switch (authorization.drsAuthType()) {
+      case NONE -> drsApi.getAccessURL(objectId, accessId);
+      case BASICAUTH ->
+          throw new BadRequestException(
+              "DRSHub does not support basic username/password authentication at this time.");
+      case BEARERAUTH -> {
+        drsApi.setBearerToken(
+            auth.map(l -> l.get(0))
+                .orElseThrow(
+                    () ->
+                        new BadRequestException(
+                            String.format(
+                                "Fence access token required for %s but is missing. Does user have an account linked in Bond?",
+                                uriComponents.toUriString()))));
+        yield drsApi.getAccessURL(objectId, accessId);
+      }
+      case PASSPORTAUTH -> {
+        try {
+          yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
+              .orElse(null);
+        } catch (RestClientException e) {
+          log.error(
+              "Passport authorized request failed for {} with error {}",
+              uriComponents.toUriString(),
+              e.getMessage());
+          yield null;
+        }
+      }
+    };
+  }
+
+  private static boolean isRequireUserProjectError(HttpClientErrorException.BadRequest e) {
+    return e.getResponseBodyAsString().contains("Snapshot requires an x-user-project header");
+  }
+
+  private static void addStandardHeaders(DrsApi drsApi, String ip, String transactionId) {
+    if (ip != null) {
+      drsApi.setHeader("X-Forwarded-For", ip);
+    }
+    drsApi.setHeader(TRANSACTION_ID_HEADER_NAME, transactionId);
   }
 
   static String getObjectId(UriComponents uriComponents) {

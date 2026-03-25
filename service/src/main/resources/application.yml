@@ -50,9 +50,11 @@ drshub:
         - type: gs
           auth: current_request
           fetchAccessUrl: true
+          requiresUserProjectOnRetry: true
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure
+          requiresUserProjectOnRetry: false  # Azure doesn't have requester-pays
     sage:
       name: Sage Bionetworks
       hostRegex: 'repo-dev\.dev\.sagebase\.org|repo-prod\.prod\.sagebase\.org'
