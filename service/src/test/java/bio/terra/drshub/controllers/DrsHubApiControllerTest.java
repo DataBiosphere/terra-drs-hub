@@ -489,6 +489,46 @@ public class DrsHubApiControllerTest extends BaseTest {
   }
 
   @Test
+  void testAcceptsUserProjectInRequestBody() throws Exception {
+    var drsHost = TDR_TEST_HOST;
+    var drsObject = drsObjectWithId("some-object-id", "gs");
+    var expectedDrsUri = "drs://" + drsHost + "/some-object-id";
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of(
+                "url",
+                expectedDrsUri,
+                "fields",
+                List.of(Fields.CONTENT_TYPE),
+                "userProject",
+                "my-billing-project"));
+
+    mockDrsApiRestTemplate(drsHost, drsObject);
+    postDrsHubRequestRaw(TEST_ACCESS_TOKEN, requestBody).andExpect(status().isOk());
+  }
+
+  @Test
+  void testReturns400IfXUserProjectHeaderIsSent() throws Exception {
+    var cidProviderHost = getProviderHosts("kidsFirst");
+    var requestBody =
+        objectMapper.writeValueAsString(
+            Map.of(
+                "url",
+                String.format("drs://%s:%s", cidProviderHost.compactUriPrefix(), UUID.randomUUID()),
+                "fields",
+                List.of(Fields.CONTENT_TYPE)));
+
+    mvc.perform(
+            post("/api/v4/drs/resolve")
+                .header("authorization", "bearer " + TEST_ACCESS_TOKEN)
+                .header("x-user-project", "my-billing-project")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("x-user-project header")));
+  }
+
+  @Test
   void testShouldReturnUnderlyingStatusIfDataObjectResolutionFails() throws Exception {
     var cidList = new ArrayList<>(config.getCompactIdHosts().keySet());
     var cid = cidList.get(new Random().nextInt(cidList.size()));

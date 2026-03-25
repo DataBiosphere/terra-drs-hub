@@ -33,13 +33,19 @@ public record DrsHubApiController(
   @Override
   @TrackCall
   public ResponseEntity<ResourceMetadata> resolveDrs(RequestObject body) {
+    var xUserProjectHeader = request.getHeader("x-user-project");
+    if (xUserProjectHeader != null && !xUserProjectHeader.isBlank()) {
+      throw new BadRequestException(
+          "The x-user-project header is no longer supported. Please send userProject in the request body instead.");
+    }
+
     var bearerToken = bearerTokenFactory.from(request);
     validateRequest(body);
 
     var userAgent = request.getHeader("user-agent");
     var forceAccessUrl = Objects.equals(request.getHeader("drshub-force-access-url"), "true");
     var ip = request.getHeader("X-Forwarded-For");
-    var googleProject = request.getHeader("x-user-project");
+    var googleProject = body.getUserProject();
     var serviceName = RequestUtils.serviceNameFromRequest(request);
 
     log.info(

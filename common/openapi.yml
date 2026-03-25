@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: drsHub
-  version: 2.0.0
+  version: 3.0.0
 paths:
   /api/v4/drs/resolve:
     post:
@@ -204,6 +204,12 @@ components:
           type: array
           items:
             type: string
+        userProject:
+          description: >
+            For GCP-hosted files, the Google project to bill when accessing the signed URL (e.g. Terra billing project).
+            Only applies to GCP-hosted data.
+          type: string
+          nullable: true
 
     GetSignedUrlRequest:
       type: object
