@@ -20,8 +20,9 @@ drshub:
       ecmProvider: fence
       accessMethodConfigs:
         - type: gs
-          auth: provider_access_token
+          auth: passport
           fetchAccessUrl: true
+          fallbackAuth: provider_access_token
     crdc:
       name: NCI Cancer Research / Proteomics Data Commons (CRDC / PDC)
       hostRegex: '.*\.datacommons\.io'
