@@ -197,6 +197,16 @@ drshub:
   compactIdHosts:
     "drs.anv0": jade.datarepo-dev.broadinstitute.org
     "dg.anv0": jade.datarepo-dev.broadinstitute.org
+  drsProviders:
+    bioDataCatalyst:
+      name: BioData Catalyst (BDC)
+      hostRegex: '.*\.biodatacatalyst\.nhlbi\.nih\.gov|wb-mock-drs-dev\.storage\.googleapis\.com'
+      ecmProvider: fence
+      accessMethodConfigs:
+        - type: gs
+          auth: passport
+          fetchAccessUrl: true
+          fallbackAuth: provider_access_token
 ---
 # staging
 spring.config.activate.on-profile: staging
