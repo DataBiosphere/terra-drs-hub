@@ -15,7 +15,7 @@ dependencies {
 	implementation 'org.junit.jupiter:junit-jupiter-api'
 
 	// Google Dependencies
-	implementation('com.google.auth:google-auth-library-oauth2-http:1.42.1') {
+	implementation('com.google.auth:google-auth-library-oauth2-http:1.43.0') {
 		exclude group: 'com.google.oauth-client', module: 'google-oauth-client'
 	}
 	implementation 'com.google.oauth-client:google-oauth-client:1.39.0'
