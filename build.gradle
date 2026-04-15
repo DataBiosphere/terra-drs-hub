@@ -9,7 +9,7 @@ plugins {
 	// ^^ see https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#i-am-seeing-method-not-found-or-class-not-found-errors-when-building
 	id 'io.freefair.lombok' version '9.2.0' apply false
 	id 'org.hidetake.swagger.generator' version '2.19.2' apply false
-	id 'org.sonarqube' version '7.2.2.6593' apply false
+	id 'org.sonarqube' version '7.2.3.7755' apply false
 }
 
 repositories { mavenCentral() }
@@ -31,7 +31,7 @@ subprojects {
 
 		dependencies {
 			dependency 'io.swagger.core.v3:swagger-annotations:2.2.37'
-			dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.77'
+			dependency 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.78'
 		}
 	}
 
