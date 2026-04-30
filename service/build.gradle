@@ -82,3 +82,7 @@ sonar {
 	}
 }
 
+srcclr {
+	scope = "runtimeClasspath"
+}
+
