@@ -9,7 +9,7 @@ pluginManagement {
 		}
 		mavenCentral()
 		maven {
-			url 'https://us-central1-maven.pkg.dev/dsp-artifact-registry/libs-snapshot/'
+			url = 'https://us-central1-maven.pkg.dev/dsp-artifact-registry/libs-snapshot/'
 		}
 		gradlePluginPortal()
 	}
