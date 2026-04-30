@@ -293,7 +293,14 @@ public class DrsResolutionService {
       try {
         accessUrl =
             callAccessUrl(
-                drsApi, objectId, accessId, authorization, accessMethodType, uriComponents);
+                drsApi,
+                objectId,
+                accessId,
+                authorization,
+                accessMethodType,
+                uriComponents,
+                googleProject,
+                drsHubAuthorizations);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
@@ -302,7 +309,14 @@ public class DrsResolutionService {
           retryApi.setHeader("x-user-project", googleProject);
           accessUrl =
               callAccessUrl(
-                  retryApi, objectId, accessId, authorization, accessMethodType, uriComponents);
+                  retryApi,
+                  objectId,
+                  accessId,
+                  authorization,
+                  accessMethodType,
+                  uriComponents,
+                  googleProject,
+                  drsHubAuthorizations);
         } else {
           throw e;
         }
@@ -322,7 +336,9 @@ public class DrsResolutionService {
       String accessId,
       DrsHubAuthorization authorization,
       TypeEnum accessMethodType,
-      UriComponents uriComponents) {
+      UriComponents uriComponents,
+      String googleProject,
+      List<DrsHubAuthorization> drsHubAuthorizations) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
 
@@ -344,6 +360,33 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
+          // If googleProject is set, also send bearer token alongside passports to enable
+          // signing the access url with the userProject set with the right access
+          if (googleProject != null) {
+            log.info(
+                "Google project {} specified for passport auth request to {}. Attempting to include bearer token.",
+                googleProject,
+                uriComponents.toUriString());
+            // Find BEARERAUTH authorization in the list to get the properly configured token
+            Optional<String> bearerTokenOpt =
+                drsHubAuthorizations.stream()
+                    .filter(
+                        a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
+                    .findFirst()
+                    .flatMap(a -> a.getAuthForAccessMethodType().apply(accessMethodType))
+                    .flatMap(
+                        list -> list.isEmpty() ? Optional.empty() : Optional.of(list.get(0)));
+            if (bearerTokenOpt.isPresent()) {
+              log.info(
+                  "Setting bearer token for passport auth request to {}",
+                  uriComponents.toUriString());
+              drsApi.setBearerToken(bearerTokenOpt.get());
+            } else {
+              log.warn(
+                  "Google project specified but no bearer token found in authorizations for {}",
+                  uriComponents.toUriString());
+            }
+          }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
               .orElse(null);
         } catch (RestClientException e) {
