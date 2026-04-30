@@ -370,12 +370,10 @@ public class DrsResolutionService {
             // Find BEARERAUTH authorization in the list to get the properly configured token
             Optional<String> bearerTokenOpt =
                 drsHubAuthorizations.stream()
-                    .filter(
-                        a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
+                    .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
                     .findFirst()
                     .flatMap(a -> a.getAuthForAccessMethodType().apply(accessMethodType))
-                    .flatMap(
-                        list -> list.isEmpty() ? Optional.empty() : Optional.of(list.get(0)));
+                    .flatMap(list -> list.isEmpty() ? Optional.empty() : Optional.of(list.get(0)));
             if (bearerTokenOpt.isPresent()) {
               log.info(
                   "Setting bearer token for passport auth request to {}",
