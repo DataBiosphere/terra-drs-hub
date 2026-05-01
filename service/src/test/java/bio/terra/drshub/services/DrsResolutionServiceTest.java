@@ -602,4 +602,43 @@ class DrsResolutionServiceTest {
     // With the fix, we now use the user's bearer token directly when googleProject is set
     verify(drsApi).setBearerToken(TOKEN_VALUE);
   }
+
+  @Test
+  void fetchDrsObjectAccessUrl_passportAuthWithGoogleProject_usesUserToken() throws Exception {
+    // Test the full fetchDrsObjectAccessUrl flow to ensure user's bearer token is set
+    var googleProject = "test-google-project";
+    var ip = "test.ip";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+
+    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
+        .thenReturn(new AccessURL().url("https://signed-url.example.com/data"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(passportAuth),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject,
+            TOKEN,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url returned with passport auth",
+        response.getUrl(),
+        equalTo("https://signed-url.example.com/data"));
+
+    // Verify standard headers are set
+    verify(drsApi).setHeader("X-Forwarded-For", ip);
+    verify(drsApi).setHeader("x-user-project", googleProject);
+    verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
+
+    // Verify user's bearer token is set before passport auth call
+    verify(drsApi).setBearerToken(TOKEN_VALUE);
+    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
+  }
 }
