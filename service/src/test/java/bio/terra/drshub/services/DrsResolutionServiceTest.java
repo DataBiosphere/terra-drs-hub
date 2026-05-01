@@ -294,6 +294,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
@@ -316,6 +317,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("X-Forwarded-For", ip);
@@ -338,6 +340,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi, never()).setHeader("X-Forwarded-For", ip);
@@ -365,6 +368,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
@@ -408,6 +412,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat(
@@ -446,6 +451,7 @@ class DrsResolutionServiceTest {
                 new AuditLogEvent.Builder(),
                 ip,
                 googleProject,
+                TOKEN,
                 TRANSACTION_ID));
 
     verify(drsApi, never()).setHeader(eq("x-user-project"), any());
@@ -479,6 +485,7 @@ class DrsResolutionServiceTest {
                 new AuditLogEvent.Builder(),
                 ip,
                 googleProject,
+                TOKEN,
                 TRANSACTION_ID));
 
     verify(drsApi, never()).setHeader(eq("x-user-project"), any());
@@ -503,6 +510,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
@@ -554,6 +562,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             null,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
@@ -585,10 +594,12 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             null,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
     verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
-    verify(drsApi, never()).setBearerToken(any());
+    // With the fix, we now use the user's bearer token directly when googleProject is set
+    verify(drsApi).setBearerToken(TOKEN_VALUE);
   }
 }
