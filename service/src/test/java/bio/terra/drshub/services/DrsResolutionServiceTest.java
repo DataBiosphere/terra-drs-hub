@@ -523,4 +523,72 @@ class DrsResolutionServiceTest {
                         .setFetchAccessUrl(true)
                         .setRequiresUserProjectOnRetry(true))));
   }
+
+  private static Stream<Arguments> passportAuthWithGoogleProject() {
+    return Stream.of(
+        Arguments.of("test-project", true), // googleProject set, bearer token should be set
+        Arguments.of(null, false) // no googleProject, bearer token should not be set
+        );
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  void passportAuthWithGoogleProject(String googleProject, boolean shouldSetBearerToken)
+      throws Exception {
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+    var bearerAuth =
+        new DrsHubAuthorization(
+            SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+
+    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
+        .thenReturn(new AccessURL().url("https://example.com"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(passportAuth, bearerAuth),
+            new AuditLogEvent.Builder(),
+            null,
+            googleProject,
+            TRANSACTION_ID);
+
+    assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
+    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
+
+    if (shouldSetBearerToken) {
+      verify(drsApi).setBearerToken(TOKEN_VALUE);
+    } else {
+      verify(drsApi, never()).setBearerToken(any());
+    }
+  }
+
+  @Test
+  void passportAuthWithGoogleProject_noBearerAuthInList() throws Exception {
+    var googleProject = "test-project";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+
+    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
+        .thenReturn(new AccessURL().url("https://example.com"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(passportAuth),
+            new AuditLogEvent.Builder(),
+            null,
+            googleProject,
+            TRANSACTION_ID);
+
+    assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
+    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
+    verify(drsApi, never()).setBearerToken(any());
+  }
 }
