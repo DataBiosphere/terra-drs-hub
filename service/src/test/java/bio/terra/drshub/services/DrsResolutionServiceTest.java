@@ -294,6 +294,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
     assertThat(
         "google signed url is properly returned", response.getUrl(), equalTo(url.toString()));
@@ -316,6 +317,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi).setHeader("X-Forwarded-For", ip);
@@ -338,6 +340,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
     verify(drsApi, never()).setHeader("X-Forwarded-For", ip);
@@ -365,6 +368,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
@@ -408,6 +412,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat(
@@ -446,6 +451,7 @@ class DrsResolutionServiceTest {
                 new AuditLogEvent.Builder(),
                 ip,
                 googleProject,
+                TOKEN,
                 TRANSACTION_ID));
 
     verify(drsApi, never()).setHeader(eq("x-user-project"), any());
@@ -479,6 +485,7 @@ class DrsResolutionServiceTest {
                 new AuditLogEvent.Builder(),
                 ip,
                 googleProject,
+                TOKEN,
                 TRANSACTION_ID));
 
     verify(drsApi, never()).setHeader(eq("x-user-project"), any());
@@ -503,6 +510,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             ip,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("signed url is properly returned", response.getUrl(), equalTo(url.toString()));
@@ -554,6 +562,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             null,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
@@ -585,10 +594,51 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             null,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
     verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
-    verify(drsApi, never()).setBearerToken(any());
+    // With the fix, we now use the user's bearer token directly when googleProject is set
+    verify(drsApi).setBearerToken(TOKEN_VALUE);
+  }
+
+  @Test
+  void fetchDrsObjectAccessUrl_passportAuthWithGoogleProject_usesUserToken() throws Exception {
+    // Test the full fetchDrsObjectAccessUrl flow to ensure user's bearer token is set
+    var googleProject = "test-google-project";
+    var ip = "test.ip";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+
+    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
+        .thenReturn(new AccessURL().url("https://signed-url.example.com/data"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(passportAuth),
+            new AuditLogEvent.Builder(),
+            ip,
+            googleProject,
+            TOKEN,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url returned with passport auth",
+        response.getUrl(),
+        equalTo("https://signed-url.example.com/data"));
+
+    // Verify standard headers are set
+    verify(drsApi).setHeader("X-Forwarded-For", ip);
+    verify(drsApi).setHeader("x-user-project", googleProject);
+    verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
+
+    // Verify user's bearer token is set before passport auth call
+    verify(drsApi).setBearerToken(TOKEN_VALUE);
+    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
   }
 }
