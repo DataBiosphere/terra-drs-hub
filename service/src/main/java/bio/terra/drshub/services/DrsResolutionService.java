@@ -39,10 +39,10 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
@@ -385,8 +385,7 @@ public class DrsResolutionService {
                 googleProject,
                 uriComponents.toUriString());
             var tdrBaseUrl = "https://" + uriComponents.getHost();
-            yield auth
-                .map(
+            yield auth.map(
                     a ->
                         callDataRepoPostAccessUrl(
                             tdrApiFactory,
@@ -412,8 +411,13 @@ public class DrsResolutionService {
   }
 
   private static AccessURL callDataRepoPostAccessUrl(
-      TdrApiFactory tdrApiFactory, String accessToken, List<String> passportStrings, String objectId, String accessId, String xUserProject, String tdrBaseUrl
-  ) {
+      TdrApiFactory tdrApiFactory,
+      String accessToken,
+      List<String> passportStrings,
+      String objectId,
+      String accessId,
+      String xUserProject,
+      String tdrBaseUrl) {
     DRSPassportRequestModel body = new DRSPassportRequestModel();
     body.setPassports(passportStrings);
 
@@ -423,11 +427,16 @@ public class DrsResolutionService {
       drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
     } catch (ApiException e) {
       var status = HttpStatusCode.valueOf(e.getCode());
-      var responseBody = e.getResponseBody() != null ? e.getResponseBody().getBytes(StandardCharsets.UTF_8) : new byte[0];
+      var responseBody =
+          e.getResponseBody() != null
+              ? e.getResponseBody().getBytes(StandardCharsets.UTF_8)
+              : new byte[0];
       if (status.is4xxClientError()) {
-        throw HttpClientErrorException.create(status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
+        throw HttpClientErrorException.create(
+            status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
       }
-      throw HttpServerErrorException.create(status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
+      throw HttpServerErrorException.create(
+          status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
     }
 
     // translate the ga4gh client model to the TDR client model for the response
@@ -437,7 +446,6 @@ public class DrsResolutionService {
 
     return accessURL;
   }
-
 
   private static boolean isRequireUserProjectError(HttpClientErrorException.BadRequest e) {
     return e.getResponseBodyAsString().contains("Snapshot requires an x-user-project header");

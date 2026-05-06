@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.datarepo.api.DataRepositoryServiceApi;
-import bio.terra.datarepo.client.ApiException;
 import bio.terra.datarepo.model.DRSAccessURL;
 import bio.terra.datarepo.model.DRSPassportRequestModel;
 import bio.terra.drshub.config.DrsProvider;
@@ -106,7 +105,8 @@ class DrsResolutionServiceTest {
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
 
     drsResolutionService =
-        new DrsResolutionService(drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory);
+        new DrsResolutionService(
+            drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory);
 
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);
@@ -395,7 +395,8 @@ class DrsResolutionServiceTest {
         .thenReturn(retryApi);
 
     drsResolutionService =
-        new DrsResolutionService(drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory);
+        new DrsResolutionService(
+            drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory);
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     when(drsApi.getAccessURL(PATH, accessId))
@@ -548,7 +549,8 @@ class DrsResolutionServiceTest {
             SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE, "https://host.com")).thenReturn(tdrApi);
-    when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+    when(tdrApi.postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
         .thenReturn(new DRSAccessURL().url("https://example.com"));
 
     var response =
@@ -566,7 +568,9 @@ class DrsResolutionServiceTest {
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
     verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://host.com");
-    verify(tdrApi).postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
+    verify(tdrApi)
+        .postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
     verify(drsApi, never()).postAccessURL(any(), any(), any());
     verify(drsApi, never()).setBearerToken(any());
   }
@@ -638,8 +642,10 @@ class DrsResolutionServiceTest {
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
 
-    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
-        .thenReturn(new AccessURL().url("https://example.com"));
+    when(tdrApiFactory.getApi(TOKEN_VALUE, "https://host.com")).thenReturn(tdrApi);
+    when(tdrApi.postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+        .thenReturn(new DRSAccessURL().url("https://example.com"));
 
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
@@ -655,21 +661,25 @@ class DrsResolutionServiceTest {
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
-    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
-    // With the fix, we now use the user's bearer token directly when googleProject is set
-    verify(drsApi).setBearerToken(TOKEN_VALUE);
+    verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://host.com");
+    verify(tdrApi)
+        .postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
+    verify(drsApi, never()).postAccessURL(any(), any(), any());
+    verify(drsApi, never()).setBearerToken(any());
   }
 
   @Test
   void fetchDrsObjectAccessUrl_passportAuthWithGoogleProject_usesUserToken() throws Exception {
-    // Test the full fetchDrsObjectAccessUrl flow to ensure user's bearer token is set
     var googleProject = "test-google-project";
     var ip = "test.ip";
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
 
-    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
-        .thenReturn(new AccessURL().url("https://signed-url.example.com/data"));
+    when(tdrApiFactory.getApi(TOKEN_VALUE, "https://host.com")).thenReturn(tdrApi);
+    when(tdrApi.postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+        .thenReturn(new DRSAccessURL().url("https://signed-url.example.com/data"));
 
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
@@ -689,13 +699,14 @@ class DrsResolutionServiceTest {
         response.getUrl(),
         equalTo("https://signed-url.example.com/data"));
 
-    // Verify standard headers are set
     verify(drsApi).setHeader("X-Forwarded-For", ip);
     verify(drsApi).setHeader("x-user-project", googleProject);
     verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
-
-    // Verify user's bearer token is set before passport auth call
-    verify(drsApi).setBearerToken(TOKEN_VALUE);
-    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
+    verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://host.com");
+    verify(tdrApi)
+        .postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
+    verify(drsApi, never()).postAccessURL(any(), any(), any());
+    verify(drsApi, never()).setBearerToken(any());
   }
 }
