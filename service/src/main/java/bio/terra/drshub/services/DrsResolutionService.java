@@ -5,6 +5,11 @@ import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
+import bio.terra.datarepo.api.DataRepositoryServiceApi;
+import bio.terra.datarepo.client.ApiClient;
+import bio.terra.datarepo.client.ApiException;
+import bio.terra.datarepo.model.DRSAccessURL;
+import bio.terra.datarepo.model.DRSPassportRequestModel;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
@@ -378,7 +383,9 @@ public class DrsResolutionService {
               log.info(
                   "Setting bearer token for passport auth request to {}",
                   uriComponents.toUriString());
-              drsApi.setBearerToken(bearerTokenOpt.get());
+              // For this specific case, call TDR using the TDR client instead of the DRS client.
+              // The TDR client supports passing the bearer token in the request.
+              yield auth.map(a -> callDataRepoPostAccessUrl(bearerTokenOpt.get(), a, objectId, accessId, googleProject)).orElse(null);
             } else {
               log.warn(
                   "Google project specified but no bearer token found in authorizations for {}",
@@ -397,6 +404,36 @@ public class DrsResolutionService {
       }
     };
   }
+
+  private static AccessURL callDataRepoPostAccessUrl(
+      String accessToken, List<String> passportStrings, String objectId, String accessId, String xUserProject
+  ) {
+    // translate the ga4gh client model to the TDR client model for the request
+    DRSPassportRequestModel body = new DRSPassportRequestModel();
+    body.setPassports(passportStrings);
+
+    // invoke TDR
+    // TODO: don't build the data repo client inline; it should probably have its own dedicated
+    //     class with http client reuse and all the trimmings
+    ApiClient dataRepoClient = new ApiClient();
+    dataRepoClient.setAccessToken(accessToken);
+    DataRepositoryServiceApi drsApi = new DataRepositoryServiceApi(dataRepoClient);
+    DRSAccessURL drsAccessURL;
+    try {
+      drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
+    } catch (ApiException e) {
+      // TODO: better exception handling
+      throw new RuntimeException(e);
+    }
+
+    // translate the ga4gh client model to the TDR client model for the response
+    AccessURL accessURL = new AccessURL();
+    accessURL.setUrl(drsAccessURL.getUrl());
+    accessURL.setHeaders(drsAccessURL.getHeaders());
+
+    return accessURL;
+  }
+
 
   private static boolean isRequireUserProjectError(HttpClientErrorException.BadRequest e) {
     return e.getResponseBodyAsString().contains("Snapshot requires an x-user-project header");
