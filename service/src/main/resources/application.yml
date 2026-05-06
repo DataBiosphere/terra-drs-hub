@@ -4,6 +4,7 @@ drshub:
   bardUrl: https://terra-bard-${deploy_env}.appspot.com
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
+  tdrUrl: ${TDR_URL:https://jade.datarepo-dev.broadinstitute.org}
 
   drsProviders:
     anvil:

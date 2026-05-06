@@ -548,7 +548,7 @@ class DrsResolutionServiceTest {
         new DrsHubAuthorization(
             SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
 
-    when(tdrApiFactory.getApi(TOKEN_VALUE, "https://host.com")).thenReturn(tdrApi);
+    when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
         .thenReturn(new DRSAccessURL().url("https://example.com"));
@@ -567,7 +567,7 @@ class DrsResolutionServiceTest {
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
-    verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://host.com");
+    verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
         .postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
@@ -576,18 +576,15 @@ class DrsResolutionServiceTest {
   }
 
   @Test
-  void passportAuthWithGoogleProject_baseUrlConstructedFromHost() throws Exception {
+  void passportAuthWithGoogleProject_usesTdrFactory() throws Exception {
     var googleProject = "test-project";
-    var differentHost = "jade.datarepo-dev.broadinstitute.org";
-    when(uriComponents.getHost()).thenReturn(differentHost);
-
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
     var bearerAuth =
         new DrsHubAuthorization(
             SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
 
-    when(tdrApiFactory.getApi(TOKEN_VALUE, "https://" + differentHost)).thenReturn(tdrApi);
+    when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), any(), any(), any()))
         .thenReturn(new DRSAccessURL().url("https://example.com"));
 
@@ -603,7 +600,7 @@ class DrsResolutionServiceTest {
         TOKEN,
         TRANSACTION_ID);
 
-    verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://" + differentHost);
+    verify(tdrApiFactory).getApi(TOKEN_VALUE);
   }
 
   @Test
@@ -642,7 +639,7 @@ class DrsResolutionServiceTest {
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
 
-    when(tdrApiFactory.getApi(TOKEN_VALUE, "https://host.com")).thenReturn(tdrApi);
+    when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
         .thenReturn(new DRSAccessURL().url("https://example.com"));
@@ -661,7 +658,7 @@ class DrsResolutionServiceTest {
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
-    verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://host.com");
+    verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
         .postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
@@ -676,7 +673,7 @@ class DrsResolutionServiceTest {
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
 
-    when(tdrApiFactory.getApi(TOKEN_VALUE, "https://host.com")).thenReturn(tdrApi);
+    when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
         .thenReturn(new DRSAccessURL().url("https://signed-url.example.com/data"));
@@ -702,7 +699,7 @@ class DrsResolutionServiceTest {
     verify(drsApi).setHeader("X-Forwarded-For", ip);
     verify(drsApi).setHeader("x-user-project", googleProject);
     verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
-    verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://host.com");
+    verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
         .postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));

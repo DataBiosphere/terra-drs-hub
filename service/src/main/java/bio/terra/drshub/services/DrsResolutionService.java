@@ -384,7 +384,6 @@ public class DrsResolutionService {
                 "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
                 googleProject,
                 uriComponents.toUriString());
-            var tdrBaseUrl = "https://" + uriComponents.getHost();
             yield auth.map(
                     a ->
                         callDataRepoPostAccessUrl(
@@ -393,8 +392,7 @@ public class DrsResolutionService {
                             a,
                             objectId,
                             accessId,
-                            googleProject,
-                            tdrBaseUrl))
+                            googleProject))
                 .orElse(null);
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
@@ -416,12 +414,11 @@ public class DrsResolutionService {
       List<String> passportStrings,
       String objectId,
       String accessId,
-      String xUserProject,
-      String tdrBaseUrl) {
+      String xUserProject) {
     DRSPassportRequestModel body = new DRSPassportRequestModel();
     body.setPassports(passportStrings);
 
-    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(accessToken, tdrBaseUrl);
+    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(accessToken);
     DRSAccessURL drsAccessURL;
     try {
       drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
