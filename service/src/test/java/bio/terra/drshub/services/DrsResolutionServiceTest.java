@@ -561,6 +561,7 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             null,
             googleProject,
+            TOKEN,
             TRANSACTION_ID);
 
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
@@ -595,6 +596,7 @@ class DrsResolutionServiceTest {
         new AuditLogEvent.Builder(),
         null,
         googleProject,
+        TOKEN,
         TRANSACTION_ID);
 
     verify(tdrApiFactory).getApi(TOKEN_VALUE, "https://" + differentHost);
@@ -621,7 +623,6 @@ class DrsResolutionServiceTest {
             new AuditLogEvent.Builder(),
             null,
             null,
-            googleProject,
             TOKEN,
             TRANSACTION_ID);
 
