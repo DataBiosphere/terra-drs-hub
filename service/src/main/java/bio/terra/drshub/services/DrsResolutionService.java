@@ -316,7 +316,6 @@ public class DrsResolutionService {
                 accessMethodType,
                 uriComponents,
                 googleProject,
-                drsHubAuthorizations,
                 tdrApiFactory,
                 bearerToken);
       } catch (HttpClientErrorException.BadRequest e) {
@@ -334,7 +333,6 @@ public class DrsResolutionService {
                   accessMethodType,
                   uriComponents,
                   googleProject,
-                  drsHubAuthorizations,
                   tdrApiFactory,
                   bearerToken);
         } else {
@@ -358,7 +356,6 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       UriComponents uriComponents,
       String googleProject,
-      List<DrsHubAuthorization> drsHubAuthorizations,
       TdrApiFactory tdrApiFactory,
       BearerToken bearerToken) {
     Optional<List<String>> auth =
@@ -389,25 +386,6 @@ public class DrsResolutionService {
                 "Google project {} specified for passport auth request to {}. Setting user's bearer token.",
                 googleProject,
                 uriComponents.toUriString());
-            // Find BEARERAUTH authorization in the list to get the properly configured token
-            Optional<String> bearerTokenOpt =
-                drsHubAuthorizations.stream()
-                    .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
-                    .findFirst()
-                    .flatMap(a -> a.getAuthForAccessMethodType().apply(accessMethodType))
-                    .flatMap(list -> list.isEmpty() ? Optional.empty() : Optional.of(list.get(0)));
-            if (bearerTokenOpt.isPresent()) {
-              log.info(
-                  "Setting bearer token for passport auth request to {}",
-                  uriComponents.toUriString());
-              // For this specific case, call TDR using the TDR client instead of the DRS client.
-              // The TDR client supports passing the bearer token in the request.
-              yield auth.map(a -> callDataRepoPostAccessUrl(tdrApiFactory, bearerTokenOpt.get(), a, objectId, accessId, googleProject, "https://" + uriComponents.getHost())).orElse(null);
-            } else {
-              log.warn(
-                  "Google project specified but no bearer token found in authorizations for {}",
-                  uriComponents.toUriString());
-            }
             drsApi.setBearerToken(bearerToken.getToken());
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
