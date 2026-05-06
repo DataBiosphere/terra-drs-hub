@@ -379,14 +379,24 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
-          // If googleProject is set, also send bearer token alongside passports to enable
-          // signing the access url with the userProject set with the right access
           if (googleProject != null && bearerToken != null && bearerToken.getToken() != null) {
             log.info(
-                "Google project {} specified for passport auth request to {}. Setting user's bearer token.",
+                "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
                 googleProject,
                 uriComponents.toUriString());
-            drsApi.setBearerToken(bearerToken.getToken());
+            var tdrBaseUrl = "https://" + uriComponents.getHost();
+            yield auth
+                .map(
+                    a ->
+                        callDataRepoPostAccessUrl(
+                            tdrApiFactory,
+                            bearerToken.getToken(),
+                            a,
+                            objectId,
+                            accessId,
+                            googleProject,
+                            tdrBaseUrl))
+                .orElse(null);
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
               .orElse(null);
