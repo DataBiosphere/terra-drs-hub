@@ -180,6 +180,7 @@ public class DrsResolutionService {
           forceAccessUrl,
           ip,
           googleProject,
+          bearerToken,
           transactionId);
     }
 
@@ -201,6 +202,7 @@ public class DrsResolutionService {
       boolean forceAccessUrl,
       String ip,
       String googleProject,
+      BearerToken bearerToken,
       String transactionId) {
 
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
@@ -220,6 +222,7 @@ public class DrsResolutionService {
                 auditEventBuilder,
                 ip,
                 googleProject,
+                bearerToken,
                 transactionId);
         drsMetadataBuilder.accessUrl(accessUrl);
       } catch (RuntimeException e) {
@@ -286,6 +289,7 @@ public class DrsResolutionService {
       AuditLogEvent.Builder auditLogEventBuilder,
       String ip,
       String googleProject,
+      BearerToken bearerToken,
       String transactionId) {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
@@ -313,7 +317,8 @@ public class DrsResolutionService {
                 uriComponents,
                 googleProject,
                 drsHubAuthorizations,
-                tdrApiFactory);
+                tdrApiFactory,
+                bearerToken);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
@@ -330,7 +335,8 @@ public class DrsResolutionService {
                   uriComponents,
                   googleProject,
                   drsHubAuthorizations,
-                  tdrApiFactory);
+                  tdrApiFactory,
+                  bearerToken);
         } else {
           throw e;
         }
@@ -353,7 +359,8 @@ public class DrsResolutionService {
       UriComponents uriComponents,
       String googleProject,
       List<DrsHubAuthorization> drsHubAuthorizations,
-      TdrApiFactory tdrApiFactory) {
+      TdrApiFactory tdrApiFactory,
+      BearerToken bearerToken) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
 
@@ -377,9 +384,9 @@ public class DrsResolutionService {
         try {
           // If googleProject is set, also send bearer token alongside passports to enable
           // signing the access url with the userProject set with the right access
-          if (googleProject != null) {
+          if (googleProject != null && bearerToken != null && bearerToken.getToken() != null) {
             log.info(
-                "Google project {} specified for passport auth request to {}. Attempting to include bearer token.",
+                "Google project {} specified for passport auth request to {}. Setting user's bearer token.",
                 googleProject,
                 uriComponents.toUriString());
             // Find BEARERAUTH authorization in the list to get the properly configured token
@@ -401,6 +408,7 @@ public class DrsResolutionService {
                   "Google project specified but no bearer token found in authorizations for {}",
                   uriComponents.toUriString());
             }
+            drsApi.setBearerToken(bearerToken.getToken());
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
               .orElse(null);
