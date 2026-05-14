@@ -15,6 +15,8 @@ public interface DrsHubConfigInterface {
 
   String getExternalcredsUrl();
 
+  String getTdrUrl();
+
   Map<String, String> getCompactIdHosts();
 
   Map<String, DrsProvider> getDrsProviders();
