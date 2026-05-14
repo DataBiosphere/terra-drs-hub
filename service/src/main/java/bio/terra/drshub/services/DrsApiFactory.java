@@ -32,16 +32,29 @@ public class DrsApiFactory {
   }
 
   public DrsApi getApiFromUriComponents(UriComponents uriComponents, DrsProvider drsProvider) {
+    var host = Objects.requireNonNull(uriComponents.getHost());
+
+    // HARDCODED for local dev: map test hostnames to localhost:8080
+    boolean isLocalDev = false;
+    if ("some.dnsname.org".equals(host) || "drs.anv0".equals(host)) {
+      host = "localhost:8080";
+      isLocalDev = true;
+      log.info("Hardcoded mapping: using localhost:8080 for TDR local dev");
+    }
+
     log.debug(
         "Creating new DrsApi client for host '{}', for DRS Provider '{}'",
-        uriComponents.getHost(),
+        host,
         drsProvider.getName());
     var drsClient = drsApiClientFactory.createClient(getOrCreateRestTemplate(drsProvider));
 
-    drsClient.setBasePath(
-        drsClient
-            .getBasePath()
-            .replace("{serverURL}", Objects.requireNonNull(uriComponents.getHost())));
+    // For local dev, use http:// instead of https://
+    String basePath = drsClient.getBasePath().replace("{serverURL}", host);
+    if (isLocalDev) {
+      basePath = basePath.replace("https://", "http://");
+      log.info("Using HTTP (not HTTPS) for local dev: {}", basePath);
+    }
+    drsClient.setBasePath(basePath);
 
     return new DrsApi(drsClient);
   }

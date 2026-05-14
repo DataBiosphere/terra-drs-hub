@@ -4,7 +4,7 @@ drshub:
   bardUrl: https://terra-bard-${deploy_env}.appspot.com
   samUrl: https://sam.dsde-${deploy_env}.broadinstitute.org
   externalcredsUrl: https://externalcreds.dsde-${deploy_env}.broadinstitute.org
-  tdrUrl: ${TDR_URL:https://jade.datarepo-dev.broadinstitute.org}
+  tdrUrl: ${TDR_URL:http://localhost:8080}
 
   drsProviders:
     anvil:
@@ -44,7 +44,7 @@ drshub:
           fetchAccessUrl: true
     terraDataRepo:
       name: Terra Data Repo (TDR)
-      hostRegex: '.*data.*[-.](?:broadinstitute\.org|terra\.bio)'
+      hostRegex: 'localhost:8080|some\.dnsname\.org|drs\.anv0'
       metadataAuthType: current_request
       useAliasesForLocalizationPath: true
       accessMethodConfigs:
@@ -108,7 +108,7 @@ server:
   compression:
     enabled: true
     mime-types: text/css,application/javascript
-  port: 8080
+  port: 8081
   error:
     include-message: always
     include-binding-errors: never
@@ -188,7 +188,7 @@ drshub:
   compactIdHosts:
     "dg.4503": gen3.biodatacatalyst.nhlbi.nih.gov # biodatacatalyst
     "dg.anv0": data.terra.bio # old anvil (hosted on TDR)
-    "drs.anv0": data.terra.bio # new anvil (hosted on TDR)
+    "drs.anv0": localhost:8080 # new anvil (hosted on TDR)
     "dg.4dfc": nci-crdc.datacommons.io # cancer research data commons
     "dg.f82a1a": data.kidsfirstdrc.org # kidsfirst
 ---
@@ -196,8 +196,8 @@ drshub:
 spring.config.activate.on-profile: dev
 drshub:
   compactIdHosts:
-    "drs.anv0": jade.datarepo-dev.broadinstitute.org
-    "dg.anv0": jade.datarepo-dev.broadinstitute.org
+    "drs.anv0": localhost:8080
+    "dg.anv0": localhost:8080
   drsProviders:
     bioDataCatalyst:
       name: BioData Catalyst (BDC)
