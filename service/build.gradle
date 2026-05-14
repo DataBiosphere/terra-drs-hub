@@ -45,7 +45,6 @@ dependencies {
 	}
 	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:v0.0.332'
 	implementation 'bio.terra:externalcreds-client-resttemplate:1.83.0-SNAPSHOT'
-	implementation 'bio.terra:datarepo-client:2.382.0-SNAPSHOT'
 	implementation 'org.codehaus.janino:janino:3.1.12' // Provides if/else xml parsing for logback config
 
 	// google
