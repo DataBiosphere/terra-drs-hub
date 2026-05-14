@@ -25,7 +25,6 @@ import bio.terra.drshub.services.AuthService;
 import bio.terra.drshub.services.DrsApiFactory;
 import bio.terra.drshub.services.DrsProviderService;
 import bio.terra.drshub.services.DrsResolutionService;
-import bio.terra.drshub.services.TdrApiFactory;
 import bio.terra.drshub.services.TrackingService;
 import bio.terra.drshub.tracking.UserLoggingMetrics;
 import bio.terra.drshub.util.AsyncUtils;
@@ -66,7 +65,6 @@ class VerifyPactsDrsHubApiController {
   @MockBean private AuthService authService;
   @MockBean private DrsApi drsApi;
   @MockBean private DrsApiFactory drsApiFactory;
-  @MockBean private TdrApiFactory tdrApiFactory;
   @MockBean private AuditLogger auditLogger;
   @MockBean private TrackingService trackingService;
   @SpyBean private DrsResolutionService drsResolutionService;
