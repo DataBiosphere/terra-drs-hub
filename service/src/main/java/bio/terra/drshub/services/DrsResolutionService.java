@@ -5,6 +5,10 @@ import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
+import bio.terra.datarepo.api.DataRepositoryServiceApi;
+import bio.terra.datarepo.client.ApiException;
+import bio.terra.datarepo.model.DRSAccessURL;
+import bio.terra.datarepo.model.DRSPassportRequestModel;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.DrsProviderInterface;
 import bio.terra.drshub.generated.model.RequestObject.CloudPlatformEnum;
@@ -35,9 +39,12 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponents;
 
@@ -48,14 +55,19 @@ public class DrsResolutionService {
   private final DrsApiFactory drsApiFactory;
   private final AuthService authService;
   private final AuditLogger auditLogger;
+  private final TdrApiFactory tdrApiFactory;
   public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
   public DrsResolutionService(
-      DrsApiFactory drsApiFactory, AuthService authService, AuditLogger auditLogger) {
+      DrsApiFactory drsApiFactory,
+      AuthService authService,
+      AuditLogger auditLogger,
+      TdrApiFactory tdrApiFactory) {
     this.drsApiFactory = drsApiFactory;
     this.authService = authService;
     this.auditLogger = auditLogger;
+    this.tdrApiFactory = tdrApiFactory;
   }
 
   /**
@@ -304,6 +316,7 @@ public class DrsResolutionService {
                 accessMethodType,
                 uriComponents,
                 googleProject,
+                tdrApiFactory,
                 bearerToken);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
@@ -320,6 +333,7 @@ public class DrsResolutionService {
                   accessMethodType,
                   uriComponents,
                   googleProject,
+                  tdrApiFactory,
                   bearerToken);
         } else {
           throw e;
@@ -342,6 +356,7 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       UriComponents uriComponents,
       String googleProject,
+      TdrApiFactory tdrApiFactory,
       BearerToken bearerToken) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
@@ -364,14 +379,21 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
-          // If googleProject is set, also send bearer token alongside passports to enable
-          // signing the access url with the userProject set with the right access
           if (googleProject != null && bearerToken != null && bearerToken.getToken() != null) {
             log.info(
-                "Google project {} specified for passport auth request to {}. Setting user's bearer token.",
+                "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
                 googleProject,
                 uriComponents.toUriString());
-            drsApi.setBearerToken(bearerToken.getToken());
+            yield auth.map(
+                    a ->
+                        callDataRepoPostAccessUrl(
+                            tdrApiFactory,
+                            bearerToken.getToken(),
+                            a,
+                            objectId,
+                            accessId,
+                            googleProject))
+                .orElse(null);
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
               .orElse(null);
@@ -384,6 +406,42 @@ public class DrsResolutionService {
         }
       }
     };
+  }
+
+  private static AccessURL callDataRepoPostAccessUrl(
+      TdrApiFactory tdrApiFactory,
+      String accessToken,
+      List<String> passportStrings,
+      String objectId,
+      String accessId,
+      String xUserProject) {
+    DRSPassportRequestModel body = new DRSPassportRequestModel();
+    body.setPassports(passportStrings);
+
+    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(accessToken);
+    DRSAccessURL drsAccessURL;
+    try {
+      drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
+    } catch (ApiException e) {
+      var status = HttpStatusCode.valueOf(e.getCode());
+      var responseBody =
+          e.getResponseBody() != null
+              ? e.getResponseBody().getBytes(StandardCharsets.UTF_8)
+              : new byte[0];
+      if (status.is4xxClientError()) {
+        throw HttpClientErrorException.create(
+            status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
+      }
+      throw HttpServerErrorException.create(
+          status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
+    }
+
+    // translate the ga4gh client model to the TDR client model for the response
+    AccessURL accessURL = new AccessURL();
+    accessURL.setUrl(drsAccessURL.getUrl());
+    accessURL.setHeaders(drsAccessURL.getHeaders());
+
+    return accessURL;
   }
 
   private static boolean isRequireUserProjectError(HttpClientErrorException.BadRequest e) {
