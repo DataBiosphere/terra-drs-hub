@@ -423,10 +423,11 @@ public class DrsResolutionService {
     String petToken;
 
     try {
+      log.info("Retrieving access token for user from sam");
       petToken =
           samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email", "profile"));
       log.info(
-          "Retrieving access token for pet token {} with length {}",
+          "Access token retrieved for pet: token substring {} with length {}",
           petToken.substring(0, 5),
           petToken.length());
     } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
