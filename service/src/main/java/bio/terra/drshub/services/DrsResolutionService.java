@@ -56,6 +56,7 @@ public class DrsResolutionService {
   private final AuthService authService;
   private final AuditLogger auditLogger;
   private final TdrApiFactory tdrApiFactory;
+  private final SamApiFactory samApiFactory;
   public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
@@ -63,11 +64,13 @@ public class DrsResolutionService {
       DrsApiFactory drsApiFactory,
       AuthService authService,
       AuditLogger auditLogger,
-      TdrApiFactory tdrApiFactory) {
+      TdrApiFactory tdrApiFactory,
+      SamApiFactory samApiFactory) {
     this.drsApiFactory = drsApiFactory;
     this.authService = authService;
     this.auditLogger = auditLogger;
     this.tdrApiFactory = tdrApiFactory;
+    this.samApiFactory = samApiFactory;
   }
 
   /**
@@ -316,7 +319,6 @@ public class DrsResolutionService {
                 accessMethodType,
                 uriComponents,
                 googleProject,
-                tdrApiFactory,
                 bearerToken);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
@@ -333,7 +335,6 @@ public class DrsResolutionService {
                   accessMethodType,
                   uriComponents,
                   googleProject,
-                  tdrApiFactory,
                   bearerToken);
         } else {
           throw e;
@@ -348,7 +349,7 @@ public class DrsResolutionService {
     return null;
   }
 
-  private static AccessURL callAccessUrl(
+  private AccessURL callAccessUrl(
       DrsApi drsApi,
       String objectId,
       String accessId,
@@ -356,7 +357,6 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       UriComponents uriComponents,
       String googleProject,
-      TdrApiFactory tdrApiFactory,
       BearerToken bearerToken) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
@@ -387,12 +387,7 @@ public class DrsResolutionService {
             yield auth.map(
                     a ->
                         callDataRepoViaPetToken(
-                            tdrApiFactory,
-                            bearerToken.getToken(),
-                            a,
-                            objectId,
-                            accessId,
-                            googleProject))
+                            bearerToken.getToken(), a, objectId, accessId, googleProject))
                 .orElse(null);
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
@@ -408,8 +403,7 @@ public class DrsResolutionService {
     };
   }
 
-  private static AccessURL callDataRepoViaPetToken(
-      TdrApiFactory tdrApiFactory,
+  private AccessURL callDataRepoViaPetToken(
       String accessToken,
       List<String> passportStrings,
       String objectId,
@@ -424,17 +418,17 @@ public class DrsResolutionService {
     //    because the GA4GH client does not pass on the bearer token, and TDR needs that.
 
     // invoke Sam to get a pet token
-    // TODO: set up a factory or other more-robust means to construct the Sam client
-    org.broadinstitute.dsde.workbench.client.sam.ApiClient samApiClient =
-        new org.broadinstitute.dsde.workbench.client.sam.ApiClient();
-    samApiClient.setAccessToken(accessToken);
     org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
-        new org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi(samApiClient);
+        samApiFactory.getGoogleApi(accessToken);
     String petToken;
 
     try {
       petToken =
           samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email", "profile"));
+      log.info(
+          "Retrieving access token for pet token {} with length {}",
+          petToken.substring(0, 5),
+          petToken.length());
     } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
       // TODO: more precise and helpful error handling
       throw new RuntimeException(e);
