@@ -1,6 +1,5 @@
 package bio.terra.drshub.services;
 
-import static io.github.ga4gh.drs.model.Authorizations.SupportedTypesEnum.BEARERAUTH;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 import bio.terra.common.exception.BadRequestException;
@@ -38,6 +37,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -386,7 +386,7 @@ public class DrsResolutionService {
                 uriComponents.toUriString());
             yield auth.map(
                     a ->
-                        callDataRepoPostAccessUrl(
+                        callDataRepoViaPetToken(
                             tdrApiFactory,
                             bearerToken.getToken(),
                             a,
@@ -408,17 +408,47 @@ public class DrsResolutionService {
     };
   }
 
-  private static AccessURL callDataRepoPostAccessUrl(
+  private static AccessURL callDataRepoViaPetToken(
       TdrApiFactory tdrApiFactory,
       String accessToken,
       List<String> passportStrings,
       String objectId,
       String accessId,
       String xUserProject) {
+
+    // 1. Invoke Sam to get a token for the user's pet. This trades the b2c-minted `accessToken` for
+    //    a Google-minted pet token. We need a Google-minted token to send to TDR, because TDR
+    //    verifies the token via Google's tokeninfo endpoint
+    // 2. Invoke TDR's `PostAccessURL` api to resolve the DRS URI to an access url. Here, we have
+    //    to use the Terra-specific TDR client library instead of the GA4GH DRS-spec client library,
+    //    because the GA4GH client does not pass on the bearer token, and TDR needs that.
+
+    // invoke Sam to get a pet token
+    // TODO: set up a factory or other more-robust means to construct the Sam client
+    org.broadinstitute.dsde.workbench.client.sam.ApiClient samApiClient =
+        new org.broadinstitute.dsde.workbench.client.sam.ApiClient();
+    samApiClient.setAccessToken(accessToken);
+    org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
+        new org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi(samApiClient);
+    String petToken;
+
+    try {
+      petToken =
+          samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email", "profile"));
+    } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
+      // TODO: more precise and helpful error handling
+      throw new RuntimeException(e);
+    }
+    if (StringUtils.isBlank(petToken)) {
+      // TODO: more precise and helpful error handling
+      throw new RuntimeException("Pet token is blank!");
+    }
+
+    // invoke TDR with the pet token to resolve the DRS URI
     DRSPassportRequestModel body = new DRSPassportRequestModel();
     body.setPassports(passportStrings);
 
-    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(accessToken);
+    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(petToken);
     DRSAccessURL drsAccessURL;
     try {
       drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
