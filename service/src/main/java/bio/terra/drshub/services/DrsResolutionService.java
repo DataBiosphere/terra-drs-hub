@@ -449,9 +449,6 @@ public class DrsResolutionService {
     body.setPassports(passportStrings);
 
     DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(petToken);
-    drsApi.setHeadersOverrides(
-        Map.of(
-            "OIDC_CLAIM_email", "fakey.mcfakerson@fake.com", "OIDC_CLAIM_user_id", "1234567890"));
     DRSAccessURL drsAccessURL;
     try {
       drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
