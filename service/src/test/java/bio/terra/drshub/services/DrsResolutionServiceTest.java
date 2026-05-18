@@ -103,11 +103,10 @@ class DrsResolutionServiceTest {
   @BeforeEach
   void before() throws Exception {
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
-    SamApiFactory samApiFactory = mock(SamApiFactory.class);
 
     drsResolutionService =
         new DrsResolutionService(
-            drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory, samApiFactory);
+            drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory);
 
     when(uriComponents.getHost()).thenReturn("host.com");
     when(uriComponents.getPath()).thenReturn(PATH);
@@ -391,14 +390,13 @@ class DrsResolutionServiceTest {
     var retryApi = mock(DrsApi.class);
 
     DrsApiFactory drsApiFactory = mock(DrsApiFactory.class);
-    SamApiFactory samApiFactory = mock(SamApiFactory.class);
     when(drsApiFactory.getApiFromUriComponents(eq(uriComponents), any(DrsProvider.class)))
         .thenReturn(drsApi)
         .thenReturn(retryApi);
 
     drsResolutionService =
         new DrsResolutionService(
-            drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory, samApiFactory);
+            drsApiFactory, authService, mock(AuditLogger.class), tdrApiFactory);
 
     SignedUrlTestUtils.setupSignedUrlMocks(authService, googleStorageService, googleProject, url);
     when(drsApi.getAccessURL(PATH, accessId))
