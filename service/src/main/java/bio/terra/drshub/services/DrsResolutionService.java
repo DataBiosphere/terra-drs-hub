@@ -425,24 +425,27 @@ public class DrsResolutionService {
 
     // invoke Sam to get a pet token
     // TODO: set up a factory or other more-robust means to construct the Sam client
-    org.broadinstitute.dsde.workbench.client.sam.ApiClient samApiClient =
-        new org.broadinstitute.dsde.workbench.client.sam.ApiClient();
-    samApiClient.setAccessToken(accessToken);
-    org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
-        new org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi(samApiClient);
-    String petToken;
+    //    org.broadinstitute.dsde.workbench.client.sam.ApiClient samApiClient =
+    //        new org.broadinstitute.dsde.workbench.client.sam.ApiClient();
+    //    samApiClient.setAccessToken(accessToken);
+    //    org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
+    //        new org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi(samApiClient);
+    //    String petToken;
+    //
+    //    try {
+    //      petToken =
+    //          samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email",
+    // "profile"));
+    //    } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
+    //      // TODO: more precise and helpful error handling
+    //      throw new RuntimeException(e);
+    //    }
+    //    if (StringUtils.isBlank(petToken)) {
+    //      // TODO: more precise and helpful error handling
+    //      throw new RuntimeException("Pet token is blank!");
+    //    }
 
-    try {
-      petToken =
-          samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email", "profile"));
-    } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
-      // TODO: more precise and helpful error handling
-      throw new RuntimeException(e);
-    }
-    if (StringUtils.isBlank(petToken)) {
-      // TODO: more precise and helpful error handling
-      throw new RuntimeException("Pet token is blank!");
-    }
+    String petToken = accessToken;
 
     // invoke TDR with the pet token to resolve the DRS URI
     DRSPassportRequestModel body = new DRSPassportRequestModel();
