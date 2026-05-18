@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -409,47 +408,11 @@ public class DrsResolutionService {
       String objectId,
       String accessId,
       String xUserProject) {
-
-    // 1. Invoke Sam to get a token for the user's pet. This trades the b2c-minted `accessToken` for
-    //    a Google-minted pet token. We need a Google-minted token to send to TDR, because TDR
-    //    verifies the token via Google's tokeninfo endpoint
-    // 2. Invoke TDR's `PostAccessURL` api to resolve the DRS URI to an access url. Here, we have
-    //    to use the Terra-specific TDR client library instead of the GA4GH DRS-spec client library,
-    //    because the GA4GH client does not pass on the bearer token, and TDR needs that.
-
-    //    // invoke Sam to get a pet token
-    //    org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
-    //        samApiFactory.getGoogleApi(accessToken);
-    //    String petToken;
-    //
-    //    try {
-    //      log.info("Retrieving access token for user from sam");
-    //      petToken =
-    //          samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email",
-    // "profile"));
-    //      log.info(
-    //          "Access token retrieved for pet: token substring {} with length {}",
-    //          petToken.substring(0, 5),
-    //          petToken.length());
-    //    } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
-    //      // TODO: more precise and helpful error handling
-    //      throw new RuntimeException(e);
-    //    }
-    //    if (StringUtils.isBlank(petToken)) {
-    //      // TODO: more precise and helpful error handling
-    //      throw new RuntimeException("Pet token is blank!");
-    //    }
-    String petToken = accessToken;
-
-    String petTokenSample = StringUtils.substring(Optional.ofNullable(petToken).orElse(""), 0, 25);
-
-    log.info("sending token from DRSHub to TDR: {}", petTokenSample);
-
     // invoke TDR with the pet token to resolve the DRS URI
     DRSPassportRequestModel body = new DRSPassportRequestModel();
     body.setPassports(passportStrings);
 
-    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(petToken);
+    DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(accessToken);
     DRSAccessURL drsAccessURL;
     try {
       drsAccessURL = drsApi.postAccessURL(body, objectId, accessId, xUserProject);
