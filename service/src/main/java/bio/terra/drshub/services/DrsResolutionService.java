@@ -55,7 +55,6 @@ public class DrsResolutionService {
   private final AuthService authService;
   private final AuditLogger auditLogger;
   private final TdrApiFactory tdrApiFactory;
-  private final SamApiFactory samApiFactory;
   public static final String TRANSACTION_ID_HEADER_NAME = "X-Transaction-Id";
 
   @Autowired
@@ -63,13 +62,11 @@ public class DrsResolutionService {
       DrsApiFactory drsApiFactory,
       AuthService authService,
       AuditLogger auditLogger,
-      TdrApiFactory tdrApiFactory,
-      SamApiFactory samApiFactory) {
+      TdrApiFactory tdrApiFactory) {
     this.drsApiFactory = drsApiFactory;
     this.authService = authService;
     this.auditLogger = auditLogger;
     this.tdrApiFactory = tdrApiFactory;
-    this.samApiFactory = samApiFactory;
   }
 
   /**
@@ -378,6 +375,8 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
+          // If googleProject is set, also send bearer token alongside passports to enable
+          // signing the access url with the userProject set with the right access
           if (googleProject != null && bearerToken != null && bearerToken.getToken() != null) {
             log.info(
                 "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
@@ -385,7 +384,7 @@ public class DrsResolutionService {
                 uriComponents.toUriString());
             yield auth.map(
                     a ->
-                        callDataRepoViaPetToken(
+                        callDataRepoPostAccessUrl(
                             bearerToken.getToken(), a, objectId, accessId, googleProject))
                 .orElse(null);
           }
@@ -402,16 +401,17 @@ public class DrsResolutionService {
     };
   }
 
-  private AccessURL callDataRepoViaPetToken(
+  private AccessURL callDataRepoPostAccessUrl(
       String accessToken,
       List<String> passportStrings,
       String objectId,
       String accessId,
       String xUserProject) {
-    // invoke TDR with the pet token to resolve the DRS URI
+    // translate the ga4gh client model to the TDR client model for the request
     DRSPassportRequestModel body = new DRSPassportRequestModel();
     body.setPassports(passportStrings);
 
+    // invoke TDR using the TDR client library to resolve the DRS URI
     DataRepositoryServiceApi drsApi = tdrApiFactory.getApi(accessToken);
     DRSAccessURL drsAccessURL;
     try {
@@ -430,7 +430,7 @@ public class DrsResolutionService {
           status, e.getMessage(), HttpHeaders.EMPTY, responseBody, StandardCharsets.UTF_8);
     }
 
-    // translate the ga4gh client model to the TDR client model for the response
+    // translate the TDR client model to the ga4gh client model for the response
     AccessURL accessURL = new AccessURL();
     accessURL.setUrl(drsAccessURL.getUrl());
     accessURL.setHeaders(drsAccessURL.getHeaders());
