@@ -417,28 +417,29 @@ public class DrsResolutionService {
     //    to use the Terra-specific TDR client library instead of the GA4GH DRS-spec client library,
     //    because the GA4GH client does not pass on the bearer token, and TDR needs that.
 
-    // invoke Sam to get a pet token
-    org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
-        samApiFactory.getGoogleApi(accessToken);
-    String petToken;
-
-    try {
-      log.info("Retrieving access token for user from sam");
-      petToken =
-          samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email", "profile"));
-      log.info(
-          "Access token retrieved for pet: token substring {} with length {}",
-          petToken.substring(0, 5),
-          petToken.length());
-    } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
-      // TODO: more precise and helpful error handling
-      throw new RuntimeException(e);
-    }
-    if (StringUtils.isBlank(petToken)) {
-      // TODO: more precise and helpful error handling
-      throw new RuntimeException("Pet token is blank!");
-    }
-    //    String petToken = accessToken;
+    //    // invoke Sam to get a pet token
+    //    org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi samGoogleApi =
+    //        samApiFactory.getGoogleApi(accessToken);
+    //    String petToken;
+    //
+    //    try {
+    //      log.info("Retrieving access token for user from sam");
+    //      petToken =
+    //          samGoogleApi.getArbitraryPetServiceAccountToken(List.of("openid", "email",
+    // "profile"));
+    //      log.info(
+    //          "Access token retrieved for pet: token substring {} with length {}",
+    //          petToken.substring(0, 5),
+    //          petToken.length());
+    //    } catch (org.broadinstitute.dsde.workbench.client.sam.ApiException e) {
+    //      // TODO: more precise and helpful error handling
+    //      throw new RuntimeException(e);
+    //    }
+    //    if (StringUtils.isBlank(petToken)) {
+    //      // TODO: more precise and helpful error handling
+    //      throw new RuntimeException("Pet token is blank!");
+    //    }
+    String petToken = accessToken;
 
     String petTokenSample = StringUtils.substring(Optional.ofNullable(petToken).orElse(""), 0, 25);
 
