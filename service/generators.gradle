@@ -28,7 +28,7 @@ swaggerSources {
 	}
 
 	ga4gh {
-		inputFile = file('src/main/resources/vendor/data-repository-service-1.2.0.yaml')
+		inputFile = file('src/main/resources/vendor/data-repository-service-1.3.0.yaml')
 		code(makeClientCodeClosure('io.github.ga4gh.drs'))
 	}
 
