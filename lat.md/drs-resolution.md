@@ -20,7 +20,7 @@ Terra UI / Cromwell / WDS
 
 **Key distinction from normal auth:**
 - Normal: `GET /objects/{id}` with `Authorization: Bearer <terra-token>`
-- Passport: `POST /objects/{id}` with body `{"passports": ["<passport_jwt>"]}`
+- Passport: `POST /objects/{id}` with body `{"passports": ["<passport_jwt>"]}` — for metadata fetches only; for signed access URL requests with requester pays, both the passport and `Authorization: Bearer <terra-token>` are sent (see the requester-pays section below)
 
 ### Where it's configured
 
