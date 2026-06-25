@@ -315,7 +315,8 @@ public class DrsResolutionService {
                 accessMethodType,
                 uriComponents,
                 googleProject,
-                bearerToken);
+                bearerToken,
+                retryMode);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
@@ -331,7 +332,8 @@ public class DrsResolutionService {
                   accessMethodType,
                   uriComponents,
                   googleProject,
-                  bearerToken);
+                  bearerToken,
+                  retryMode);
         } else {
           throw e;
         }
@@ -353,7 +355,8 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       UriComponents uriComponents,
       String googleProject,
-      BearerToken bearerToken) {
+      BearerToken bearerToken,
+      boolean requiresUserProjectOnRetry) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
 
@@ -375,9 +378,14 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
-          // If googleProject is set, also send bearer token alongside passports to enable
-          // signing the access url with the userProject set with the right access
-          if (googleProject != null && bearerToken != null && bearerToken.getToken() != null) {
+          // If googleProject is set and this is a TDR provider, also send bearer token alongside
+          // passports to enable signing the access url with the userProject set with the right
+          // access. Non-TDR providers (e.g. BDC) do not use x-user-project and must not be routed
+          // to TDR.
+          if (requiresUserProjectOnRetry
+              && googleProject != null
+              && bearerToken != null
+              && bearerToken.getToken() != null) {
             log.info(
                 "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
                 googleProject,

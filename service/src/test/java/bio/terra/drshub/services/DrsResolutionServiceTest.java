@@ -541,6 +541,7 @@ class DrsResolutionServiceTest {
 
   @Test
   void passportAuthWithGoogleProject_usesTdrClient() throws Exception {
+    var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
@@ -555,7 +556,7 @@ class DrsResolutionServiceTest {
 
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
-            testDrsProvider,
+            tdrProvider,
             uriComponents,
             accessId,
             TypeEnum.GS,
@@ -577,6 +578,7 @@ class DrsResolutionServiceTest {
 
   @Test
   void passportAuthWithGoogleProject_usesTdrFactory() throws Exception {
+    var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
@@ -589,7 +591,7 @@ class DrsResolutionServiceTest {
         .thenReturn(new DRSAccessURL().url("https://example.com"));
 
     drsResolutionService.fetchDrsObjectAccessUrl(
-        testDrsProvider,
+        tdrProvider,
         uriComponents,
         accessId,
         TypeEnum.GS,
@@ -635,6 +637,7 @@ class DrsResolutionServiceTest {
 
   @Test
   void passportAuthWithGoogleProject_noBearerAuthInList() throws Exception {
+    var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
@@ -646,7 +649,7 @@ class DrsResolutionServiceTest {
 
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
-            testDrsProvider,
+            tdrProvider,
             uriComponents,
             accessId,
             TypeEnum.GS,
@@ -668,6 +671,7 @@ class DrsResolutionServiceTest {
 
   @Test
   void fetchDrsObjectAccessUrl_passportAuthWithGoogleProject_usesUserToken() throws Exception {
+    var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-google-project";
     var ip = "test.ip";
     var passportAuth =
@@ -680,7 +684,7 @@ class DrsResolutionServiceTest {
 
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
-            testDrsProvider,
+            tdrProvider,
             uriComponents,
             accessId,
             TypeEnum.GS,
@@ -697,7 +701,6 @@ class DrsResolutionServiceTest {
         equalTo("https://signed-url.example.com/data"));
 
     verify(drsApi).setHeader("X-Forwarded-For", ip);
-    verify(drsApi).setHeader("x-user-project", googleProject);
     verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
     verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
@@ -705,5 +708,41 @@ class DrsResolutionServiceTest {
             any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
     verify(drsApi, never()).postAccessURL(any(), any(), any());
     verify(drsApi, never()).setBearerToken(any());
+  }
+
+  @Test
+  void passportAuth_nonTdrProvider_withGoogleProject_usesPassportPath() throws Exception {
+    // BDC (requiresUserProjectOnRetry=false) with a googleProject must use the standard passport
+    // path, not the TDR client. Before the fix, the presence of googleProject alone was enough to
+    // route any passport-auth provider to TDR.
+    var googleProject = "terra-dev-billing-project";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+    var bearerAuth =
+        new DrsHubAuthorization(
+            SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+
+    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
+        .thenReturn(new AccessURL().url("https://fence.example.com/signed-url"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            testDrsProvider, // requiresUserProjectOnRetry=false (BDC-like)
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(passportAuth, bearerAuth),
+            new AuditLogEvent.Builder(),
+            null,
+            googleProject,
+            TOKEN,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url returned via passport path",
+        response.getUrl(),
+        equalTo("https://fence.example.com/signed-url"));
+    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
+    verifyNoInteractions(tdrApiFactory);
   }
 }
