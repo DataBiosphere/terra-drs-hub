@@ -296,6 +296,8 @@ public class DrsResolutionService {
     var accessMethodConfig = drsProvider.getAccessMethodByType(accessMethodType);
     boolean retryMode =
         accessMethodConfig != null && accessMethodConfig.requiresUserProjectOnRetry();
+    boolean supportsUserProject =
+        accessMethodConfig != null && accessMethodConfig.supportsUserProject();
 
     // Set x-user-project immediately for providers that always want it
     if (!retryMode && googleProject != null) {
@@ -316,7 +318,7 @@ public class DrsResolutionService {
                 uriComponents,
                 googleProject,
                 bearerToken,
-                retryMode);
+                supportsUserProject);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
@@ -333,7 +335,7 @@ public class DrsResolutionService {
                   uriComponents,
                   googleProject,
                   bearerToken,
-                  retryMode);
+                  supportsUserProject);
         } else {
           throw e;
         }
@@ -356,7 +358,7 @@ public class DrsResolutionService {
       UriComponents uriComponents,
       String googleProject,
       BearerToken bearerToken,
-      boolean requiresUserProjectOnRetry) {
+      boolean supportsUserProject) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
 
@@ -382,7 +384,7 @@ public class DrsResolutionService {
           // passports to enable signing the access url with the userProject set with the right
           // access. Non-TDR providers (e.g. BDC) do not use x-user-project and must not be routed
           // to TDR.
-          if (requiresUserProjectOnRetry
+          if (supportsUserProject
               && googleProject != null
               && bearerToken != null
               && bearerToken.getToken() != null) {

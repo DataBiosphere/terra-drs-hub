@@ -536,7 +536,8 @@ class DrsResolutionServiceTest {
                         .setType(AccessMethodConfigTypeEnum.gs)
                         .setAuth(DrsAuthEnum.current_request)
                         .setFetchAccessUrl(true)
-                        .setRequiresUserProjectOnRetry(true))));
+                        .setRequiresUserProjectOnRetry(true)
+                        .setSupportsUserProject(true))));
   }
 
   @Test

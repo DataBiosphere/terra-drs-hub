@@ -27,4 +27,15 @@ public interface ProviderAccessMethodConfigInterface {
   default boolean requiresUserProjectOnRetry() {
     return false;
   }
+
+  /**
+   * When true, passport-auth access-URL requests that include a googleProject are routed through
+   * the TDR client (which forwards x-user-project to sign the URL against the caller's billing
+   * project). Only TDR supports this mechanism; non-TDR providers (e.g. BDC/Gen3) must use the
+   * standard passport POST path regardless of whether a googleProject is present.
+   */
+  @Default
+  default boolean supportsUserProject() {
+    return false;
+  }
 }
