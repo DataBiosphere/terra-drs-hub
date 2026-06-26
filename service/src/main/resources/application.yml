@@ -52,6 +52,7 @@ drshub:
           auth: current_request
           fetchAccessUrl: true
           requiresUserProjectOnRetry: true
+          supportsUserProject: true
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure

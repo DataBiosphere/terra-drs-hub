@@ -296,6 +296,8 @@ public class DrsResolutionService {
     var accessMethodConfig = drsProvider.getAccessMethodByType(accessMethodType);
     boolean retryMode =
         accessMethodConfig != null && accessMethodConfig.requiresUserProjectOnRetry();
+    boolean supportsUserProject =
+        accessMethodConfig != null && accessMethodConfig.supportsUserProject();
 
     // Set x-user-project immediately for providers that always want it
     if (!retryMode && googleProject != null) {
@@ -315,7 +317,8 @@ public class DrsResolutionService {
                 accessMethodType,
                 uriComponents,
                 googleProject,
-                bearerToken);
+                bearerToken,
+                supportsUserProject);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
@@ -331,7 +334,8 @@ public class DrsResolutionService {
                   accessMethodType,
                   uriComponents,
                   googleProject,
-                  bearerToken);
+                  bearerToken,
+                  supportsUserProject);
         } else {
           throw e;
         }
@@ -353,7 +357,8 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       UriComponents uriComponents,
       String googleProject,
-      BearerToken bearerToken) {
+      BearerToken bearerToken,
+      boolean supportsUserProject) {
     Optional<List<String>> auth =
         authorization.getAuthForAccessMethodType().apply(accessMethodType);
 
@@ -375,9 +380,14 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
-          // If googleProject is set, also send bearer token alongside passports to enable
-          // signing the access url with the userProject set with the right access
-          if (googleProject != null && bearerToken != null && bearerToken.getToken() != null) {
+          // If googleProject is set and this is a TDR provider, also send bearer token alongside
+          // passports to enable signing the access url with the userProject set with the right
+          // access. Non-TDR providers (e.g. BDC) do not use x-user-project and must not be routed
+          // to TDR.
+          if (supportsUserProject
+              && googleProject != null
+              && bearerToken != null
+              && bearerToken.getToken() != null) {
             log.info(
                 "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
                 googleProject,
