@@ -746,4 +746,101 @@ class DrsResolutionServiceTest {
     verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId);
     verifyNoInteractions(tdrApiFactory);
   }
+
+  private DrsProvider createFullTdrProvider() {
+    // Mirrors application.yml's terraDataRepo config: gs supports user-project routing, https
+    // (shared by Azure and TDR's GCP-passport signed-URL method) does not by type alone.
+    return DrsProvider.create()
+        .setMetadataAuthType(DrsAuthEnum.current_request)
+        .setName("tdr")
+        .setHostRegex(".*")
+        .setAccessMethodConfigs(
+            new ArrayList<>(
+                List.of(
+                    ProviderAccessMethodConfig.create()
+                        .setType(AccessMethodConfigTypeEnum.gs)
+                        .setAuth(DrsAuthEnum.current_request)
+                        .setFetchAccessUrl(true)
+                        .setRequiresUserProjectOnRetry(true)
+                        .setSupportsUserProject(true),
+                    ProviderAccessMethodConfig.create()
+                        .setType(AccessMethodConfigTypeEnum.https)
+                        .setAuth(DrsAuthEnum.current_request)
+                        .setFetchAccessUrl(true))));
+  }
+
+  @Test
+  void passportAuth_tdrGcpPassportHttps_usesTdrClient() throws Exception {
+    // CTM-613 regression: TDR returns its GCP passport signed-URL access method typed `https`
+    // (same type as Azure), distinguishable only by the `gcp-` access-id prefix. Before the fix,
+    // this fell through to TDR's https config (supportsUserProject=false) and used the no-bearer
+    // passport path, which TDR 401s on, ultimately surfacing as a 500.
+    var tdrProvider = createFullTdrProvider();
+    var gcpAccessId = "gcp-passport-us-central1*snapshot";
+    var googleProject = "test-project";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+
+    when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
+    when(tdrApi.postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(gcpAccessId), eq(googleProject)))
+        .thenReturn(new DRSAccessURL().url("https://signed-url.example.com/data"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            tdrProvider,
+            uriComponents,
+            gcpAccessId,
+            TypeEnum.HTTPS,
+            List.of(passportAuth),
+            new AuditLogEvent.Builder(),
+            null,
+            googleProject,
+            TOKEN,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url returned via TDR client",
+        response.getUrl(),
+        equalTo("https://signed-url.example.com/data"));
+    verify(tdrApiFactory).getApi(TOKEN_VALUE);
+    verify(tdrApi)
+        .postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(gcpAccessId), eq(googleProject));
+    verify(drsApi, never()).postAccessURL(any(), any(), any());
+  }
+
+  @Test
+  void passportAuth_tdrAzureHttps_usesPassportPath() throws Exception {
+    // Azure's TDR access method is also typed `https` but is not gcp-prefixed; it must keep using
+    // the standard passport path (no bearer/x-user-project), matching pre-fix Azure behavior.
+    var tdrProvider = createFullTdrProvider();
+    var azureAccessId = "az-passport-eastus*snapshot";
+    var googleProject = "test-project";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+
+    when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, azureAccessId))
+        .thenReturn(new AccessURL().url("https://azure.example.com/signed-url"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            tdrProvider,
+            uriComponents,
+            azureAccessId,
+            TypeEnum.HTTPS,
+            List.of(passportAuth),
+            new AuditLogEvent.Builder(),
+            null,
+            googleProject,
+            TOKEN,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url returned via passport path",
+        response.getUrl(),
+        equalTo("https://azure.example.com/signed-url"));
+    verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, azureAccessId);
+    verifyNoInteractions(tdrApiFactory);
+  }
 }

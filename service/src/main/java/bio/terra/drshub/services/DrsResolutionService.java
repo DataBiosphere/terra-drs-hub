@@ -293,7 +293,8 @@ public class DrsResolutionService {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
-    var accessMethodConfig = drsProvider.getAccessMethodByType(accessMethodType);
+    var accessMethodConfig =
+        drsProvider.getAccessMethodByTypeAndAccessId(accessMethodType, accessId);
     boolean retryMode =
         accessMethodConfig != null && accessMethodConfig.requiresUserProjectOnRetry();
     boolean supportsUserProject =
@@ -342,7 +343,7 @@ public class DrsResolutionService {
       }
       if (accessUrl != null) {
         auditLogEventBuilder.authType(
-            drsProvider.getAccessMethodByType(accessMethodType).getAuth());
+            drsProvider.getAccessMethodByTypeAndAccessId(accessMethodType, accessId).getAuth());
         return accessUrl;
       }
     }
