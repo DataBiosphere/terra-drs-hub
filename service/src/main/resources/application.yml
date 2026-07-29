@@ -53,10 +53,24 @@ drshub:
           fetchAccessUrl: true
           requiresUserProjectOnRetry: true
           supportsUserProject: true
+          cloud: gcp
         - type: https
           auth: current_request
           fetchAccessUrl: true # Used for Azure
           requiresUserProjectOnRetry: false  # Azure doesn't have requester-pays
+          cloud: azure
+        # GCS signed-URL / passport access method: TDR types it `https` (a signed URL is https for
+        # every cloud). It needs its own gcp-cloud config so `type` + `cloud` selection matches here
+        # -- not the Azure `https` config above -- preserving requester-pays user-project support
+        # (the fix for the HTTP 500). Listed after Azure so the legacy type-only
+        # getAccessMethodByType(https) fallback still resolves to Azure (unchanged) when `cloud` is
+        # absent, e.g. before TDR emits it.
+        - type: https
+          auth: current_request
+          fetchAccessUrl: true
+          requiresUserProjectOnRetry: true
+          supportsUserProject: true
+          cloud: gcp
     sage:
       name: Sage Bionetworks
       hostRegex: 'repo-dev\.dev\.sagebase\.org|repo-prod\.prod\.sagebase\.org'

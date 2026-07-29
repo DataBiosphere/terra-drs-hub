@@ -11,6 +11,15 @@ import org.immutables.value.Value.Default;
 public interface ProviderAccessMethodConfigInterface {
   AccessMethodConfigTypeEnum getType();
 
+  /**
+   * DRS 1.5 `cloud` (CSP) this config applies to (`gcp` / `azure` / `aws`). When set, DrsHub matches
+   * this config to an access method by `type` AND `cloud`, so a GCS signed-URL method (typed
+   * `https`, like Azure) is not mis-matched to the Azure `https` config and keeps its requester-pays
+   * user-project support. Optional for backward compatibility: configs without `cloud` are matched
+   * by `type` alone (legacy behavior).
+   */
+  Optional<String> getCloud();
+
   DrsAuthEnum getAuth();
 
   boolean isFetchAccessUrl();
