@@ -91,6 +91,24 @@ public class TestAccessMethodUtils {
   }
 
   @Test
+  void testGetAccessMethodForCloud_prefersCloudFieldOverTypeAndPrefixHeuristics() {
+    // TDR types both its GCS passport method and its Azure method `https` -- a signed URL is
+    // `https` for every cloud, so `type`/access-id-prefix heuristics alone can't tell them apart.
+    // The DRS 1.5 `cloud` field can, and must be preferred when present.
+    var gcpPassportMethod =
+        new AccessMethod().accessId("gcp-passport-1").type(TypeEnum.HTTPS).cloud("gcp");
+    var azureMethod = new AccessMethod().accessId("az-1").type(TypeEnum.HTTPS).cloud("azure");
+    var methods = List.of(gcpPassportMethod, azureMethod);
+
+    assertThat(
+        AccessMethodUtils.getAccessMethodForCloud(methods, CloudPlatformEnum.GS).get(),
+        equalTo(gcpPassportMethod));
+    assertThat(
+        AccessMethodUtils.getAccessMethodForCloud(methods, CloudPlatformEnum.AZURE).get(),
+        equalTo(azureMethod));
+  }
+
+  @Test
   void testGetAccessMethods() {
     assertThat(
         AccessMethodUtils.getAccessMethods(drsObject, drsProvider),
