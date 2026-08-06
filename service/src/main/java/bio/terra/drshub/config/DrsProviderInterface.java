@@ -64,8 +64,8 @@ public interface DrsProviderInterface {
    */
   default ProviderAccessMethodConfig getAccessMethodByTypeAndAccessId(
       AccessMethod.TypeEnum accessMethodType, String accessId) {
-    boolean isGcpPassport = accessId != null && accessId.startsWith("gcp-");
-    if (accessMethodType == AccessMethod.TypeEnum.HTTPS && isGcpPassport) {
+    boolean isGcp = accessId != null && accessId.startsWith("gcp-");
+    if (accessMethodType == AccessMethod.TypeEnum.HTTPS && isGcp) {
       var gcpConfig = getAccessMethodByType(AccessMethod.TypeEnum.GS);
       if (gcpConfig != null) {
         return gcpConfig;
