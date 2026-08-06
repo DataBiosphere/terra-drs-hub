@@ -57,14 +57,13 @@ public interface DrsProviderInterface {
   /**
    * Like {@link #getAccessMethodByType}, but corrects for TDR returning its GCP passport signed-URL
    * access method typed {@code https} (the same type it uses for Azure) rather than {@code gs}.
-   * Only TDR prefixes Azure access ids with {@code az-}; any other {@code https} access id is
-   * treated as GCP and resolved against the provider's {@code gs} config instead, regardless of the
-   * type DRS reported. See CTM-613.
+   * Only TDR prefixes GCP access ids with {@code gcp-}, so an access id with that prefix is
+   * resolved against the provider's {@code gs} config instead, regardless of the type DRS reported.
+   * See CTM-613.
    */
   default ProviderAccessMethodConfig getAccessMethodByTypeAndAccessId(
       AccessMethod.TypeEnum accessMethodType, String accessId) {
-    boolean isAzure = accessId != null && accessId.startsWith("az-");
-    if (accessMethodType == AccessMethod.TypeEnum.HTTPS && !isAzure) {
+    if (accessId != null && accessId.startsWith("gcp-")) {
       var gcpConfig = getAccessMethodByType(AccessMethod.TypeEnum.GS);
       if (gcpConfig != null) {
         return gcpConfig;
