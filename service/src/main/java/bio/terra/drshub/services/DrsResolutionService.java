@@ -209,6 +209,10 @@ public class DrsResolutionService {
 
     if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
       var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
+      // DRS 1.5 `cloud` of the selected access method (null for providers not yet emitting it),
+      // used to select the per-cloud config so a GCS signed-URL method typed `https` is not
+      // matched to the Azure `https` config.
+      var accessMethodCloud = accessMethod.map(AccessMethod::getCloud).orElse(null);
       try {
         log.info("Requesting URL for {}", uriComponents.toUriString());
         var accessUrl =
@@ -217,6 +221,7 @@ public class DrsResolutionService {
                 uriComponents,
                 accessId,
                 accessMethodType,
+                accessMethodCloud,
                 authorizations,
                 auditEventBuilder,
                 ip,
@@ -284,6 +289,7 @@ public class DrsResolutionService {
       UriComponents uriComponents,
       String accessId,
       TypeEnum accessMethodType,
+      String accessMethodCloud,
       List<DrsHubAuthorization> drsHubAuthorizations,
       AuditLogEvent.Builder auditLogEventBuilder,
       String ip,
@@ -293,7 +299,10 @@ public class DrsResolutionService {
 
     var drsApi = drsApiFactory.getApiFromUriComponents(uriComponents, drsProvider);
     var objectId = getObjectId(uriComponents);
-    var accessMethodConfig = drsProvider.getAccessMethodByType(accessMethodType);
+    // Select the config by `type` + DRS 1.5 `cloud` so a GCS signed-URL method (typed `https`,
+    // like Azure) is matched to the GCS config -- not the Azure `https` config -- keeping its
+    // requester-pays user-project support. Falls back to type-only when `cloud` is absent.
+    var accessMethodConfig = drsProvider.getAccessMethodConfig(accessMethodType, accessMethodCloud);
     boolean retryMode =
         accessMethodConfig != null && accessMethodConfig.requiresUserProjectOnRetry();
     boolean supportsUserProject =
@@ -342,7 +351,7 @@ public class DrsResolutionService {
       }
       if (accessUrl != null) {
         auditLogEventBuilder.authType(
-            drsProvider.getAccessMethodByType(accessMethodType).getAuth());
+            drsProvider.getAccessMethodConfig(accessMethodType, accessMethodCloud).getAuth());
         return accessUrl;
       }
     }

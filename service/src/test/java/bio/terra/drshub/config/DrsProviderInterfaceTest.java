@@ -1,14 +1,20 @@
 package bio.terra.drshub.config;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import bio.terra.drshub.BaseTest;
+import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
+import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.Fields;
 import bio.terra.drshub.services.DrsProviderService;
 import io.github.ga4gh.drs.model.AccessMethod;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,5 +63,57 @@ class DrsProviderInterfaceTest extends BaseTest {
   void testShouldFailOnAccessUrlFail() {
     assertFalse(DrsProviderInterface.shouldFailOnAccessUrlFail(AccessMethod.TypeEnum.GS));
     assertTrue(DrsProviderInterface.shouldFailOnAccessUrlFail(AccessMethod.TypeEnum.S3));
+  }
+
+  @Test
+  void testGetAccessMethodConfig_selectsByTypeAndCloud() {
+    // TDR types both its GCS passport method and its Azure method `https` -- only the DRS 1.5
+    // `cloud` field disambiguates them, so each needs its own cloud-annotated config.
+    var azureHttpsConfig = createTestAccessMethodConfig(AccessMethodConfigTypeEnum.https, "azure");
+    var gcpHttpsConfig = createTestAccessMethodConfig(AccessMethodConfigTypeEnum.https, "gcp");
+    var drsProvider =
+        DrsProvider.create()
+            .setName("tdr")
+            .setHostRegex(".*")
+            .setMetadataAuthType(DrsAuthEnum.current_request)
+            .setAccessMethodConfigs(new ArrayList<>(List.of(azureHttpsConfig, gcpHttpsConfig)));
+
+    assertThat(
+        drsProvider.getAccessMethodConfig(AccessMethod.TypeEnum.HTTPS, "gcp"),
+        equalTo(gcpHttpsConfig));
+    assertThat(
+        drsProvider.getAccessMethodConfig(AccessMethod.TypeEnum.HTTPS, "azure"),
+        equalTo(azureHttpsConfig));
+  }
+
+  @Test
+  void testGetAccessMethodConfig_fallsBackToTypeOnlyWhenCloudAbsentOrUnmatched() {
+    // Only one `https` config, and it carries no `cloud` -- i.e. a provider not yet emitting DRS
+    // 1.5. Selection must fall back to the legacy type-only match, unchanged.
+    var httpsConfig = createTestAccessMethodConfig(AccessMethodConfigTypeEnum.https, null);
+    var drsProvider =
+        DrsProvider.create()
+            .setName("bdc")
+            .setHostRegex(".*")
+            .setMetadataAuthType(DrsAuthEnum.current_request)
+            .setAccessMethodConfigs(new ArrayList<>(List.of(httpsConfig)));
+
+    assertThat(
+        drsProvider.getAccessMethodConfig(AccessMethod.TypeEnum.HTTPS, null), equalTo(httpsConfig));
+    // An access method `cloud` that matches no config also falls back to type-only.
+    assertThat(
+        drsProvider.getAccessMethodConfig(AccessMethod.TypeEnum.HTTPS, "aws"),
+        equalTo(httpsConfig));
+  }
+
+  private static ProviderAccessMethodConfig createTestAccessMethodConfig(
+      AccessMethodConfigTypeEnum type, String cloud) {
+    var config =
+        ProviderAccessMethodConfig.create()
+            .setType(type)
+            .setAuth(DrsAuthEnum.current_request)
+            .setFetchAccessUrl(true)
+            .setSupportsUserProject(true);
+    return cloud == null ? config : config.setCloud(cloud);
   }
 }

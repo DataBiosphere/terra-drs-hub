@@ -54,6 +54,29 @@ public interface DrsProviderInterface {
         .orElse(null);
   }
 
+  /**
+   * Select the access-method config for a resolved access method by its DRS `type` AND DRS 1.5
+   * `cloud`. Matching on `type` alone is insufficient: a signed URL is `https` for every cloud, so
+   * a GCS passport access method (typed `https`) would otherwise match the Azure `https` config and
+   * lose requester-pays user-project support. When the access method carries no `cloud` (providers
+   * not yet emitting DRS 1.5), or no cloud-annotated config matches, fall back to the legacy
+   * type-only match so behavior is unchanged.
+   */
+  default ProviderAccessMethodConfig getAccessMethodConfig(
+      AccessMethod.TypeEnum accessMethodType, @Nullable String cloud) {
+    if (cloud != null) {
+      Optional<ProviderAccessMethodConfig> byTypeAndCloud =
+          getAccessMethodConfigs().stream()
+              .filter(c -> c.getType().getReturnedEquivalent() == accessMethodType)
+              .filter(c -> c.getCloud().map(cloud::equalsIgnoreCase).orElse(false))
+              .findFirst();
+      if (byTypeAndCloud.isPresent()) {
+        return byTypeAndCloud.get();
+      }
+    }
+    return getAccessMethodByType(accessMethodType);
+  }
+
   default List<AccessMethodConfigTypeEnum> getAccessMethodConfigTypes() {
     return getAccessMethodConfigs().stream().map(ProviderAccessMethodConfig::getType).toList();
   }
