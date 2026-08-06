@@ -207,12 +207,13 @@ public class DrsResolutionService {
     getDrsFileName(drsResponse).ifPresent(drsMetadataBuilder::fileName);
     drsMetadataBuilder.localizationPath(getLocalizationPath(drsProvider, drsResponse));
 
-    if (drsProvider.shouldFetchAccessUrl(accessMethodType, requestedFields, forceAccessUrl)) {
+    // DRS 1.5 `cloud` of the selected access method (null for providers not yet emitting it), used
+    // to select the per-cloud config so a GCS signed-URL method typed `https` is not matched to
+    // the Azure `https` config.
+    var accessMethodCloud = accessMethod.map(AccessMethod::getCloud).orElse(null);
+    if (drsProvider.shouldFetchAccessUrl(
+        accessMethodType, accessMethodCloud, requestedFields, forceAccessUrl)) {
       var accessId = accessMethod.map(AccessMethod::getAccessId).orElseThrow();
-      // DRS 1.5 `cloud` of the selected access method (null for providers not yet emitting it),
-      // used to select the per-cloud config so a GCS signed-URL method typed `https` is not
-      // matched to the Azure `https` config.
-      var accessMethodCloud = accessMethod.map(AccessMethod::getCloud).orElse(null);
       try {
         log.info("Requesting URL for {}", uriComponents.toUriString());
         var accessUrl =
@@ -324,6 +325,7 @@ public class DrsResolutionService {
                 accessId,
                 authorization,
                 accessMethodType,
+                accessMethodCloud,
                 uriComponents,
                 googleProject,
                 bearerToken,
@@ -341,6 +343,7 @@ public class DrsResolutionService {
                   accessId,
                   authorization,
                   accessMethodType,
+                  accessMethodCloud,
                   uriComponents,
                   googleProject,
                   bearerToken,
@@ -350,8 +353,7 @@ public class DrsResolutionService {
         }
       }
       if (accessUrl != null) {
-        auditLogEventBuilder.authType(
-            drsProvider.getAccessMethodConfig(accessMethodType, accessMethodCloud).getAuth());
+        auditLogEventBuilder.authType(accessMethodConfig.getAuth());
         return accessUrl;
       }
     }
@@ -364,12 +366,13 @@ public class DrsResolutionService {
       String accessId,
       DrsHubAuthorization authorization,
       TypeEnum accessMethodType,
+      String accessMethodCloud,
       UriComponents uriComponents,
       String googleProject,
       BearerToken bearerToken,
       boolean supportsUserProject) {
     Optional<List<String>> auth =
-        authorization.getAuthForAccessMethodType().apply(accessMethodType);
+        authorization.getAuthForAccessMethodType().apply(accessMethodType, accessMethodCloud);
 
     return switch (authorization.drsAuthType()) {
       case NONE -> drsApi.getAccessURL(objectId, accessId);

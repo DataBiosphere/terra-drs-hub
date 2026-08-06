@@ -12,6 +12,8 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.drshub.BaseTest;
 import bio.terra.drshub.DrsHubException;
 import bio.terra.drshub.config.DrsProvider;
+import bio.terra.drshub.config.ProviderAccessMethodConfig;
+import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.DrsApi;
 import bio.terra.drshub.models.DrsAuthEnum;
 import bio.terra.drshub.models.DrsHubAuthorization;
@@ -117,7 +119,7 @@ class AuthServiceTest extends BaseTest {
 
     Set<Optional<List<String>>> secrets =
         authorizations.stream()
-            .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS))
+            .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS, null))
             .collect(Collectors.toSet());
 
     Set<Optional<List<String>>> expected =
@@ -143,7 +145,7 @@ class AuthServiceTest extends BaseTest {
 
     secrets =
         authorizations.stream()
-            .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS))
+            .map(a -> a.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.GS, null))
             .collect(Collectors.toSet());
 
     expected =
@@ -153,6 +155,61 @@ class AuthServiceTest extends BaseTest {
 
     // Make sure ECM wasn't called a second time due to the cache
     verify(oidcApi).getProviderPassport(any());
+  }
+
+  @Test
+  void testMappingDrsAuthorizations_bearerAuthUsesCloudToDisambiguateHttpsConfigs() {
+    // TDR types both its GCS passport method and its Azure method `https` -- only the DRS 1.5
+    // `cloud` field tells them apart. The BEARERAUTH resolution path must use it (via
+    // getAccessMethodConfig), not fall through to whichever `https` config happens to be listed
+    // first, or it reintroduces the CTM-613 bug class for this auth path.
+    var azureConfig =
+        ProviderAccessMethodConfig.create()
+            .setType(AccessMethodConfigTypeEnum.https)
+            .setAuth(DrsAuthEnum.current_request)
+            .setFetchAccessUrl(true)
+            .setCloud("azure");
+    var gcpConfig =
+        ProviderAccessMethodConfig.create()
+            .setType(AccessMethodConfigTypeEnum.https)
+            .setAuth(DrsAuthEnum.provider_access_token)
+            .setFetchAccessUrl(true)
+            .setCloud("gcp");
+    var drsProvider =
+        DrsProvider.create()
+            .setName("tdr")
+            .setHostRegex(".*")
+            .setMetadataAuthType(DrsAuthEnum.current_request)
+            .setEcmProvider(Optional.of(ECMProviderEnum.fence))
+            .setAccessMethodConfigs(new ArrayList<>(List.of(azureConfig, gcpConfig)));
+
+    var uriComponents = UriComponentsBuilder.fromUriString("drs://test-host/object-1").build();
+    var bearerToken = new BearerToken("bearer-token-value");
+    var providerAccessToken = "provider-access-token-value";
+
+    when(drsApiFactory.getApiFromUriComponents(any(), any())).thenReturn(drsApi);
+    when(drsApi.optionsObject(any()))
+        .thenReturn(
+            new Authorizations()
+                .supportedTypes(List.of(Authorizations.SupportedTypesEnum.BEARERAUTH)));
+    when(externalCredsApiFactory.getOauthApi(any())).thenReturn(oauthApi);
+    when(oauthApi.getProviderAccessToken(any())).thenReturn(providerAccessToken);
+
+    var authorizations = authService.buildAuthorizations(drsProvider, uriComponents, bearerToken);
+    var bearerAuth =
+        authorizations.stream()
+            .filter(a -> a.drsAuthType() == Authorizations.SupportedTypesEnum.BEARERAUTH)
+            .findFirst()
+            .orElseThrow();
+
+    // Azure config says current_request -> resolves to the caller's bearer token.
+    assertEquals(
+        Optional.of(List.of(bearerToken.getToken())),
+        bearerAuth.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.HTTPS, "azure"));
+    // GCP config says provider_access_token -> resolves to the fence-provider token from ECM.
+    assertEquals(
+        Optional.of(List.of(providerAccessToken)),
+        bearerAuth.getAuthForAccessMethodType().apply(AccessMethod.TypeEnum.HTTPS, "gcp"));
   }
 
   @Test

@@ -84,16 +84,13 @@ public interface DrsProviderInterface {
   /** Should Drshub call the DRS provider's `access` endpoint to get a signed URL. */
   default boolean shouldFetchAccessUrl(
       AccessMethod.TypeEnum accessMethodType,
+      @Nullable String cloud,
       List<String> requestedFields,
       boolean forceAccessUrl) {
     var fieldsOverlap = Fields.overlap(requestedFields, Fields.ACCESS_URL_FIELDS);
-    var accessMethodConfigs = getAccessMethodConfigs();
+    var accessMethodConfig = getAccessMethodConfig(accessMethodType, cloud);
     var accessMethodTypeMatches =
-        accessMethodConfigs.stream()
-            .anyMatch(
-                m ->
-                    m.getType().getReturnedEquivalent() == accessMethodType
-                        && m.isFetchAccessUrl());
+        accessMethodConfig != null && accessMethodConfig.isFetchAccessUrl();
 
     return fieldsOverlap && (accessMethodTypeMatches || forceAccessUrl);
   }

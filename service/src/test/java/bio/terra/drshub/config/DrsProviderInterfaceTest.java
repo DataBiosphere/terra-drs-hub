@@ -44,10 +44,10 @@ class DrsProviderInterfaceTest extends BaseTest {
 
     assertFalse(
         passportDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.GS, Fields.ACCESS_URL_FIELDS, false));
+            AccessMethod.TypeEnum.GS, null, Fields.ACCESS_URL_FIELDS, false));
     assertFalse(
         passportDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.S3, Fields.ACCESS_URL_FIELDS, false));
+            AccessMethod.TypeEnum.S3, null, Fields.ACCESS_URL_FIELDS, false));
 
     var fenceProviderHost = getProviderHosts("fenceTokenOnly");
     var fenceTestUri = String.format("drs://%s:12345", fenceProviderHost.compactUriPrefix());
@@ -56,7 +56,30 @@ class DrsProviderInterfaceTest extends BaseTest {
 
     assertTrue(
         fenceDrsProvider.shouldFetchAccessUrl(
-            AccessMethod.TypeEnum.GS, Fields.ACCESS_URL_FIELDS, false));
+            AccessMethod.TypeEnum.GS, null, Fields.ACCESS_URL_FIELDS, false));
+  }
+
+  @Test
+  void testShouldFetchAccessUrl_disambiguatesByCloud() {
+    // Two `https`-typed configs (GCS passport + Azure) with different `fetchAccessUrl` settings.
+    // Only `cloud` can tell them apart -- type-only matching would pick whichever is listed first
+    // regardless of which cloud the resolved access method actually belongs to.
+    var azureConfig = createTestAccessMethodConfig(AccessMethodConfigTypeEnum.https, "azure");
+    azureConfig.setFetchAccessUrl(false);
+    var gcpConfig = createTestAccessMethodConfig(AccessMethodConfigTypeEnum.https, "gcp");
+    var drsProvider =
+        DrsProvider.create()
+            .setName("tdr")
+            .setHostRegex(".*")
+            .setMetadataAuthType(DrsAuthEnum.current_request)
+            .setAccessMethodConfigs(new ArrayList<>(List.of(azureConfig, gcpConfig)));
+
+    assertFalse(
+        drsProvider.shouldFetchAccessUrl(
+            AccessMethod.TypeEnum.HTTPS, "azure", Fields.ACCESS_URL_FIELDS, false));
+    assertTrue(
+        drsProvider.shouldFetchAccessUrl(
+            AccessMethod.TypeEnum.HTTPS, "gcp", Fields.ACCESS_URL_FIELDS, false));
   }
 
   @Test

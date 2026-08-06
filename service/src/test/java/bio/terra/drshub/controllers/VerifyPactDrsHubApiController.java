@@ -106,7 +106,8 @@ class VerifyPactsDrsHubApiController {
     context.setTarget(new MockMvcTestTarget(mockMvc));
   }
 
-  Optional<List<String>> getAuthForAccessMethodType(AccessMethod.TypeEnum accessMethodType) {
+  Optional<List<String>> getAuthForAccessMethodType(
+      AccessMethod.TypeEnum accessMethodType, String cloud) {
     return Optional.of(List.of("Bearer: test 123"));
   }
 

@@ -78,7 +78,7 @@ class DrsResolutionServiceTest {
       new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, null);
   private static final DrsHubAuthorization BEARERAUTH =
       new DrsHubAuthorization(
-          SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+          SupportedTypesEnum.BEARERAUTH, (var e, var c) -> Optional.of(List.of(TOKEN_VALUE)));
   private static final DrsObject DRS_OBJECT = new DrsObject().id("drs.id");
 
   private static final String accessId = "foo";
@@ -553,10 +553,11 @@ class DrsResolutionServiceTest {
     var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
-        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+        new DrsHubAuthorization(
+            SupportedTypesEnum.PASSPORTAUTH, (var e, var c) -> Optional.of(PASSPORTS));
     var bearerAuth =
         new DrsHubAuthorization(
-            SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+            SupportedTypesEnum.BEARERAUTH, (var e, var c) -> Optional.of(List.of(TOKEN_VALUE)));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(
@@ -591,10 +592,11 @@ class DrsResolutionServiceTest {
     var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
-        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+        new DrsHubAuthorization(
+            SupportedTypesEnum.PASSPORTAUTH, (var e, var c) -> Optional.of(PASSPORTS));
     var bearerAuth =
         new DrsHubAuthorization(
-            SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+            SupportedTypesEnum.BEARERAUTH, (var e, var c) -> Optional.of(List.of(TOKEN_VALUE)));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), any(), any(), any()))
@@ -619,10 +621,11 @@ class DrsResolutionServiceTest {
   @Test
   void passportAuthWithGoogleProject_noGoogleProject() throws Exception {
     var passportAuth =
-        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+        new DrsHubAuthorization(
+            SupportedTypesEnum.PASSPORTAUTH, (var e, var c) -> Optional.of(PASSPORTS));
     var bearerAuth =
         new DrsHubAuthorization(
-            SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+            SupportedTypesEnum.BEARERAUTH, (var e, var c) -> Optional.of(List.of(TOKEN_VALUE)));
 
     when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
         .thenReturn(new AccessURL().url("https://example.com"));
@@ -652,7 +655,8 @@ class DrsResolutionServiceTest {
     var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
-        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+        new DrsHubAuthorization(
+            SupportedTypesEnum.PASSPORTAUTH, (var e, var c) -> Optional.of(PASSPORTS));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(
@@ -688,7 +692,8 @@ class DrsResolutionServiceTest {
     var googleProject = "test-google-project";
     var ip = "test.ip";
     var passportAuth =
-        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+        new DrsHubAuthorization(
+            SupportedTypesEnum.PASSPORTAUTH, (var e, var c) -> Optional.of(PASSPORTS));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
     when(tdrApi.postAccessURL(
@@ -731,10 +736,11 @@ class DrsResolutionServiceTest {
     // route any passport-auth provider to TDR.
     var googleProject = "terra-dev-billing-project";
     var passportAuth =
-        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+        new DrsHubAuthorization(
+            SupportedTypesEnum.PASSPORTAUTH, (var e, var c) -> Optional.of(PASSPORTS));
     var bearerAuth =
         new DrsHubAuthorization(
-            SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
+            SupportedTypesEnum.BEARERAUTH, (var e, var c) -> Optional.of(List.of(TOKEN_VALUE)));
 
     when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, accessId))
         .thenReturn(new AccessURL().url("https://fence.example.com/signed-url"));

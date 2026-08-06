@@ -143,15 +143,16 @@ public class AuthService {
       BearerToken bearerToken) {
     return switch (authType) {
       case NONE ->
-          new DrsHubAuthorization(authType, (AccessMethod.TypeEnum accessType) -> Optional.empty());
+          new DrsHubAuthorization(
+              authType, (AccessMethod.TypeEnum accessType, String cloud) -> Optional.empty());
       case BASICAUTH ->
           throw new DrsHubException(
               "DRSHub does not currently support basic username/password authentication");
       case BEARERAUTH ->
           new DrsHubAuthorization(
               authType,
-              (AccessMethod.TypeEnum accessType) ->
-                  switch (drsProvider.getAccessMethodByType(accessType).getAuth()) {
+              (AccessMethod.TypeEnum accessType, String cloud) ->
+                  switch (drsProvider.getAccessMethodConfig(accessType, cloud).getAuth()) {
                     case provider_access_token ->
                         getProviderAccessToken(components.toUriString(), drsProvider, bearerToken);
                     case current_request ->
@@ -161,7 +162,7 @@ public class AuthService {
                     // Check to see if the fallback auth is current_request or provider_access_token
                     case passport ->
                         drsProvider
-                            .getAccessMethodByType(accessType)
+                            .getAccessMethodConfig(accessType, cloud)
                             .getFallbackAuth()
                             .flatMap(
                                 auth ->
@@ -178,7 +179,8 @@ public class AuthService {
                   });
       case PASSPORTAUTH ->
           new DrsHubAuthorization(
-              authType, (AccessMethod.TypeEnum accessType) -> fetchPassports(bearerToken));
+              authType,
+              (AccessMethod.TypeEnum accessType, String cloud) -> fetchPassports(bearerToken));
     };
   }
 
@@ -216,16 +218,16 @@ public class AuthService {
       case current_request ->
           new DrsHubAuthorization(
               Authorizations.SupportedTypesEnum.BEARERAUTH,
-              accessType -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
+              (accessType, cloud) -> Optional.ofNullable(bearerToken.getToken()).map(List::of));
       case provider_access_token ->
           new DrsHubAuthorization(
               Authorizations.SupportedTypesEnum.BEARERAUTH,
-              accessType ->
+              (accessType, cloud) ->
                   getProviderAccessToken(components.toUriString(), drsProvider, bearerToken));
       case passport ->
           new DrsHubAuthorization(
               Authorizations.SupportedTypesEnum.PASSPORTAUTH,
-              accessType -> fetchPassports(bearerToken));
+              (accessType, cloud) -> fetchPassports(bearerToken));
     };
   }
 
