@@ -342,8 +342,9 @@ public class DrsResolutionService {
         }
       }
       if (accessUrl != null) {
-        auditLogEventBuilder.authType(
-            drsProvider.getAccessMethodByTypeAndAccessId(accessMethodType, accessId).getAuth());
+        if (accessMethodConfig != null) {
+          auditLogEventBuilder.authType(accessMethodConfig.getAuth());
+        }
         return accessUrl;
       }
     }

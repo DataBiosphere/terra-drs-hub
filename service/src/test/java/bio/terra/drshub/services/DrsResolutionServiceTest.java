@@ -18,6 +18,7 @@ import bio.terra.datarepo.model.DRSPassportRequestModel;
 import bio.terra.drshub.config.DrsProvider;
 import bio.terra.drshub.config.ProviderAccessMethodConfig;
 import bio.terra.drshub.logging.AuditLogEvent;
+import bio.terra.drshub.logging.AuditLogEventType;
 import bio.terra.drshub.logging.AuditLogger;
 import bio.terra.drshub.models.AccessMethodConfigTypeEnum;
 import bio.terra.drshub.models.DrsApi;
@@ -750,6 +751,8 @@ class DrsResolutionServiceTest {
   private DrsProvider createFullTdrProvider() {
     // Mirrors application.yml's terraDataRepo config: gs supports user-project routing, https
     // (shared by Azure and TDR's GCP-passport signed-URL method) does not by type alone.
+    // Unlike prod config, gs and https are given distinct auth values here (rather than both
+    // current_request) so tests can tell which config's auth type was actually selected.
     return DrsProvider.create()
         .setMetadataAuthType(DrsAuthEnum.current_request)
         .setName("tdr")
@@ -765,7 +768,7 @@ class DrsResolutionServiceTest {
                         .setSupportsUserProject(true),
                     ProviderAccessMethodConfig.create()
                         .setType(AccessMethodConfigTypeEnum.https)
-                        .setAuth(DrsAuthEnum.current_request)
+                        .setAuth(DrsAuthEnum.provider_access_token)
                         .setFetchAccessUrl(true))));
   }
 
@@ -786,6 +789,7 @@ class DrsResolutionServiceTest {
             any(DRSPassportRequestModel.class), eq(PATH), eq(gcpAccessId), eq(googleProject)))
         .thenReturn(new DRSAccessURL().url("https://signed-url.example.com/data"));
 
+    var auditLogEventBuilder = new AuditLogEvent.Builder();
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
             tdrProvider,
@@ -793,7 +797,7 @@ class DrsResolutionServiceTest {
             gcpAccessId,
             TypeEnum.HTTPS,
             List.of(passportAuth),
-            new AuditLogEvent.Builder(),
+            auditLogEventBuilder,
             null,
             googleProject,
             TOKEN,
@@ -808,6 +812,13 @@ class DrsResolutionServiceTest {
         .postAccessURL(
             any(DRSPassportRequestModel.class), eq(PATH), eq(gcpAccessId), eq(googleProject));
     verify(drsApi, never()).postAccessURL(any(), any(), any());
+    assertThat(
+        "audit log records the gs config's auth type, not https's",
+        auditLogEventBuilder
+            .auditLogEventType(AuditLogEventType.DrsResolutionSucceeded)
+            .build()
+            .getAuthType(),
+        equalTo(Optional.of(DrsAuthEnum.current_request)));
   }
 
   @Test
@@ -823,6 +834,7 @@ class DrsResolutionServiceTest {
     when(drsApi.postAccessURL(Map.of("passports", PASSPORTS), PATH, azureAccessId))
         .thenReturn(new AccessURL().url("https://azure.example.com/signed-url"));
 
+    var auditLogEventBuilder = new AuditLogEvent.Builder();
     var response =
         drsResolutionService.fetchDrsObjectAccessUrl(
             tdrProvider,
@@ -830,7 +842,7 @@ class DrsResolutionServiceTest {
             azureAccessId,
             TypeEnum.HTTPS,
             List.of(passportAuth),
-            new AuditLogEvent.Builder(),
+            auditLogEventBuilder,
             null,
             googleProject,
             TOKEN,
@@ -842,5 +854,12 @@ class DrsResolutionServiceTest {
         equalTo("https://azure.example.com/signed-url"));
     verify(drsApi).postAccessURL(Map.of("passports", PASSPORTS), PATH, azureAccessId);
     verifyNoInteractions(tdrApiFactory);
+    assertThat(
+        "audit log records the https config's auth type, not gs's",
+        auditLogEventBuilder
+            .auditLogEventType(AuditLogEventType.DrsResolutionSucceeded)
+            .build()
+            .getAuthType(),
+        equalTo(Optional.of(DrsAuthEnum.provider_access_token)));
   }
 }
