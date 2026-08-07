@@ -32,6 +32,7 @@ public class AccessMethodUtils {
     return accessMethod;
   }
 
+  // Change in random part of code to get tests to run
   public static Optional<AccessMethod> getAccessMethodForCloud(
       List<AccessMethod> accessMethods, CloudPlatformEnum cloudPlatform) {
     Predicate<AccessMethod> filter;
