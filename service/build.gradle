@@ -11,7 +11,7 @@ plugins {
 	id 'com.gorylenko.gradle-git-properties' version '2.5.6'
 	id 'io.freefair.lombok'
 	id 'org.hidetake.swagger.generator'
-  	id 'com.srcclr.gradle' version '3.1.12'
+	id 'com.srcclr.gradle' version '3.1.12'
 	id 'org.sonarqube'
 	id 'io.sentry.jvm.gradle' version '5.12.2'
 }
@@ -42,6 +42,7 @@ dependencies {
 		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-data-jdbc'
 		exclude group: 'com.google.oauth-client', module: 'google-oauth-client'
 		exclude group: 'org.postgresql', module: 'postgresql'
+		exclude group: 'io.kubernetes', module: 'client-java'
 	}
 	implementation 'org.broadinstitute.dsde.workbench:sam-client_2.13:v0.0.332'
 	implementation 'bio.terra:externalcreds-client-resttemplate:1.83.0-SNAPSHOT'
