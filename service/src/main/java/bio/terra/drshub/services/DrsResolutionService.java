@@ -308,8 +308,8 @@ public class DrsResolutionService {
     for (var authorization : drsHubAuthorizations) {
       AccessURL accessUrl;
       try {
-        // Attempt to fetch without providing google project and associated info, in case the
-        // provider does not require it
+        // In retry mode, attempt to fetch without providing google project and associated info,
+        // in case the provider does not require it
         accessUrl =
             callAccessUrl(
                 drsApi,
@@ -318,9 +318,9 @@ public class DrsResolutionService {
                 authorization,
                 accessMethodType,
                 uriComponents,
-                null,
-                null,
-                false);
+                retryMode ? null : googleProject,
+                retryMode ? null : bearerToken,
+                !retryMode && supportsUserProject);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
