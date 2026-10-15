@@ -308,6 +308,8 @@ public class DrsResolutionService {
     for (var authorization : drsHubAuthorizations) {
       AccessURL accessUrl;
       try {
+        // Attempt to fetch without providing google project and associated info, in case the
+        // provider does not require it
         accessUrl =
             callAccessUrl(
                 drsApi,
@@ -316,9 +318,9 @@ public class DrsResolutionService {
                 authorization,
                 accessMethodType,
                 uriComponents,
-                googleProject,
-                bearerToken,
-                supportsUserProject);
+                null,
+                null,
+                false);
       } catch (HttpClientErrorException.BadRequest e) {
         if (retryMode && googleProject != null && isRequireUserProjectError(e)) {
           // Retry with a fresh client that includes x-user-project
@@ -400,6 +402,15 @@ public class DrsResolutionService {
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
               .orElse(null);
+        } catch (HttpClientErrorException.BadRequest e) {
+          if (isRequireUserProjectError(e)) {
+            throw e; // let fetchDrsObjectAccessUrl retry with project + bearer token
+          }
+          log.error(
+              "Passport authorized request failed for {} with error {}",
+              uriComponents.toUriString(),
+              e.getMessage());
+          yield null;
         } catch (RestClientException e) {
           log.error(
               "Passport authorized request failed for {} with error {}",
