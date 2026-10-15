@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import bio.terra.common.iam.BearerToken;
 import bio.terra.datarepo.api.DataRepositoryServiceApi;
+import bio.terra.datarepo.client.ApiException;
 import bio.terra.datarepo.model.DRSAccessURL;
 import bio.terra.datarepo.model.DRSPassportRequestModel;
 import bio.terra.drshub.config.DrsProvider;
@@ -542,6 +544,8 @@ class DrsResolutionServiceTest {
 
   @Test
   void passportAuthWithGoogleProject_usesTdrClient() throws Exception {
+    // Non-requester-pays snapshot: the first (and only) TDR-client call omits x-user-project, so
+    // TDR bills the snapshot's own (source) project rather than the caller's.
     var tdrProvider = createTdrProviderWithRetryMode();
     var googleProject = "test-project";
     var passportAuth =
@@ -551,8 +555,7 @@ class DrsResolutionServiceTest {
             SupportedTypesEnum.BEARERAUTH, (var e) -> Optional.of(List.of(TOKEN_VALUE)));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
-    when(tdrApi.postAccessURL(
-            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+    when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull()))
         .thenReturn(new DRSAccessURL().url("https://example.com"));
 
     var response =
@@ -571,8 +574,7 @@ class DrsResolutionServiceTest {
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
     verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
-        .postAccessURL(
-            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
+        .postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull());
     verify(drsApi, never()).postAccessURL(any(), any(), any());
     verify(drsApi, never()).setBearerToken(any());
   }
@@ -644,8 +646,7 @@ class DrsResolutionServiceTest {
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
-    when(tdrApi.postAccessURL(
-            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+    when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull()))
         .thenReturn(new DRSAccessURL().url("https://example.com"));
 
     var response =
@@ -664,8 +665,7 @@ class DrsResolutionServiceTest {
     assertThat("access url returned", response.getUrl(), equalTo("https://example.com"));
     verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
-        .postAccessURL(
-            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
+        .postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull());
     verify(drsApi, never()).postAccessURL(any(), any(), any());
     verify(drsApi, never()).setBearerToken(any());
   }
@@ -679,8 +679,7 @@ class DrsResolutionServiceTest {
         new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
 
     when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
-    when(tdrApi.postAccessURL(
-            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+    when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull()))
         .thenReturn(new DRSAccessURL().url("https://signed-url.example.com/data"));
 
     var response =
@@ -705,10 +704,53 @@ class DrsResolutionServiceTest {
     verify(drsApi).setHeader(DrsResolutionService.TRANSACTION_ID_HEADER_NAME, TRANSACTION_ID);
     verify(tdrApiFactory).getApi(TOKEN_VALUE);
     verify(tdrApi)
-        .postAccessURL(
-            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
+        .postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull());
     verify(drsApi, never()).postAccessURL(any(), any(), any());
     verify(drsApi, never()).setBearerToken(any());
+  }
+
+  @Test
+  void passportAuthWithGoogleProject_requesterPays_retriesWithUserProject() throws Exception {
+    // Requester-pays snapshot: the first TDR-client call omits x-user-project and TDR responds that
+    // a user project is required; DrsHub then retries, this time forwarding the caller's project.
+    var tdrProvider = createTdrProviderWithRetryMode();
+    var googleProject = "test-project";
+    var passportAuth =
+        new DrsHubAuthorization(SupportedTypesEnum.PASSPORTAUTH, (var e) -> Optional.of(PASSPORTS));
+
+    when(tdrApiFactory.getApi(TOKEN_VALUE)).thenReturn(tdrApi);
+    // First attempt (no x-user-project) -> TDR signals that a user project is required.
+    when(tdrApi.postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull()))
+        .thenThrow(
+            new ApiException(
+                400, "Bad Request", null, "Snapshot requires an x-user-project header"));
+    // Retry (with x-user-project) -> success.
+    when(tdrApi.postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject)))
+        .thenReturn(new DRSAccessURL().url("https://example.com"));
+
+    var response =
+        drsResolutionService.fetchDrsObjectAccessUrl(
+            tdrProvider,
+            uriComponents,
+            accessId,
+            TypeEnum.GS,
+            List.of(passportAuth),
+            new AuditLogEvent.Builder(),
+            null,
+            googleProject,
+            TOKEN,
+            TRANSACTION_ID);
+
+    assertThat(
+        "signed url returned after requester-pays retry",
+        response.getUrl(),
+        equalTo("https://example.com"));
+    verify(tdrApi)
+        .postAccessURL(any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), isNull());
+    verify(tdrApi)
+        .postAccessURL(
+            any(DRSPassportRequestModel.class), eq(PATH), eq(accessId), eq(googleProject));
   }
 
   @Test

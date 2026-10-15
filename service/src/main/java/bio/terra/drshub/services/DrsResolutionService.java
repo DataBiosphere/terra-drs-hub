@@ -305,6 +305,13 @@ public class DrsResolutionService {
     }
     addStandardHeaders(drsApi, ip, transactionId);
 
+    // Requester-pays handling (see ProviderAccessMethodConfig#requiresUserProjectOnRetry): in retry
+    // mode, do NOT forward x-user-project on the first attempt. TDR then bills the snapshot's own
+    // (source) project for non-requester-pays snapshots; for requester-pays snapshots TDR returns
+    // its "requires an x-user-project" error, which the catch block below detects and retries WITH
+    // the caller's project. Outside retry mode, forward it on the first attempt.
+    boolean forwardUserProjectOnFirstAttempt = !retryMode;
+
     for (var authorization : drsHubAuthorizations) {
       AccessURL accessUrl;
       try {
@@ -317,6 +324,7 @@ public class DrsResolutionService {
                 accessMethodType,
                 uriComponents,
                 googleProject,
+                forwardUserProjectOnFirstAttempt,
                 bearerToken,
                 supportsUserProject);
       } catch (HttpClientErrorException.BadRequest e) {
@@ -334,6 +342,7 @@ public class DrsResolutionService {
                   accessMethodType,
                   uriComponents,
                   googleProject,
+                  /* forwardUserProject= */ true,
                   bearerToken,
                   supportsUserProject);
         } else {
@@ -357,6 +366,7 @@ public class DrsResolutionService {
       TypeEnum accessMethodType,
       UriComponents uriComponents,
       String googleProject,
+      boolean forwardUserProject,
       BearerToken bearerToken,
       boolean supportsUserProject) {
     Optional<List<String>> auth =
@@ -380,26 +390,44 @@ public class DrsResolutionService {
       }
       case PASSPORTAUTH -> {
         try {
-          // If googleProject is set and this is a TDR provider, also send bearer token alongside
-          // passports to enable signing the access url with the userProject set with the right
-          // access. Non-TDR providers (e.g. BDC) do not use x-user-project and must not be routed
-          // to TDR.
+          // If googleProject is set and this is a TDR provider, route through the TDR client so the
+          // bearer token is sent alongside the passports (TDR requires it to sign the URL). The
+          // x-user-project header is forwarded only when forwardUserProject is true. On the first
+          // attempt (gated by requiresUserProjectOnRetry) it is omitted, so TDR bills a
+          // non-requester-pays snapshot to its source project; the retry then forwards it.
+          // Non-TDR providers (e.g. BDC) do not use x-user-project and must not be routed to TDR.
           if (supportsUserProject
               && googleProject != null
               && bearerToken != null
               && bearerToken.getToken() != null) {
+            String userProjectHeader = forwardUserProject ? googleProject : null;
             log.info(
-                "Google project {} specified for passport auth request to {}. Using TDR client with bearer token.",
-                googleProject,
-                uriComponents.toUriString());
+                "Passport auth request to {} routed through the TDR client with bearer token; "
+                    + "x-user-project {}.",
+                uriComponents.toUriString(),
+                userProjectHeader != null
+                    ? "forwarded (" + userProjectHeader + ")"
+                    : "omitted on this attempt");
             yield auth.map(
                     a ->
                         callDataRepoPostAccessUrl(
-                            bearerToken.getToken(), a, objectId, accessId, googleProject))
+                            bearerToken.getToken(), a, objectId, accessId, userProjectHeader))
                 .orElse(null);
           }
           yield auth.map(a -> drsApi.postAccessURL(Map.of("passports", a), objectId, accessId))
               .orElse(null);
+        } catch (HttpClientErrorException.BadRequest e) {
+          // Let TDR's requester-pays "requires an x-user-project" signal propagate so
+          // fetchDrsObjectAccessUrl can retry forwarding the caller's project. Any other bad
+          // request is a passport auth failure, so we fall through to the next authorization.
+          if (isRequireUserProjectError(e)) {
+            throw e;
+          }
+          log.error(
+              "Passport authorized request failed for {} with error {}",
+              uriComponents.toUriString(),
+              e.getMessage());
+          yield null;
         } catch (RestClientException e) {
           log.error(
               "Passport authorized request failed for {} with error {}",
