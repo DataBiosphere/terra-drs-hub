@@ -6,7 +6,7 @@ on:
     paths-ignore: [ '*.md' ]
   pull_request:
     branches: [ '**' ]
-  workflow_dispatch: {}
+  workflow_dispatch: { }
 
 jobs:
   build:
@@ -97,12 +97,11 @@ jobs:
         run: |
           git clone https://github.com/awslabs/git-secrets.git ~/git-secrets
           cd ~/git-secrets
-          git checkout b9e96b3212fa06aea65964ff0d5cda84ce935f38
+          git checkout 7d6b970cbd3c216353cb22b383b70c150140662e
           sudo make install
 
       - name: Secrets check
         run: |
-          sudo ln -s "$(which echo)" /usr/local/bin/say
           ./minnie-kenny.sh --force
           git secrets --scan-history
 
