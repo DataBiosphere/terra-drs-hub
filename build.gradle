@@ -22,8 +22,8 @@ subprojects {
 		artifactGroup = "${group}.${rootProject.name}"
 	}
 
-	// CVE-2026-71290: Spring Boot 3.5.16 manages httpclient5 5.5.2, which is affected, and 5.5.x has no fix.
-	// Override until Spring Boot manages httpclient5 >= 5.6.4. httpcore5 moves to the 5.4 line 5.6.5 is built against.
+	// CVE-2026-71290: Override Spring Boot 3.5.16 transitive dependency. 
+	// Remove when we update to Springboot 4 and we can use httpclient5 >= 5.6.4.
 	ext['httpclient5.version'] = '5.6.5'
 	ext['httpcore5.version'] = '5.4.4'
 
