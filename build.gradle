@@ -22,6 +22,11 @@ subprojects {
 		artifactGroup = "${group}.${rootProject.name}"
 	}
 
+	// CVE-2026-71290: Override Spring Boot 3.5.16 transitive dependency. 
+	// Remove when we update to Springboot 4 and we can use httpclient5 >= 5.6.4.
+	ext['httpclient5.version'] = '5.6.5'
+	ext['httpcore5.version'] = '5.4.4'
+
 	apply plugin: 'io.spring.dependency-management'
 
 	dependencyManagement {
