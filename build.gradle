@@ -27,6 +27,10 @@ subprojects {
 	ext['httpclient5.version'] = '5.6.5'
 	ext['httpcore5.version'] = '5.4.4'
 
+	// CVE-2026-19880: Override Spring Boot 3.5.16 transitive dependency (logback 1.5.34).
+	// The fix first shipped in logback 1.6.3. Remove when a Spring Boot release manages logback >= 1.6.3.
+	ext['logback.version'] = '1.6.8'
+
 	apply plugin: 'io.spring.dependency-management'
 
 	dependencyManagement {
